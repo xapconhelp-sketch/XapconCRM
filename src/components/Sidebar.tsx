@@ -17,9 +17,10 @@ import {
 interface SidebarProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
+  onLogout: () => void;
 }
 
-export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
+export default function Sidebar({ currentView, onViewChange, onLogout }: SidebarProps) {
   const menuItems = [
     { type: ViewType.DASHBOARD, label: "Dashboard", icon: LayoutDashboard },
     { type: ViewType.LEADS, label: "Leads", icon: Users },
@@ -69,9 +70,14 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
           <Settings className="w-4 h-4 text-[#7c839b]" />
           <span>Configuración</span>
         </button>
-        <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-[#7c839b] hover:text-white hover:bg-white/5 transition-all">
-          <HelpCircle className="w-4 h-4 text-[#7c839b]" />
-          <span>Soporte Técnico</span>
+        <button 
+          onClick={onLogout}
+          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-white/5 transition-all"
+        >
+          <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span>Cerrar Sesión</span>
         </button>
       </div>
     </nav>

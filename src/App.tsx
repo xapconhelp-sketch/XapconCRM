@@ -18,10 +18,12 @@ import EstimatorView from "./components/EstimatorView";
 import ProductionView from "./components/ProductionView";
 import FinancialsView from "./components/FinancialsView";
 import TeamView from "./components/TeamView";
+import LoginView from "./components/LoginView";
 
 import { Menu, X, HelpCircle } from "lucide-react";
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   // Views and collapsible menus
   const [currentView, setCurrentView] = useState<ViewType>(ViewType.DASHBOARD);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -409,6 +411,10 @@ export default function App() {
     });
   };
 
+  if (!isAuthenticated) {
+    return <LoginView onLogin={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#f7f9fb] text-[#191c1e] font-sans antialiased overflow-hidden">
       
@@ -419,6 +425,7 @@ export default function App() {
           setCurrentView(view);
           setMobileMenuOpen(false);
         }}
+        onLogout={() => setIsAuthenticated(false)}
       />
 
       {/* Header - Mobile */}
@@ -451,20 +458,28 @@ export default function App() {
             { id: ViewType.PRODUCTION, label: "Production Pipeline" },
             { id: ViewType.FINANCIALS, label: "Financials Overview" },
             { id: ViewType.TEAM, label: "Personal & Crews" }
-          ].map((lnk) => (
+          ].map((item) => (
             <button
-              key={lnk.id}
+              key={item.id}
               onClick={() => {
-                setCurrentView(lnk.id);
+                setCurrentView(item.id);
                 setMobileMenuOpen(false);
               }}
-              className={`w-full text-left py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
-                currentView === lnk.id ? "bg-[#6cf8bb] text-[#002113]" : "text-white/70 hover:bg-white/5"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-150 ${
+                currentView === item.id 
+                  ? "bg-[#6cf8bb] text-[#002113] font-bold" 
+                  : "text-[#7c839b] hover:text-white hover:bg-white/5"
               }`}
             >
-              {lnk.label}
+              <span>{item.label}</span>
             </button>
           ))}
+          <button
+            onClick={() => setIsAuthenticated(false)}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-red-400 hover:text-red-300 hover:bg-white/5 transition-all mt-4 border-t border-white/10 pt-4"
+          >
+            Cerrar Sesión
+          </button>
         </div>
       )}
 
