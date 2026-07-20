@@ -1,0 +1,738 @@
+[
+  {
+    "id": "MAT-001",
+    "description": "Remove Laminated - comp. shingle rfg. w/out felt",
+    "originalDescription": "1. Remove Laminated - comp. shingle rfg. w/out felt",
+    "category": "labor",
+    "unit": "SQ",
+    "unitPrice": 64.05
+  },
+  {
+    "id": "MAT-002",
+    "description": "Material Only Laminated - comp. shingle rfg. - w/out felt",
+    "originalDescription": "2. Material Only Laminated - comp. shingle rfg. - w/out felt",
+    "category": "material",
+    "unit": "SQ",
+    "unitPrice": 134.25
+  },
+  {
+    "id": "MAT-003",
+    "description": "Install Laminated - comp. shingle rfg. w/out felt",
+    "originalDescription": "3. Install Laminated - comp. shingle rfg. w/out felt",
+    "category": "labor",
+    "unit": "SQ",
+    "unitPrice": 114.9
+  },
+  {
+    "id": "MAT-004",
+    "description": "Remove 3 tab-25 yr. comp. shingle roofing - w/out felt",
+    "originalDescription": "4. Remove 3 tab-25 yr. comp. shingle roofing - w/out felt",
+    "category": "labor",
+    "unit": "SQ",
+    "unitPrice": 62.25
+  },
+  {
+    "id": "MAT-005",
+    "description": "Material Only 3 tab - 25 yr. comp. shingle roofing - w/out felt",
+    "originalDescription": "5. Material Only 3 tab - 25 yr. comp. shingle roofing - w/out felt",
+    "category": "material",
+    "unit": "SQ",
+    "unitPrice": 111.03
+  },
+  {
+    "id": "MAT-006",
+    "description": "Install 3 tab- 25 yr. comp. shingle roofing - w/out felt",
+    "originalDescription": "6. Install 3 tab- 25 yr. comp. shingle roofing - w/out felt",
+    "category": "labor",
+    "unit": "SQ",
+    "unitPrice": 115.24
+  },
+  {
+    "id": "MAT-007",
+    "description": "Remove Hip / Ridge cap - cut from 3 tab",
+    "originalDescription": "7. Remove Hip / Ridge cap - cut from 3 tab",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 2.63
+  },
+  {
+    "id": "MAT-008",
+    "description": "Material Only Hip / Ridge cap cut from 3 tab",
+    "originalDescription": "8. Material Only Hip / Ridge cap cut from 3 tab",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 1.34
+  },
+  {
+    "id": "MAT-009",
+    "description": "Install Hip/Ridge capcut from 3 tab",
+    "originalDescription": "9. Install Hip/Ridge capcut from 3 tab",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 2.93
+  },
+  {
+    "id": "MAT-010",
+    "description": "Remove Drip edge",
+    "originalDescription": "10. Remove Drip edge",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.38
+  },
+  {
+    "id": "MAT-011",
+    "description": "Material Only Drip edge",
+    "originalDescription": "11. Material Only Drip edge",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 1.18
+  },
+  {
+    "id": "MAT-012",
+    "description": "Install Drip edge",
+    "originalDescription": "12. Install Drip edge",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 1.52
+  },
+  {
+    "id": "MAT-013",
+    "description": "Material Only Asphalt starter - universal starter course",
+    "originalDescription": "13. Material Only Asphalt starter - universal starter course",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 0.53
+  },
+  {
+    "id": "MAT-014",
+    "description": "Install Asphalt starter - universal starter course",
+    "originalDescription": "14. Install Asphalt starter - universal starter course",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 1.13
+  },
+  {
+    "id": "MAT-015",
+    "description": "Material Only Ice & water barrier",
+    "originalDescription": "15. Material Only Ice & water barrier",
+    "category": "material",
+    "unit": "SQ",
+    "unitPrice": 0.53
+  },
+  {
+    "id": "MAT-016",
+    "description": "Install Ice & water barrier",
+    "originalDescription": "16. Install Ice & water barrier",
+    "category": "labor",
+    "unit": "SQ",
+    "unitPrice": 1.08
+  },
+  {
+    "id": "MAT-017",
+    "description": "Material Only Roofing felt - 15 lb.",
+    "originalDescription": "17. Material Only Roofing felt - 15 lb.",
+    "category": "material",
+    "unit": "SQ",
+    "unitPrice": 7.93
+  },
+  {
+    "id": "MAT-018",
+    "description": "Install Roofing felt - 15 lb.",
+    "originalDescription": "18. Install Roofing felt - 15 lb.",
+    "category": "labor",
+    "unit": "SQ",
+    "unitPrice": 24.13
+  },
+  {
+    "id": "MAT-019",
+    "description": "Remove Flashing - L flashing - color finish",
+    "originalDescription": "19. Remove Flashing - L flashing - color finish",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.69
+  },
+  {
+    "id": "MAT-020",
+    "description": "Material Only Flashing - L flashing - color finish",
+    "originalDescription": "20. Material Only Flashing - L flashing - color finish",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 3.09
+  },
+  {
+    "id": "MAT-021",
+    "description": "Install Flashing - L flashing - color finish",
+    "originalDescription": "21. Install Flashing - L flashing - color finish",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 2.44
+  },
+  {
+    "id": "MAT-022",
+    "description": "Material Only Step flashing",
+    "originalDescription": "22. Material Only Step flashing",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 2.25
+  },
+  {
+    "id": "MAT-023",
+    "description": "Install Step flashing",
+    "originalDescription": "23. Install Step flashing",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 7.68
+  },
+  {
+    "id": "MAT-024",
+    "description": "Remove Roof vent - turbine type",
+    "originalDescription": "24. Remove Roof vent - turbine type",
+    "category": "labor",
+    "unit": "EA",
+    "unitPrice": 10.37
+  },
+  {
+    "id": "MAT-025",
+    "description": "Material Only Roof vent - turbine type",
+    "originalDescription": "25. Material Only Roof vent - turbine type",
+    "category": "material",
+    "unit": "EA",
+    "unitPrice": 103
+  },
+  {
+    "id": "MAT-026",
+    "description": "Install Roof vent - turbine type",
+    "originalDescription": "26. Install Roof vent - turbine type",
+    "category": "labor",
+    "unit": "EA",
+    "unitPrice": 48.57
+  },
+  {
+    "id": "MAT-027",
+    "description": "Remove Roof vent - turtle type - Metal",
+    "originalDescription": "27. Remove Roof vent - turtle type - Metal",
+    "category": "labor",
+    "unit": "EA",
+    "unitPrice": 10.37
+  },
+  {
+    "id": "MAT-028",
+    "description": "Material Only Roof vent - turtle type - Metal",
+    "originalDescription": "28. Material Only Roof vent - turtle type - Metal",
+    "category": "material",
+    "unit": "EA",
+    "unitPrice": 23.96
+  },
+  {
+    "id": "MAT-029",
+    "description": "Install Roof vent - turtle type - Metal",
+    "originalDescription": "29. Install Roof vent - turtle type - Metal",
+    "category": "labor",
+    "unit": "EA",
+    "unitPrice": 40.47
+  },
+  {
+    "id": "MAT-030",
+    "description": "Remove Exhaust cap - through roof - 6\" to 8\"",
+    "originalDescription": "30. Remove Exhaust cap - through roof - 6\" to 8\"",
+    "category": "labor",
+    "unit": "EA",
+    "unitPrice": 10.37
+  },
+  {
+    "id": "MAT-031",
+    "description": "Material Only Exhaust cap - through roof - 6\" to 8\"",
+    "originalDescription": "31. Material Only Exhaust cap - through roof - 6\" to 8\"",
+    "category": "material",
+    "unit": "EA",
+    "unitPrice": 51.46
+  },
+  {
+    "id": "MAT-032",
+    "description": "Install Exhaust cap - through roof - 6\" to 8\"",
+    "originalDescription": "32. Install Exhaust cap - through roof - 6\" to 8\"",
+    "category": "labor",
+    "unit": "EA",
+    "unitPrice": 48.57
+  },
+  {
+    "id": "MAT-033",
+    "description": "Remove Soffit metal",
+    "originalDescription": "33. Remove Soffit metal",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.35
+  },
+  {
+    "id": "MAT-034",
+    "description": "Material Only Soffit - metal",
+    "originalDescription": "34. Material Only Soffit - metal",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 3.95
+  },
+  {
+    "id": "MAT-035",
+    "description": "Install Soffit - metal",
+    "originalDescription": "35. Install Soffit - metal",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 4.17
+  },
+  {
+    "id": "MAT-036",
+    "description": "Remove Soffit - vinyl",
+    "originalDescription": "36. Remove Soffit - vinyl",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.35
+  },
+  {
+    "id": "MAT-037",
+    "description": "Material Only Soffit - vinyl",
+    "originalDescription": "37. Material Only Soffit - vinyl",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 2.55
+  },
+  {
+    "id": "MAT-038",
+    "description": "Install Soffit - vinyl",
+    "originalDescription": "38. Install Soffit - vinyl",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 4.17
+  },
+  {
+    "id": "MAT-039",
+    "description": "Remove Soffit - wood",
+    "originalDescription": "39. Remove Soffit - wood",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.35
+  },
+  {
+    "id": "MAT-040",
+    "description": "Material Only Soffit - wood",
+    "originalDescription": "40. Material Only Soffit - wood",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 2.58
+  },
+  {
+    "id": "MAT-041",
+    "description": "Install Soffit - wood",
+    "originalDescription": "41. Install Soffit - wood",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 5.2
+  },
+  {
+    "id": "MAT-042",
+    "description": "Paint exterior soffit wood 1 coat",
+    "originalDescription": "42. Paint exterior soffit wood 1 coat",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 1.61
+  },
+  {
+    "id": "MAT-043",
+    "description": "Prime & paint exterior soffit - wood",
+    "originalDescription": "43. Prime & paint exterior soffit - wood",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 2.48
+  },
+  {
+    "id": "MAT-044",
+    "description": "Prime & paint exterior soffit - metal",
+    "originalDescription": "44. Prime & paint exterior soffit - metal",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 2.17
+  },
+  {
+    "id": "MAT-045",
+    "description": "Paint exterior soffit metal 1 coat",
+    "originalDescription": "45. Paint exterior soffit metal 1 coat",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 1.43
+  },
+  {
+    "id": "MAT-046",
+    "description": "Remove Gutter / downspout - aluminum - up to 5\"",
+    "originalDescription": "46. Remove Gutter / downspout - aluminum - up to 5\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.58
+  },
+  {
+    "id": "MAT-047",
+    "description": "Material Only Gutter / downspout - aluminum - up to 5\"",
+    "originalDescription": "47. Material Only Gutter / downspout - aluminum - up to 5\"",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 4.05
+  },
+  {
+    "id": "MAT-048",
+    "description": "Install Gutter/downspout aluminum up to 5\"",
+    "originalDescription": "48. Install Gutter/downspout aluminum up to 5\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 5.08
+  },
+  {
+    "id": "MAT-049",
+    "description": "Remove Gutter / downspout - aluminum - 6\"",
+    "originalDescription": "49. Remove Gutter / downspout - aluminum - 6\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.58
+  },
+  {
+    "id": "MAT-050",
+    "description": "Material Only Gutter/downspout - aluminum - 6\"",
+    "originalDescription": "50. Material Only Gutter/downspout - aluminum - 6\"",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 8.31
+  },
+  {
+    "id": "MAT-051",
+    "description": "Install Gutter / downspout - aluminum - 6\"",
+    "originalDescription": "51. Install Gutter / downspout - aluminum - 6\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 5.05
+  },
+  {
+    "id": "MAT-052",
+    "description": "Remove Gutter/downspout - copper - up to 5\"",
+    "originalDescription": "52. Remove Gutter/downspout - copper - up to 5\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.58
+  },
+  {
+    "id": "MAT-053",
+    "description": "Material Only Gutter / downspout - copper up to 5\"",
+    "originalDescription": "53. Material Only Gutter / downspout - copper up to 5\"",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 20.2
+  },
+  {
+    "id": "MAT-054",
+    "description": "Install Gutter/downspout copper - up to 5\"",
+    "originalDescription": "54. Install Gutter/downspout copper - up to 5\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 8.32
+  },
+  {
+    "id": "MAT-055",
+    "description": "Remove Gutter/downspout - plastic",
+    "originalDescription": "55. Remove Gutter/downspout - plastic",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.58
+  },
+  {
+    "id": "MAT-056",
+    "description": "Material Only Gutter/downspout - plastic",
+    "originalDescription": "56. Material Only Gutter/downspout - plastic",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 2.5
+  },
+  {
+    "id": "MAT-057",
+    "description": "Install Gutter / downspout - plastic",
+    "originalDescription": "57. Install Gutter / downspout - plastic",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 4.38
+  },
+  {
+    "id": "MAT-058",
+    "description": "Remove Gutter/downspout - galvanized - up to 5\"",
+    "originalDescription": "58. Remove Gutter/downspout - galvanized - up to 5\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.58
+  },
+  {
+    "id": "MAT-059",
+    "description": "Material Only Gutter/downspout - galvanized - up to 5\"",
+    "originalDescription": "59. Material Only Gutter/downspout - galvanized - up to 5\"",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 3.6
+  },
+  {
+    "id": "MAT-060",
+    "description": "Install Gutter/downspout - galvanized up to 5\"",
+    "originalDescription": "60. Install Gutter/downspout - galvanized up to 5\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 4.76
+  },
+  {
+    "id": "MAT-061",
+    "description": "Gutter/downspout - Detach & reset",
+    "originalDescription": "61. Gutter/downspout - Detach & reset",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 5.55
+  },
+  {
+    "id": "MAT-062",
+    "description": "Prime & paint gutter/downspout",
+    "originalDescription": "62. Prime & paint gutter/downspout",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 1.72
+  },
+  {
+    "id": "MAT-063",
+    "description": "Remove Fascia metal - 4\"",
+    "originalDescription": "63. Remove Fascia metal - 4\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.39
+  },
+  {
+    "id": "MAT-064",
+    "description": "Material Only Fascia - metal - 4\"",
+    "originalDescription": "64. Material Only Fascia - metal - 4\"",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 1.87
+  },
+  {
+    "id": "MAT-065",
+    "description": "Install Fascia metal - 4\"",
+    "originalDescription": "65. Install Fascia metal - 4\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 3.96
+  },
+  {
+    "id": "MAT-066",
+    "description": "Remove Fascia metal - 6\"",
+    "originalDescription": "66. Remove Fascia metal - 6\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.39
+  },
+  {
+    "id": "MAT-067",
+    "description": "Material Only Fascia - metal - 6\"",
+    "originalDescription": "67. Material Only Fascia - metal - 6\"",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 2.68
+  },
+  {
+    "id": "MAT-068",
+    "description": "Install Fascia - metal - 6\"",
+    "originalDescription": "68. Install Fascia - metal - 6\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 4.17
+  },
+  {
+    "id": "MAT-069",
+    "description": "Remove Fascia - metal - 8\"",
+    "originalDescription": "69. Remove Fascia - metal - 8\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.39
+  },
+  {
+    "id": "MAT-070",
+    "description": "Material Only Fascia - metal - 8\"",
+    "originalDescription": "70. Material Only Fascia - metal - 8\"",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 3.08
+  },
+  {
+    "id": "MAT-071",
+    "description": "Install Fascia metal - 8\"",
+    "originalDescription": "71. Install Fascia metal - 8\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 4.5
+  },
+  {
+    "id": "MAT-072",
+    "description": "Remove Fascia - metal - 10\"",
+    "originalDescription": "72. Remove Fascia - metal - 10\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.39
+  },
+  {
+    "id": "MAT-073",
+    "description": "Material Only Fascia metal - 10\"",
+    "originalDescription": "73. Material Only Fascia metal - 10\"",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 3.72
+  },
+  {
+    "id": "MAT-074",
+    "description": "Install Fascia - metal - 10\"",
+    "originalDescription": "74. Install Fascia - metal - 10\"",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 4.76
+  },
+  {
+    "id": "MAT-075",
+    "description": "Remove Fascia - 1\" x 4\" - #1 pine",
+    "originalDescription": "75. Remove Fascia - 1\" x 4\" - #1 pine",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.39
+  },
+  {
+    "id": "MAT-076",
+    "description": "Material Only Fascia - 1\" x 4\" - #1 pine",
+    "originalDescription": "76. Material Only Fascia - 1\" x 4\" - #1 pine",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 1.34
+  },
+  {
+    "id": "MAT-077",
+    "description": "Install Fascia - 1\" x 4\" - #1 pine",
+    "originalDescription": "77. Install Fascia - 1\" x 4\" - #1 pine",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 5.94
+  },
+  {
+    "id": "MAT-078",
+    "description": "Remove Fascia - 1\" x 4\" - #2 pine",
+    "originalDescription": "78. Remove Fascia - 1\" x 4\" - #2 pine",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.39
+  },
+  {
+    "id": "MAT-079",
+    "description": "Material Only Fascia - 1\" x 4\" - #2 pine",
+    "originalDescription": "79. Material Only Fascia - 1\" x 4\" - #2 pine",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 0.95
+  },
+  {
+    "id": "MAT-080",
+    "description": "Install Fascia - 1\" x 4\" - #2 pine",
+    "originalDescription": "80. Install Fascia - 1\" x 4\" - #2 pine",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 5.94
+  },
+  {
+    "id": "MAT-081",
+    "description": "Remove Fascia - 1\" x 6\" - #1 pine",
+    "originalDescription": "81. Remove Fascia - 1\" x 6\" - #1 pine",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.39
+  },
+  {
+    "id": "MAT-082",
+    "description": "Material Only Fascia - 1\" x 6\" - #1 pine",
+    "originalDescription": "82. Material Only Fascia - 1\" x 6\" - #1 pine",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 2.14
+  },
+  {
+    "id": "MAT-083",
+    "description": "Install Fascia - 1\" x 6\" - #1 pine",
+    "originalDescription": "83. Install Fascia - 1\" x 6\" - #1 pine",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 6.53
+  },
+  {
+    "id": "MAT-084",
+    "description": "Remove Fascia - 1\" x 6\" - #2 pine",
+    "originalDescription": "84. Remove Fascia - 1\" x 6\" - #2 pine",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.39
+  },
+  {
+    "id": "MAT-085",
+    "description": "Material Only Fascia - 1\" x 6\" - #2 pine",
+    "originalDescription": "85. Material Only Fascia - 1\" x 6\" - #2 pine",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 1.44
+  },
+  {
+    "id": "MAT-086",
+    "description": "Install Fascia - 1\" x 6\" - #2 pine",
+    "originalDescription": "86. Install Fascia - 1\" x 6\" - #2 pine",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 6.53
+  },
+  {
+    "id": "MAT-087",
+    "description": "Remove Fascia - 1\" x 8\" - #1 pine",
+    "originalDescription": "87. Remove Fascia - 1\" x 8\" - #1 pine",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.39
+  },
+  {
+    "id": "MAT-088",
+    "description": "Material Only Fascia - 1\" x 8\" - #1 pine",
+    "originalDescription": "88. Material Only Fascia - 1\" x 8\" - #1 pine",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 2.61
+  },
+  {
+    "id": "MAT-089",
+    "description": "Install Fascia - 1\" x 8\" - #1 pine",
+    "originalDescription": "89. Install Fascia - 1\" x 8\" - #1 pine",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 7.24
+  },
+  {
+    "id": "MAT-090",
+    "description": "Remove Fascia - 1\" x 8\" - #2 pine",
+    "originalDescription": "90. Remove Fascia - 1\" x 8\" - #2 pine",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 0.39
+  },
+  {
+    "id": "MAT-091",
+    "description": "Material Only Fascia - 1\" x 8\" - #2 pine",
+    "originalDescription": "91. Material Only Fascia - 1\" x 8\" - #2 pine",
+    "category": "material",
+    "unit": "LF",
+    "unitPrice": 1.97
+  },
+  {
+    "id": "MAT-092",
+    "description": "Install Fascia - 1\" x 8\" - #2 pine",
+    "originalDescription": "92. Install Fascia - 1\" x 8\" - #2 pine",
+    "category": "labor",
+    "unit": "LF",
+    "unitPrice": 7.24
+  }
+]

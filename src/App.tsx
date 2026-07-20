@@ -245,6 +245,10 @@ export default function App() {
         phone,
         address,
         created_at,
+        company_email,
+        company_website,
+        registration_number,
+        license_number,
         user_organizations (
           organization_id,
           organizations (
@@ -307,6 +311,10 @@ export default function App() {
           email: item.email,
           phone: item.phone || "",
           address: item.address || "",
+          companyEmail: item.company_email || "",
+          companyWebsite: item.company_website || "",
+          registrationNumber: item.registration_number || "",
+          licenseNumber: item.license_number || "",
           activeLeads: Math.floor(Math.random() * 5),
           closeRate: 50 + Math.floor(Math.random() * 40)
         };
@@ -359,7 +367,18 @@ export default function App() {
 
   const handleUpdateTeamMember = async (
     memberId: string, 
-    updatedData: { name: string; phone: string; address: string; avatarFile?: File; companyName?: string; organizationId?: string }
+    updatedData: { 
+      name: string; 
+      phone: string; 
+      address: string; 
+      avatarFile?: File; 
+      companyName?: string; 
+      organizationId?: string;
+      companyEmail?: string;
+      companyWebsite?: string;
+      registrationNumber?: string;
+      licenseNumber?: string;
+    }
   ) => {
     if (!session) return false;
 
@@ -386,7 +405,11 @@ export default function App() {
         full_name: updatedData.name,
         phone: updatedData.phone,
         address: updatedData.address,
-        ...(finalAvatarUrl ? { avatar_url: finalAvatarUrl } : {})
+        ...(finalAvatarUrl ? { avatar_url: finalAvatarUrl } : {}),
+        company_email: updatedData.companyEmail || null,
+        company_website: updatedData.companyWebsite || null,
+        registration_number: updatedData.registrationNumber || null,
+        license_number: updatedData.licenseNumber || null
       })
       .eq('id', memberId);
 
@@ -462,6 +485,23 @@ export default function App() {
 
         if (relErr) {
           console.error("Error al vincular organización:", relErr.message);
+        }
+      }
+
+      // Save contractor company metadata in profiles table
+      if (newMember.roleCategory === "contractor") {
+        const { error: profileUpdateErr } = await supabase
+          .from("profiles")
+          .update({
+            company_email: newMember.companyEmail || null,
+            company_website: newMember.companyWebsite || null,
+            registration_number: newMember.registrationNumber || null,
+            license_number: newMember.licenseNumber || null
+          })
+          .eq("id", signUpData.user.id);
+          
+        if (profileUpdateErr) {
+          console.error("Error updating profile metadata:", profileUpdateErr.message);
         }
       }
 
@@ -1208,7 +1248,7 @@ export default function App() {
       />
 
       {/* Header - Mobile */}
-      <header className="md:hidden flex items-center justify-between px-6 py-4 bg-[#131b2e] text-white border-b border-white/15 shrink-0 select-none">
+      <header className="no-print md:hidden flex items-center justify-between px-6 py-4 bg-[#131b2e] text-white border-b border-white/15 shrink-0 select-none">
         <div className="flex items-center">
           <img 
             src={logo} 
@@ -1268,7 +1308,7 @@ export default function App() {
         
         {/* Visual Top Bar for Company Selection */}
         {userRole === "admin" && (
-          <div className="bg-white border-b border-[#c6c6cd]/30 px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 select-none shadow-sm">
+          <div className="no-print bg-white border-b border-[#c6c6cd]/30 px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 select-none shadow-sm">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Visualizando Empresa:</span>
               <select 
@@ -1326,7 +1366,7 @@ export default function App() {
         )}
 
         {userRole === "contractor" && (
-          <div className="bg-white border-b border-[#c6c6cd]/30 px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 select-none shadow-sm">
+          <div className="no-print bg-white border-b border-[#c6c6cd]/30 px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 select-none shadow-sm">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Portal de Cliente:</span>
               <span className="px-2.5 py-1 bg-sky-50 text-sky-800 text-xs font-bold rounded-lg border border-sky-100 uppercase tracking-wider">
@@ -1463,6 +1503,7 @@ export default function App() {
                 organizations={organizations}
                 userCompany={contractorCompany}
                 companyInviteCode={activeOrganization?.invite_code}
+                currentUserId={session?.user?.id}
               />
             </ErrorBoundary>
           )}

@@ -9,6 +9,10 @@ export interface UserProfile {
   role: string;
   avatar_url?: string;
   organization_id?: string | null;
+  company_email?: string | null;
+  company_website?: string | null;
+  registration_number?: string | null;
+  license_number?: string | null;
 }
 
 export interface Organization {

@@ -139,6 +139,9 @@ export interface Estimate {
   total: number;
   profitMargin: number; // e.g., 24.5
   cashData?: CashData;
+  termsAndCommitment?: string;
+  warrantyType?: string;
+  warrantyTypes?: string[];
 }
 
 export interface KanbanProject {
@@ -185,6 +188,10 @@ export interface TeamMember {
   organizationId?: string;
   email?: string;
   phone?: string;
+  companyEmail?: string;
+  companyWebsite?: string;
+  registrationNumber?: string;
+  licenseNumber?: string;
 }
 
 export interface CriticalAlert {
@@ -205,6 +212,15 @@ export interface InspectionAppointment {
   type: string;
   inspectorName: string;
   inspectorInitials: string;
+}
+
+export interface MaterialItem {
+  id: string;
+  description: string;
+  category: 'material' | 'labor' | 'fee';
+  unit: string;
+  unitPrice: number;
+  originalDescription?: string;
 }
 
 

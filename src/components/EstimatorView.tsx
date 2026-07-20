@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Estimate, EstimateItem, Lead } from "../types";
+import { Estimate, EstimateItem, Lead, MaterialItem } from "../types";
+import { useAuth } from "../contexts/AuthContext";
+import logoXapcon from "../../LogoXapcon.png";
+import MaterialsCatalogModal from "./MaterialsCatalogModal";
+import globalMaterials from "../data/materials.json";
 import { 
   FileSignature, 
   Trash2, 
@@ -15,8 +19,11 @@ import {
   X,
   Send,
   Loader2,
-  FileCheck2
+  FileCheck2,
+  FileSpreadsheet
 } from "lucide-react";
+
+const DEFAULT_TERMS_TEXT = "ALL WORK WILL BE COMPLETED IN FULL IN ACCORDANCE WITH THE QUOTE APPROVED BY THE CLIENT. The materials specified in the client’s approved estimate will be used, employing installation methods that comply with current Arkansas building codes, IRC and IBC standards, the manufacturer’s installation guidelines, and industry best practices.";
 
 interface EstimatorViewProps {
   leads: Lead[];
@@ -31,6 +38,9 @@ export default function EstimatorView({
   onAddLead,
   onDeleteLead
 }: EstimatorViewProps) {
+  const { profile, activeOrganization } = useAuth();
+  const userRole = profile?.role === 'super_admin' ? 'admin' : 'contractor';
+
   // Master-Detail State
   const [selectedLeadId, setSelectedLeadId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,7 +59,10 @@ export default function EstimatorView({
   const [newQty, setNewQty] = useState(1);
   const [newUnit, setNewUnit] = useState("SQ");
   const [newPrice, setNewPrice] = useState(100);
-  const [includeWarranty, setIncludeWarranty] = useState(true);
+
+  // Catalog States
+  const [showCatalogModal, setShowCatalogModal] = useState(false);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
 
   // Simulated email actions
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -224,6 +237,27 @@ export default function EstimatorView({
     onUpdateLeadEstimate(selectedLead.id, updatedEst);
   };
 
+  const handleUpdateTermsText = (value: string) => {
+    const updatedEst = { ...activeEstimate, termsAndCommitment: value };
+    onUpdateLeadEstimate(selectedLead.id, updatedEst);
+  };
+
+  const handleToggleWarrantyType = (optId: string) => {
+    const currentTypes = activeEstimate.warrantyTypes || (activeEstimate.warrantyType ? [activeEstimate.warrantyType] : []);
+    let updatedTypes: string[];
+    if (currentTypes.includes(optId)) {
+      updatedTypes = currentTypes.filter(id => id !== optId);
+    } else {
+      updatedTypes = [...currentTypes, optId];
+    }
+    const updatedEst = { 
+      ...activeEstimate, 
+      warrantyTypes: updatedTypes,
+      warrantyType: undefined
+    };
+    onUpdateLeadEstimate(selectedLead.id, updatedEst);
+  };
+
   // Submit new lead
   const handleCreateLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -286,26 +320,168 @@ export default function EstimatorView({
   return (
     <div className="flex-1 flex h-screen overflow-hidden bg-[#f7f9fb]">
       
-      {/* CSS Injected print styling */}
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
         @media print {
+          /* Reset screen-only styles */
           body * {
             visibility: hidden;
           }
           #print-area, #print-area * {
             visibility: visible;
           }
-          #print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding: 40px;
-            background: white !important;
-            color: black !important;
+          
+          /* Reset parent structures to prevent shifts, margins, and cut-off content on print */
+          body,
+          #root,
+          main,
+          .min-h-screen,
+          .flex-1.flex.h-screen.overflow-hidden,
+          .flex-1.flex.flex-col.h-screen.overflow-y-auto,
+          .flex-1.p-6.space-y-6 {
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            position: static !important;
+            overflow: visible !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: transparent !important;
           }
+          
+          #print-area {
+            position: relative !important;
+            width: 100% !important;
+            padding: 0px !important;
+            margin: 0px !important;
+            background: white !important;
+            color: #1e293b !important;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+            font-size: 11px !important;
+            line-height: 1.6 !important;
+          }
+          
+          /* Page setup - Letters size */
+          @page {
+            size: letter;
+            margin: 1.8cm 1.5cm;
+          }
+          
           .no-print {
             display: none !important;
+          }
+          
+          /* Clean typography */
+          h1, h2, h3, h4 {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+            color: #0f172a !important;
+          }
+          
+          /* Homeowner card columns layout (4 columns on print) */
+          #print-area .lg\:grid-cols-4 {
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 16px !important;
+          }
+          
+          #print-area label {
+            color: #64748B !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            font-size: 8px !important;
+            letter-spacing: 0.05em !important;
+            margin-bottom: 4px !important;
+            display: block !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+          }
+          
+          #print-area input {
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            color: #0f172a !important;
+            font-weight: 600 !important;
+            font-size: 11px !important;
+            width: 100% !important;
+          }
+          
+          /* Table styling - modern, borderless rows with bottom borders */
+          #print-area table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin-top: 24px !important;
+            margin-bottom: 24px !important;
+            font-size: 10px !important;
+          }
+          
+          #print-area th, #print-area td {
+            border: none !important;
+            border-bottom: 1px solid #E2E8F0 !important;
+            padding: 10px 12px !important;
+            text-align: left !important;
+          }
+          
+          #print-area th {
+            background-color: #0F172A !important;
+            color: #FFFFFF !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            font-size: 8px !important;
+            letter-spacing: 0.08em !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            border-bottom: none !important;
+            padding: 10px 12px !important;
+          }
+          
+          #print-area th:first-child {
+            border-top-left-radius: 8px !important;
+            border-bottom-left-radius: 8px !important;
+          }
+          
+          #print-area th:last-child {
+            border-top-right-radius: 8px !important;
+            border-bottom-right-radius: 8px !important;
+          }
+          
+          #print-area tr:last-child td {
+            border-bottom: none !important;
+          }
+          
+          /* Table row break management */
+          #print-area tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          
+          #print-area thead {
+            display: table-header-group !important;
+          }
+          
+          #print-area .border-t {
+            border-color: #E2E8F0 !important;
+          }
+          
+          #print-area .text-right {
+            text-align: right !important;
+          }
+          
+          /* Signature blocks (2 columns, avoid breaking) */
+          #print-area .print\:grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 40px !important;
+            margin-top: 40px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          
+          #print-area .border-b {
+            border-bottom: 1px solid #CBD5E1 !important;
           }
         }
       `}</style>
@@ -458,26 +634,80 @@ export default function EstimatorView({
             <div id="print-area" className="space-y-6">
               
               {/* PDF Header Branding (Only visible on print/PDF) */}
-              <div className="hidden print:flex justify-between items-start border-b-2 border-gray-200 pb-4 mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-[#131b2e] tracking-tight uppercase">PRESUPUESTO DE CONSTRUCCIÓN</h1>
-                  <span className="text-xs text-gray-500 block mt-1 font-mono">Xapcon Group - Lic. #98240-TX</span>
+              <div className="hidden print:flex justify-between items-start border-b border-gray-200/80 pb-6 mb-6">
+                <div className="flex items-start gap-4">
+                  {userRole === "contractor" ? (
+                    <>
+                      {profile?.avatar_url ? (
+                        <img 
+                          src={profile.avatar_url} 
+                          alt="Logo Empresa" 
+                          referrerPolicy="no-referrer"
+                          className="h-16 w-auto object-contain shrink-0 rounded-lg border border-slate-100" 
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-xl bg-yellow-50 border border-yellow-200 flex items-center justify-center text-[#ca8a04] font-extrabold text-lg shrink-0 uppercase">
+                          {(activeOrganization?.name || "CO").substring(0, 2)}
+                        </div>
+                      )}
+                      <div className="space-y-1 text-left">
+                        <h1 className="text-xl font-extrabold text-[#0F172A] tracking-tight uppercase font-sans">
+                          {activeOrganization?.name || "CONSTRUCTION ESTIMATE"}
+                        </h1>
+                        <div className="border-l-2 border-[#eab308] pl-3 text-[10px] text-slate-500 font-mono space-y-0.5">
+                          <div className="font-bold text-slate-700">Lic. #{profile?.license_number || "N/A"} · Reg. #{profile?.registration_number || "N/A"}</div>
+                          {(profile?.company_email || profile?.company_website) && (
+                            <div>
+                              {profile?.company_email && <span>Email: {profile.company_email}</span>}
+                              {profile?.company_email && profile?.company_website && <span> · </span>}
+                              {profile?.company_website && <span>Web: {profile.company_website}</span>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <img 
+                        src={logoXapcon} 
+                        alt="Xapcon Group Logo" 
+                        className="h-16 w-auto object-contain shrink-0" 
+                      />
+                      <div className="space-y-1 text-left">
+                        <h1 className="text-xl font-extrabold text-[#0F172A] tracking-tight uppercase font-sans">
+                          RETAIL ESTIMATE
+                        </h1>
+                        <div className="border-l-2 border-[#eab308] pl-3 text-[10px] text-slate-500 font-mono">
+                          <span className="font-bold text-slate-700 block">Xapcon Group</span>
+                          <span>Lic. #98240-TX</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="text-right">
-                  <span className="text-xs font-bold text-gray-700 block">Cotización: {activeEstimate.id}</span>
-                  <span className="text-[10px] text-gray-500 block">Fecha: {selectedLead.createdAt}</span>
+                
+                {/* Modern metadata box */}
+                <div className="bg-[#f8fafc] border border-slate-200 rounded-xl p-3.5 text-right min-w-[190px] shadow-sm">
+                  <div className="text-[9px] font-extrabold uppercase tracking-widest text-[#64748b] font-sans">Estimate Details</div>
+                  <div className="text-sm font-black text-[#0f172a] mt-0.5 tracking-tight font-mono">{activeEstimate.id}</div>
+                  <div className="text-[10px] text-slate-500 font-mono mt-1 pt-1 border-t border-slate-200/60">
+                    Date: {selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' }) : new Date().toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </div>
                 </div>
               </div>
 
               {/* Homeowner Details Card */}
-              <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="bg-white print:bg-[#f8fafc] border border-[#c6c6cd]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-3 gap-2">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-yellow-50 flex items-center justify-center text-[#ca8a04] shrink-0 print:hidden">
                       <Users className="w-4 h-4" />
                     </div>
                     <div>
-                      <h2 className="font-sans text-xs font-bold text-[#131b2e]">Datos del Homeowner (Propietario)</h2>
+                      <h2 className="font-sans text-xs font-bold text-[#131b2e]">
+                        <span className="print:hidden">Datos del Homeowner (Propietario)</span>
+                        <span className="hidden print:inline">Homeowner Information</span>
+                      </h2>
                       <p className="text-[10px] text-[#7c839b] font-medium print:hidden">Información de contacto y dirección de la obra</p>
                     </div>
                   </div>
@@ -498,7 +728,10 @@ export default function EstimatorView({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Inputs render as editable inside UI, but static text in print mode */}
                   <div>
-                    <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Nombre</label>
+                    <label className="block text-[10px] font-bold text-[#7c839b] mb-1">
+                      <span className="print:hidden">Nombre</span>
+                      <span className="hidden print:inline">Name</span>
+                    </label>
                     <input 
                       type="text"
                       value={activeEstimate.clientName}
@@ -508,7 +741,10 @@ export default function EstimatorView({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Dirección de la Obra</label>
+                    <label className="block text-[10px] font-bold text-[#7c839b] mb-1">
+                      <span className="print:hidden">Dirección de la Obra</span>
+                      <span className="hidden print:inline">Job Address</span>
+                    </label>
                     <input 
                       type="text"
                       value={activeEstimate.address}
@@ -518,7 +754,10 @@ export default function EstimatorView({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Teléfono</label>
+                    <label className="block text-[10px] font-bold text-[#7c839b] mb-1">
+                      <span className="print:hidden">Teléfono</span>
+                      <span className="hidden print:inline">Phone</span>
+                    </label>
                     <input 
                       type="text"
                       value={activeEstimate.clientPhone || ""}
@@ -528,7 +767,10 @@ export default function EstimatorView({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Correo Electrónico</label>
+                    <label className="block text-[10px] font-bold text-[#7c839b] mb-1">
+                      <span className="print:hidden">Correo Electrónico</span>
+                      <span className="hidden print:inline">Email</span>
+                    </label>
                     <input 
                       type="email"
                       value={activeEstimate.clientEmail || ""}
@@ -541,30 +783,81 @@ export default function EstimatorView({
               </div>
 
               {/* Item List Table Card */}
-              <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-white print:bg-transparent border border-[#c6c6cd]/30 print:border-none rounded-2xl shadow-sm print:shadow-none overflow-hidden print:overflow-visible">
                 <div className="p-4 border-b border-[#eceef0] flex items-center justify-between no-print">
                   <h2 className="font-sans text-xs font-bold text-[#131b2e]">Desglose de Conceptos de Construcción</h2>
-                  <button
-                    onClick={() => setIsAddingItem(!isAddingItem)}
-                    className="text-xs text-[#ca8a04] font-bold flex items-center gap-1 hover:underline"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Añadir Concepto
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowCatalogModal(true)}
+                      className="text-xs text-gray-500 hover:text-[#ca8a04] font-bold flex items-center gap-1 hover:underline transition-colors"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-[#ca8a04]" />
+                      Catálogo de Materiales
+                    </button>
+                    <button
+                      onClick={() => setIsAddingItem(!isAddingItem)}
+                      className="text-xs text-[#ca8a04] font-bold flex items-center gap-1 hover:underline"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Añadir Concepto
+                    </button>
+                  </div>
                 </div>
 
                 {isAddingItem && (
                   <form onSubmit={handleAddItem} className="no-print p-4 bg-[#f7f9fb] border-b border-[#eceef0] grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                    <div className="md:col-span-4">
+                    <div className="md:col-span-4 relative">
                       <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Descripción</label>
                       <input 
                         type="text" 
                         value={newDesc} 
-                        onChange={(e) => setNewDesc(e.target.value)}
+                        onChange={(e) => {
+                          setNewDesc(e.target.value);
+                          setShowAutocomplete(true);
+                        }}
+                        onFocus={() => setShowAutocomplete(true)}
+                        onBlur={() => {
+                          setTimeout(() => setShowAutocomplete(false), 200);
+                        }}
                         placeholder="Ej. Tejas de asfalto" 
-                        className="w-full bg-white border border-[#c6c6cd] rounded-lg p-1.5 text-xs text-[#191c1e]"
+                        className="w-full bg-white border border-[#c6c6cd] rounded-lg p-1.5 text-xs text-[#191c1e] outline-none focus:border-[#eab308]"
                         required
                       />
+                      {/* Autocomplete Dropdown */}
+                      {(() => {
+                        const catalog = globalMaterials as MaterialItem[];
+                        const matchingItems = newDesc.trim() 
+                          ? catalog.filter(m => m.description.toLowerCase().includes(newDesc.toLowerCase()))
+                          : [];
+                        const showDropdown = showAutocomplete && matchingItems.length > 0;
+                        
+                        if (!showDropdown) return null;
+                        
+                        return (
+                          <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50 text-xs divide-y divide-gray-100">
+                            {matchingItems.slice(0, 15).map((item) => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => {
+                                  setNewDesc(item.description);
+                                  setNewCategory(item.category);
+                                  setNewUnit(item.unit);
+                                  setNewPrice(item.unitPrice);
+                                  setShowAutocomplete(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-2"
+                              >
+                                <span className="font-semibold text-slate-800 truncate">{item.description}</span>
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 uppercase shrink-0">
+                                  ${item.unitPrice} / {item.unit}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Categoría</label>
@@ -627,10 +920,22 @@ export default function EstimatorView({
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-[#f7f9fb] border-b border-[#eceef0] text-[#7c839b] text-[10px] font-mono uppercase tracking-wider font-semibold">
-                        <th className="py-3 px-4">Concepto</th>
-                        <th className="py-3 px-4 text-center">Cantidad</th>
-                        <th className="py-3 px-4 text-center">Unidad</th>
-                        <th className="py-3 px-4 text-right">Precio Unitario</th>
+                        <th className="py-3 px-4">
+                          <span className="print:hidden">Concepto</span>
+                          <span className="hidden print:inline">Item Description</span>
+                        </th>
+                        <th className="py-3 px-4 text-center">
+                          <span className="print:hidden">Cantidad</span>
+                          <span className="hidden print:inline">Quantity</span>
+                        </th>
+                        <th className="py-3 px-4 text-center">
+                          <span className="print:hidden">Unidad</span>
+                          <span className="hidden print:inline">Unit</span>
+                        </th>
+                        <th className="py-3 px-4 text-right">
+                          <span className="print:hidden">Precio Unitario</span>
+                          <span className="hidden print:inline">Unit Price</span>
+                        </th>
                         <th className="py-3 px-4 text-right">Total</th>
                         <th className="py-3 px-4 text-center no-print">Acciones</th>
                       </tr>
@@ -686,55 +991,147 @@ export default function EstimatorView({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 
                 {/* Warranty Digital Contract terms */}
-                <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-5 shadow-sm space-y-4 select-none">
+                <div className="bg-white print:bg-[#f8fafc] border border-[#c6c6cd]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
                   <div className="flex items-center gap-2 border-b pb-2 text-[#131b2e] font-bold text-xs">
                     <FileText className="w-4 h-4 text-[#ca8a04] print:hidden" />
-                    <span>Contrato Digital & Términos de Servicio</span>
+                    <span>
+                      <span className="print:hidden">Terminos y compromiso del Servicio</span>
+                      <span className="hidden print:inline">Terms and Service Commitment</span>
+                    </span>
                   </div>
-                  <p className="text-[11px] text-[#7c839b] leading-relaxed">
-                    Se requiere la firma del cliente en el contrato digital para iniciar la producción de techado. El propietario pagará el monto acordado según las condiciones del contrato final.
-                  </p>
-                  <label className="flex items-center gap-2.5 cursor-pointer p-2 bg-[#f7f9fb] rounded-lg border border-[#c6c6cd]/20 print:border-none print:bg-transparent print:p-0">
-                    <input 
-                      type="checkbox" 
-                      checked={includeWarranty} 
-                      onChange={() => setIncludeWarranty(!includeWarranty)}
-                      className="rounded text-[#ca8a04] focus:ring-[#eab308] print:hidden"
+                  
+                  {/* Screen Mode: Editable Textarea */}
+                  <div className="print:hidden">
+                    <textarea
+                      value={activeEstimate.termsAndCommitment ?? DEFAULT_TERMS_TEXT}
+                      onChange={(e) => handleUpdateTermsText(e.target.value)}
+                      className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/40 rounded-lg p-2.5 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none transition-all font-medium h-36 resize-y"
+                      placeholder="Escribe los términos y compromiso del servicio aquí..."
                     />
-                    <span className="text-xs font-semibold text-[#191c1e]">Incluir adenda de garantía estándar (10 años mano de obra)</span>
-                  </label>
+                  </div>
+                  
+                  {/* Print Mode: Plain Text */}
+                  <p className="hidden print:block text-[11px] text-[#7c839b] leading-relaxed whitespace-pre-wrap">
+                    {activeEstimate.termsAndCommitment ?? DEFAULT_TERMS_TEXT}
+                  </p>
+                  
+                  <div className="space-y-2 print:border-none print:bg-transparent print:p-0">
+                    <label className="block text-[10px] font-bold text-[#7c839b] print:hidden uppercase tracking-wider mb-1">Garantías Aplicables</label>
+                    
+                    {/* Screen Mode: Scrollable Checkbox Checklist */}
+                    <div className="print:hidden space-y-2 max-h-56 overflow-y-auto pr-1 border border-[#c6c6cd]/25 rounded-lg p-2 bg-[#f7f9fb]">
+                      {[
+                        { id: "labor_5", label: "Incluye garantía estándar (5 años mano de obra)" },
+                        { id: "labor_10", label: "Incluye garantía estándar (10 años mano de obra)" },
+                        { id: "material_5", label: "Incluye garantía estándar (5 años en Material)" },
+                        { id: "material_8", label: "Incluye garantía estándar (8 años en Material)" },
+                        { id: "material_10", label: "Incluye garantía estándar (10 años en Material)" },
+                        { id: "material_12", label: "Incluye garantía estándar (12 años en Material)" },
+                        { id: "material_15", label: "Incluye garantía estándar (15 años en Material)" },
+                        { id: "material_20", label: "Incluye garantía estándar (20 años en Material)" },
+                        { id: "material_25", label: "Incluye garantía estándar (25 años en Material)" }
+                      ].map((opt) => {
+                        const wTypes = activeEstimate.warrantyTypes || (activeEstimate.warrantyType ? [activeEstimate.warrantyType] : []);
+                        const isChecked = wTypes.includes(opt.id);
+                        
+                        return (
+                          <label key={opt.id} className="flex items-center gap-2.5 cursor-pointer p-1.5 hover:bg-white rounded transition-colors select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={isChecked} 
+                              onChange={() => handleToggleWarrantyType(opt.id)}
+                              className="rounded text-[#ca8a04] focus:ring-[#eab308]"
+                            />
+                            <span className="text-xs font-semibold text-[#191c1e]">
+                              {opt.label}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Print Mode: List of Selected Warranties in English */}
+                    <div className="hidden print:block space-y-1">
+                      {(() => {
+                        const wTypes = activeEstimate.warrantyTypes || (activeEstimate.warrantyType ? [activeEstimate.warrantyType] : []);
+                        if (wTypes.length === 0 || (wTypes.length === 1 && wTypes[0] === "none")) {
+                          return <span className="text-xs font-semibold text-[#191c1e]">Standard warranty addendum excluded</span>;
+                        }
+                        
+                        return wTypes.filter(w => w !== "none").map((wType) => {
+                          let text = "";
+                          switch(wType) {
+                            case "labor_5": text = "Includes standard warranty (5-year labor warranty)"; break;
+                            case "labor_10": text = "Includes standard warranty (10-year labor warranty)"; break;
+                            case "material_5": text = "Includes standard warranty (5-year material warranty)"; break;
+                            case "material_8": text = "Includes standard warranty (8-year material warranty)"; break;
+                            case "material_10": text = "Includes standard warranty (10-year material warranty)"; break;
+                            case "material_12": text = "Includes standard warranty (12-year material warranty)"; break;
+                            case "material_15": text = "Includes standard warranty (15-year material warranty)"; break;
+                            case "material_20": text = "Includes standard warranty (20-year material warranty)"; break;
+                            case "material_25": text = "Includes standard warranty (25-year material warranty)"; break;
+                          }
+                          return text ? <div key={wType} className="text-xs font-semibold text-[#191c1e]">{text}</div> : null;
+                        });
+                      })()}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Totals and Profit Margin widget */}
-                <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="bg-white print:bg-[#f8fafc] border border-[#c6c6cd]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
                   <div className="flex items-center justify-between border-b pb-2">
-                    <h3 className="font-sans text-xs font-bold text-[#131b2e]">Resumen de Cierre de Cotización</h3>
-                    <span className="font-sans text-[11px] text-[#7c839b] font-medium">Valores en USD</span>
+                    <h3 className="font-sans text-xs font-bold text-[#131b2e]">
+                      <span className="print:hidden">Resumen de Cierre de Cotización</span>
+                      <span className="hidden print:inline">Estimate Summary</span>
+                    </h3>
+                    <span className="font-sans text-[11px] text-[#7c839b] font-medium">
+                      <span className="print:hidden">Valores en USD</span>
+                      <span className="hidden print:inline">Values in USD</span>
+                    </span>
                   </div>
 
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-[#7c839b]">Subtotal Materiales:</span>
+                      <span className="text-[#7c839b]">
+                        <span className="print:hidden">Subtotal Materiales:</span>
+                        <span className="hidden print:inline">Materials Subtotal:</span>
+                      </span>
                       <span className="font-mono font-bold text-[#45464d]">${activeEstimate.subtotalMaterials.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[#7c839b]">Subtotal Mano de Obra:</span>
+                      <span className="text-[#7c839b]">
+                        <span className="print:hidden">Subtotal Mano de Obra:</span>
+                        <span className="hidden print:inline">Labor Subtotal:</span>
+                      </span>
                       <span className="font-mono font-bold text-[#45464d]">${activeEstimate.subtotalLabor.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[#7c839b]">Permisos y Tasas Administrativas:</span>
+                      <span className="text-[#7c839b]">
+                        <span className="print:hidden">Permisos y Tasas Administrativas:</span>
+                        <span className="hidden print:inline">Permits & Administrative Fees:</span>
+                      </span>
                       <span className="font-mono font-bold text-[#45464d]">${activeEstimate.subtotalFees.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between border-t pt-2 font-bold text-[#131b2e]">
-                      <span>Subtotal Bruto:</span>
+                      <span>
+                        <span className="print:hidden">Subtotal Bruto:</span>
+                        <span className="hidden print:inline">Gross Subtotal:</span>
+                      </span>
                       <span className="font-mono">${activeEstimate.subtotalGross.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between text-[#7c839b]">
-                      <span>Impuestos ({(activeEstimate.taxRate * 100).toFixed(2)}%):</span>
+                      <span>
+                        <span className="print:hidden">Impuestos ({(activeEstimate.taxRate * 100).toFixed(2)}%):</span>
+                        <span className="hidden print:inline">Tax ({(activeEstimate.taxRate * 100).toFixed(2)}%):</span>
+                      </span>
                       <span className="font-mono">${activeEstimate.taxAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between border-t pt-2 font-bold text-lg text-[#131b2e]">
-                      <span>Total Estimado:</span>
+                      <span>
+                        <span className="print:hidden">Total Estimado:</span>
+                        <span className="hidden print:inline">Estimated Total:</span>
+                      </span>
                       <span className="font-mono">${activeEstimate.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   </div>
@@ -778,14 +1175,14 @@ export default function EstimatorView({
               {/* PDF Print Signature lines (Only visible on print/PDF) */}
               <div className="hidden print:grid grid-cols-2 gap-8 mt-16 pt-8 border-t border-gray-300">
                 <div className="space-y-8">
-                  <p className="text-xs text-gray-500 font-medium">Aprobado por el Cliente (Propietario):</p>
+                  <p className="text-xs text-gray-500 font-medium">Approved by Customer (Homeowner):</p>
                   <div className="border-b border-gray-400 h-8 w-2/3"></div>
-                  <p className="text-[10px] text-slate-500">Firma / Fecha</p>
+                  <p className="text-[10px] text-slate-500">Signature / Date</p>
                 </div>
                 <div className="space-y-8 text-right flex flex-col items-end">
-                  <p className="text-xs text-gray-500 font-medium">Representante Autorizado (Xapcon Group):</p>
+                  <p className="text-xs text-gray-500 font-medium">Authorized Representative ({userRole === "contractor" ? (activeOrganization?.name || "Contractor") : "Xapcon Group"}):</p>
                   <div className="border-b border-gray-400 h-8 w-2/3"></div>
-                  <p className="text-[10px] text-slate-500">Firma / Fecha</p>
+                  <p className="text-[10px] text-slate-500">Signature / Date</p>
                 </div>
               </div>
 
@@ -889,6 +1286,11 @@ export default function EstimatorView({
             <p className="text-xs font-bold text-slate-100">{toastMessage}</p>
           </div>
         </div>
+      )}
+
+      {/* Materials Catalog Modal */}
+      {showCatalogModal && (
+        <MaterialsCatalogModal onClose={() => setShowCatalogModal(false)} />
       )}
 
     </div>

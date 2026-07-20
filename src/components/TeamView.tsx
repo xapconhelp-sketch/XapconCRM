@@ -15,11 +15,23 @@ import {
 interface TeamViewProps {
   members: TeamMember[];
   onAddMember?: (member: Omit<TeamMember, "id" | "avatar" | "status">) => void;
-  onUpdateMember?: (id: string, data: { name: string; phone: string; address: string; avatarFile?: File; companyName?: string; organizationId?: string }) => Promise<boolean>;
+  onUpdateMember?: (id: string, data: { 
+    name: string; 
+    phone: string; 
+    address: string; 
+    avatarFile?: File; 
+    companyName?: string; 
+    organizationId?: string;
+    companyEmail?: string;
+    companyWebsite?: string;
+    registrationNumber?: string;
+    licenseNumber?: string;
+  }) => Promise<boolean>;
   userRole?: "admin" | "contractor";
   organizations?: { id: string; name: string }[];
   userCompany?: string;
   companyInviteCode?: string;
+  currentUserId?: string;
 }
 
 export default function TeamView({ 
@@ -29,7 +41,8 @@ export default function TeamView({
   userRole = "admin", 
   organizations = [], 
   userCompany = "",
-  companyInviteCode = ""
+  companyInviteCode = "",
+  currentUserId = ""
 }: TeamViewProps) {
   const [filterRole, setFilterRole] = useState<"all" | "sales" | "pm" | "install" | "admin" | "contractor">("all");
   
@@ -41,6 +54,12 @@ export default function TeamView({
   const [roleCategory, setRoleCategory] = useState<"sales" | "pm" | "install" | "admin" | "contractor">("sales");
   const [customRoleText, setCustomRoleText] = useState("");
   const [company, setCompany] = useState("");
+  
+  // Contractor owner metadata states
+  const [companyEmail, setCompanyEmail] = useState("");
+  const [companyWebsite, setCompanyWebsite] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
 
   // Edit form state
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
@@ -49,6 +68,10 @@ export default function TeamView({
   const [editPhone, setEditPhone] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
+  const [editCompanyEmail, setEditCompanyEmail] = useState("");
+  const [editCompanyWebsite, setEditCompanyWebsite] = useState("");
+  const [editRegistrationNumber, setEditRegistrationNumber] = useState("");
+  const [editLicenseNumber, setEditLicenseNumber] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const openEditModal = (m: TeamMember) => {
@@ -58,6 +81,10 @@ export default function TeamView({
     setEditPhone(m.phone || "");
     setEditAddress((m as any).address || "");
     setEditAvatarFile(null);
+    setEditCompanyEmail(m.companyEmail || "");
+    setEditCompanyWebsite(m.companyWebsite || "");
+    setEditRegistrationNumber(m.registrationNumber || "");
+    setEditLicenseNumber(m.licenseNumber || "");
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
@@ -70,7 +97,11 @@ export default function TeamView({
       address: editAddress,
       avatarFile: editAvatarFile || undefined,
       companyName: editingMember.roleCategory === "contractor" ? editCompany : undefined,
-      organizationId: (editingMember as any).organizationId || undefined
+      organizationId: (editingMember as any).organizationId || undefined,
+      companyEmail: editingMember.roleCategory === "contractor" ? editCompanyEmail : undefined,
+      companyWebsite: editingMember.roleCategory === "contractor" ? editCompanyWebsite : undefined,
+      registrationNumber: editingMember.roleCategory === "contractor" ? editRegistrationNumber : undefined,
+      licenseNumber: editingMember.roleCategory === "contractor" ? editLicenseNumber : undefined
     });
     setIsSaving(false);
     if (success) {
@@ -122,7 +153,11 @@ export default function TeamView({
       phone: phone || "(555) 000-0000",
       roleCategory,
       role: roleText,
-      company: roleCategory === "contractor" ? company : (userRole === "contractor" ? userCompany : company)
+      company: roleCategory === "contractor" ? company : (userRole === "contractor" ? userCompany : company),
+      companyEmail: roleCategory === "contractor" ? companyEmail : undefined,
+      companyWebsite: roleCategory === "contractor" ? companyWebsite : undefined,
+      registrationNumber: roleCategory === "contractor" ? registrationNumber : undefined,
+      licenseNumber: roleCategory === "contractor" ? licenseNumber : undefined
     });
 
     // Reset fields
@@ -130,6 +165,10 @@ export default function TeamView({
     setEmail("");
     setPhone("");
     setCustomRoleText("");
+    setCompanyEmail("");
+    setCompanyWebsite("");
+    setRegistrationNumber("");
+    setLicenseNumber("");
     setShowAddForm(false);
   };
 
@@ -206,7 +245,7 @@ export default function TeamView({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Tipo de Rol */}
             <div className="space-y-1">
               <label className="block text-[10px] uppercase font-bold text-[#7c839b]">Rol del Usuario</label>
@@ -262,23 +301,69 @@ export default function TeamView({
                 />
               </div>
             )}
+          </div>
 
-            {/* Submit Buttons */}
-            <div className="flex items-end gap-2">
-              <button 
-                type="submit" 
-                className="btn-gold-3d w-full py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs font-bold rounded-lg transition-all"
-              >
-                Registrar e Invitar
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setShowAddForm(false)}
-                className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition-all"
-              >
-                Cancelar
-              </button>
+          {/* Campos adicionales para dueño de compañía (contractor) */}
+          {roleCategory === "contractor" && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 border-t border-gray-100 pt-4 mt-2">
+              <div className="space-y-1">
+                <label className="block text-[10px] uppercase font-bold text-[#7c839b]">Correo de la Compañía</label>
+                <input 
+                  type="email" 
+                  value={companyEmail} 
+                  onChange={(e) => setCompanyEmail(e.target.value)} 
+                  placeholder="empresa@correo.com"
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#eab308]"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-[10px] uppercase font-bold text-[#7c839b]">Web de la Compañía</label>
+                <input 
+                  type="text" 
+                  value={companyWebsite} 
+                  onChange={(e) => setCompanyWebsite(e.target.value)} 
+                  placeholder="www.empresa.com"
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#eab308]"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-[10px] uppercase font-bold text-[#7c839b]">Número de Registro</label>
+                <input 
+                  type="text" 
+                  value={registrationNumber} 
+                  onChange={(e) => setRegistrationNumber(e.target.value)} 
+                  placeholder="REG-12345"
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#eab308]"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-[10px] uppercase font-bold text-[#7c839b]">Número de Licencia</label>
+                <input 
+                  type="text" 
+                  value={licenseNumber} 
+                  onChange={(e) => setLicenseNumber(e.target.value)} 
+                  placeholder="LIC-98765"
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#eab308]"
+                />
+              </div>
             </div>
+          )}
+
+          {/* Submit Buttons */}
+          <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+            <button 
+              type="button" 
+              onClick={() => setShowAddForm(false)}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition-all"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              className="btn-responsive btn-gold-3d px-4 py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg transition-all"
+            >
+              Registrar e Invitar
+            </button>
           </div>
         </form>
       )}
@@ -432,6 +517,15 @@ export default function TeamView({
                         </>
                       )}
                     </div>
+                    
+                    {m.roleCategory === "contractor" && (m.companyEmail || m.companyWebsite || m.registrationNumber || m.licenseNumber) && (
+                      <div className="col-span-2 border-t border-gray-100 pt-2 mt-1 space-y-0.5 text-[10px] text-slate-500 font-medium text-left">
+                        {m.companyEmail && <div className="truncate"><span className="font-semibold text-slate-700">Email Cía:</span> {m.companyEmail}</div>}
+                        {m.companyWebsite && <div className="truncate"><span className="font-semibold text-slate-700">Web Cía:</span> {m.companyWebsite}</div>}
+                        {m.registrationNumber && <div><span className="font-semibold text-slate-700">Reg #:</span> {m.registrationNumber}</div>}
+                        {m.licenseNumber && <div><span className="font-semibold text-slate-700">Lic #:</span> {m.licenseNumber}</div>}
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -446,7 +540,7 @@ export default function TeamView({
                   <span>Enviar Correo</span>
                 </a>
                 
-                {userRole === "admin" && onUpdateMember && (
+                {(userRole === "admin" || m.id === currentUserId) && onUpdateMember && (
                   <button 
                     onClick={() => openEditModal(m)}
                     className="flex-1 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1"
@@ -491,6 +585,43 @@ export default function TeamView({
                     className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
                   />
                 </div>
+              )}
+
+              {editingMember.roleCategory === "contractor" && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] uppercase font-bold text-[#7c839b]">Correo de la Compañía</label>
+                      <input 
+                        type="email" value={editCompanyEmail} onChange={e => setEditCompanyEmail(e.target.value)}
+                        className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[10px] uppercase font-bold text-[#7c839b]">Web de la Compañía</label>
+                      <input 
+                        type="text" value={editCompanyWebsite} onChange={e => setEditCompanyWebsite(e.target.value)}
+                        className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] uppercase font-bold text-[#7c839b]">Número de Registro</label>
+                      <input 
+                        type="text" value={editRegistrationNumber} onChange={e => setEditRegistrationNumber(e.target.value)}
+                        className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[10px] uppercase font-bold text-[#7c839b]">Número de Licencia</label>
+                      <input 
+                        type="text" value={editLicenseNumber} onChange={e => setEditLicenseNumber(e.target.value)}
+                        className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               <div className="space-y-1">
