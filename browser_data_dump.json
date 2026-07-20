@@ -1,0 +1,112 @@
+[
+  {
+    "claimId": "8da1bb67-3373-4e2d-8a0f-0589737ab05d",
+    "claimName": "Jorge Siles",
+    "task": {
+      "id": "tk-1783964235601-1",
+      "title": "Inspección de daños",
+      "status": "pending",
+      "dueDate": "Hoy",
+      "priority": "high"
+    }
+  },
+  {
+    "claimId": "8da1bb67-3373-4e2d-8a0f-0589737ab05d",
+    "claimName": "Jorge Siles",
+    "task": {
+      "id": "tk-1783964235601-2",
+      "title": "Inspección del ajustador",
+      "status": "pending",
+      "dueDate": "Mañana",
+      "priority": "medium"
+    }
+  },
+  {
+    "claimId": "b6a6d33f-0b4f-4cba-bf47-ebfef0d420c1",
+    "claimName": "Hector Enriquez",
+    "task": {
+      "id": "tk-1783963458317-1",
+      "title": "Inspección de daños",
+      "status": "pending",
+      "dueDate": "Hoy",
+      "priority": "high"
+    }
+  },
+  {
+    "claimId": "b6a6d33f-0b4f-4cba-bf47-ebfef0d420c1",
+    "claimName": "Hector Enriquez",
+    "task": {
+      "id": "tk-1783963458317-2",
+      "title": "Inspección del ajustador",
+      "status": "pending",
+      "dueDate": "Mañana",
+      "priority": "medium"
+    }
+  },
+  {
+    "claimId": "ec7f9544-628a-446c-a771-92d2097ea4c7",
+    "claimName": "Deandra Lopez",
+    "task": {
+      "id": "tk-1783960884890-1",
+      "title": "Inspección de daños",
+      "status": "pending",
+      "dueDate": "Hoy",
+      "priority": "high"
+    }
+  },
+  {
+    "claimId": "ec7f9544-628a-446c-a771-92d2097ea4c7",
+    "claimName": "Deandra Lopez",
+    "task": {
+      "id": "tk-1783960884890-2",
+      "title": "Inspección del ajustador",
+      "status": "pending",
+      "dueDate": "Mañana",
+      "priority": "medium"
+    }
+  },
+  {
+    "claimId": "762eb033-c73a-4639-ba6c-8cdd7703363d",
+    "claimName": "Martha Gomez",
+    "task": {
+      "id": "tk-1783956087311-1",
+      "title": "Inspección de daños",
+      "status": "pending",
+      "dueDate": "Hoy",
+      "priority": "high"
+    }
+  },
+  {
+    "claimId": "762eb033-c73a-4639-ba6c-8cdd7703363d",
+    "claimName": "Martha Gomez",
+    "task": {
+      "id": "tk-1783956087311-2",
+      "title": "Inspección del ajustador",
+      "status": "pending",
+      "dueDate": "Mañana",
+      "priority": "medium"
+    }
+  },
+  {
+    "claimId": "d608f1de-2724-4094-8215-74e9589cc57b",
+    "claimName": "Angel R Ventura Ayala",
+    "task": {
+      "id": "tk-1783954827517-1",
+      "title": "Inspección de daños",
+      "status": "pending",
+      "dueDate": "Hoy",
+      "priority": "high"
+    }
+  },
+  {
+    "claimId": "d608f1de-2724-4094-8215-74e9589cc57b",
+    "claimName": "Angel R Ventura Ayala",
+    "task": {
+      "id": "tk-1783954827517-2",
+      "title": "Inspección del ajustador",
+      "status": "pending",
+      "dueDate": "Mañana",
+      "priority": "medium"
+    }
+  }
+]

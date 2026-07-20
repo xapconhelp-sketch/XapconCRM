@@ -72,7 +72,8 @@ export const initialLeads: Lead[] = [
       { id: "task1", title: "Schedule Adjuster Meeting", dueDate: "Due Today", status: "pending", priority: "high" },
       { id: "task2", title: "Draft Initial Estimate", dueDate: "Due Tomorrow", status: "pending", priority: "medium" },
       { id: "task3", title: "Complete Drone Inspection", dueDate: "Done", status: "completed", priority: "medium" }
-    ]
+    ],
+    company: "Robertson Roofing"
   },
   {
     id: "APX-9825",
@@ -102,7 +103,8 @@ export const initialLeads: Lead[] = [
     documents: [],
     tasks: [
       { id: "sj-task-1", title: "Contact Lead to Qualify", dueDate: "Due Today", status: "pending", priority: "high" }
-    ]
+    ],
+    company: "Jenkins Contractors"
   }
 ];
 
@@ -173,7 +175,8 @@ export const initialProjects: KanbanProject[] = [
     durationEstimate: "Est. 2 Days",
     status: "scheduled",
     statusText: "Scheduled",
-    isWarning: false
+    isWarning: false,
+    company: "Robertson Roofing"
   },
   {
     id: "p2",
@@ -184,7 +187,8 @@ export const initialProjects: KanbanProject[] = [
     durationEstimate: "Tomorrow",
     status: "ordered",
     statusText: "Material Ordered",
-    isWarning: false
+    isWarning: false,
+    company: "Jenkins Contractors"
   },
   {
     id: "p3",
@@ -200,7 +204,8 @@ export const initialProjects: KanbanProject[] = [
       { name: "Dave Vance", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAmUy4bpb8Rqyjp3zbPcMIPs6jdjpv5WoLQ22idVPDwXvWcqTgG-hnMNC1xagd3l_S3HfDQ8XHyehU7RjmYgHwXla-9P0j1LPAUxhys15DmbzfpZffw2slKt4y0p0elAHXm6dC3KhS90tqQLoen72iP3xKEz4QXQknPZ0J9tqUkVfwypuiX3Po8eNY9bI4zPLaGXxR7jX7cHmUbW_cenJy6BvOub5kfxizaaKNKn6TLWPo8elDyW06jZHnoLsIINYfovX4dqym6HLAa" },
       { name: "John Smith", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDzImCDP7Stl4rUiGwuD1tgx7khMNM_SEU1mub4lTAcgV-jLDyLrJOvYtofsXT5bb9NiYMq2sgaEvB-IZx85ZV2Njl4gJXamNuE-We_2rawt5966rGpwF5hy3SaiSDHCDVKdGA3ABKlbSvFtqgE9dDXyTQqOhqbQ7eC_5EDV6XLD2rDQskfQmuEDRwzptZnJif8SKngPvuf1FFCzAXkRe6ClCPHCackeX0HT8n5NvQAsMxzSaYXyrmQsonUbhNp-oykNR37MRB9rmMw" }
     ],
-    isWarning: false
+    isWarning: false,
+    company: "Robertson Roofing"
   },
   {
     id: "p4",
@@ -213,7 +218,8 @@ export const initialProjects: KanbanProject[] = [
     statusText: "Weather Delay",
     progress: 70,
     isWarning: true,
-    warningText: "Weather Delay"
+    warningText: "Weather Delay",
+    company: "Jenkins Contractors"
   },
   {
     id: "p5",
@@ -224,15 +230,16 @@ export const initialProjects: KanbanProject[] = [
     durationEstimate: "QA Checklist",
     status: "qa",
     statusText: "QA Inspection",
-    isWarning: false
+    isWarning: false,
+    company: "Robertson Roofing"
   }
 ];
 
 export const initialInvoices: Invoice[] = [
-  { id: "i1", invoiceNumber: "INV-4029", clientName: "Oakhaven Retail Plaza", projectCategory: "Commercial Flat Roof", amount: 45200, status: "Paid" },
-  { id: "i2", invoiceNumber: "INV-4028", clientName: "Sarah Jenkins", projectCategory: "Residential Asphalt", amount: 12450, status: "Overdue" },
-  { id: "i3", invoiceNumber: "INV-4027", clientName: "Westside Industrial", projectCategory: "Metal Roof Repair", amount: 8900, status: "Pending" },
-  { id: "i4", invoiceNumber: "INV-4026", clientName: "Pine Crest HOA", projectCategory: "Multi-Family Shingle", amount: 112000, status: "Pending" }
+  { id: "i1", invoiceNumber: "INV-4029", clientName: "Oakhaven Retail Plaza", projectCategory: "Commercial Flat Roof", amount: 45200, status: "Paid", company: "Robertson Roofing" },
+  { id: "i2", invoiceNumber: "INV-4028", clientName: "Sarah Jenkins", projectCategory: "Residential Asphalt", amount: 12450, status: "Overdue", company: "Jenkins Contractors" },
+  { id: "i3", invoiceNumber: "INV-4027", clientName: "Westside Industrial", projectCategory: "Metal Roof Repair", amount: 8900, status: "Pending", company: "Robertson Roofing" },
+  { id: "i4", invoiceNumber: "INV-4026", clientName: "Pine Crest HOA", projectCategory: "Multi-Family Shingle", amount: 112000, status: "Pending", company: "Jenkins Contractors" }
 ];
 
 export const initialTeamMembers: TeamMember[] = [
@@ -265,6 +272,26 @@ export const initialTeamMembers: TeamMember[] = [
     status: "Available",
     crewMembersCount: 6,
     onTimeRate: 98
+  },
+  {
+    id: "tm4",
+    name: "Carlos Robertson",
+    role: "Contratista Principal",
+    roleCategory: "contractor",
+    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDzImCDP7Stl4rUiGwuD1tgx7khMNM_SEU1mub4lTAcgV-jLDyLrJOvYtofsXT5bb9NiYMq2sgaEvB-IZx85ZV2Njl4gJXamNuE-We_2rawt5966rGpwF5hy3SaiSDHCDVKdGA3ABKlbSvFtqgE9dDXyTQqOhqbQ7eC_5EDV6XLD2rDQskfQmuEDRwzptZnJif8SKngPvuf1FFCzAXkRe6ClCPHCackeX0HT8n5NvQAsMxzSaYXyrmQsonUbhNp-oykNR37MRB9rmMw",
+    status: "Available",
+    email: "robertson@empresa.com",
+    company: "Robertson Roofing"
+  },
+  {
+    id: "tm5",
+    name: "Andrea Jenkins",
+    role: "Contratista Asociada",
+    roleCategory: "contractor",
+    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAF8Dedh0UEGuqYsUzr2JHGjy2W83G3UwsT6hkmNdF_Degb7cM2BLgjUhQQAZv2riR06YGGhd30tDVaOQI4OzP1a7pzstqUuofYjRBxQc-ZBNwAS-lZ9UCcm2uF5Qb2tsKJa7T1u5S0zf6oMMi8X2517-p-Gd1iWtMMwnaP6sEkNsc8Z-vATkvZ_dOBnp_7hCdsBqGg2Wa1x9MyBfgfMqzIxToaS7S0enelFdcIPLmHrFvrLYi9zEh-06sQaxgv2SDumRdUDjYxJKjC",
+    status: "Available",
+    email: "jenkins@empresa.com",
+    company: "Jenkins Contractors"
   }
 ];
 

@@ -1,41 +1,174 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  
-  --color-primary-container: #131b2e;
-  --color-on-primary-container: #7c839b;
-  --color-secondary-container: #6cf8bb;
-  --color-on-secondary-container: #00714d;
-  --color-secondary-fixed: #6ffbbe;
-  --color-on-secondary-fixed-variant: #005236;
+  --font-display: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Inter", ui-monospace, monospace;
+
+  /* Brand palette */
+  --color-gold:            #B8860B;
+  --color-gold-dark:       #8B6914;
+  --color-gold-light:      #FEF3C7;
+
+  /* App surfaces */
+  --color-bg-app:          #EDEEF2;
+  --color-bg-card:         #FFFFFF;
+  --color-bg-sidebar:      #0D1117;
+
+  /* Text */
+  --color-text-primary:    #0F172A;
+  --color-text-secondary:  #64748B;
+  --color-text-muted:      #94A3B8;
+
+  /* Borders */
+  --color-border:          #E2E4EA;
+  --color-border-subtle:   rgba(226,228,234,0.6);
+
+  /* Legacy tokens kept for compatibility */
+  --color-primary-container:          #0F172A;
+  --color-on-primary-container:       #64748B;
+  --color-secondary-container:        #FEF3C7;
+  --color-on-secondary-container:     #854d0e;
+  --color-secondary-fixed:            #FEF3C7;
+  --color-on-secondary-fixed-variant: #B8860B;
+/* ─── Premium Craft Tokens (Emil Kowalski) ────────────────────────── */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @layer base {
   body {
-    @apply font-sans antialiased text-[#191c1e] bg-[#f7f9fb];
+    @apply font-sans antialiased;
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-app);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em; /* Tighter tracking for modern display feel */
   }
 }
 
+/* ─── Base Animations & Interactions ────────────────────────────── */
+/* Every pressable element should feel responsive */
+.btn-responsive {
+  transition: transform 150ms var(--ease-out), background-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
+}
+
+.btn-responsive:active {
+  transform: scale(0.97);
+}
+
+/* Enter animations (Modals, Dropdowns) should start at 0.95 scale, not 0 */
+.animate-enter {
+  animation: enter-scale 200ms var(--ease-out) forwards;
+}
+
+@keyframes enter-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ─── Sidebar nav item — active state ─────────────────────────── */
+.nav-item-active {
+  background: rgba(255,255,255,0.06);
+  border-left: 2px solid #FFFFFF;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.nav-item-inactive {
+  border-left: 2px solid transparent;
+  color: #64748B;
+  transition: color 150ms var(--ease-out), background 150ms var(--ease-out);
+}
+
+.nav-item-inactive:hover {
+  background: rgba(255,255,255,0.03);
+  color: #CBD5E1;
+}
+
+/* ─── KPI Card ─────────────────────────────────────────────────── */
+.kpi-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-bottom: 2px solid var(--color-gold);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  /* Multi-layered ambient shadow */
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.03),
+    0 10px 15px -3px rgba(0, 0, 0, 0.05),
+    0 20px 25px -5px rgba(0, 0, 0, 0.02);
+}
+
+/* ─── Panel header (section titles inside cards) ───────────────── */
+.panel-section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin-bottom: 16px;
+}
+
+/* ─── Ambient shadows ──────────────────────────────────────────── */
 .ambient-shadow {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02), 0 4px 10px rgba(0,0,0,0.02);
 }
 
 .ambient-shadow-hover {
-  transition: all 0.2s ease-in-out;
+  transition: all 200ms var(--ease-out);
 }
 
 .ambient-shadow-hover:hover {
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.03),
+    0 10px 15px -3px rgba(0, 0, 0, 0.05);
   transform: translateY(-1px);
 }
 
-/* Custom scrollbars for a premium finish */
+/* ─── Premium Gold action button ───────────────────────────────── */
+.btn-gold-3d {
+  background: var(--color-gold) !important;
+  color: #fff !important;
+  border: 1px solid rgba(0,0,0,0.05) !important;
+  /* Subtler inset shadow for depth without looking cheap */
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 1px 2px rgba(184,134,11,0.2);
+  transition: transform 150ms var(--ease-out), box-shadow 150ms var(--ease-out), background-color 150ms var(--ease-out);
+}
+
+.btn-gold-3d:hover {
+  background: var(--color-gold-dark) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 12px rgba(184,134,11,0.25);
+}
+
+.btn-gold-3d:active {
+  box-shadow: 0 0 0 transparent;
+  transform: scale(0.97);
+}
+
+/* ─── Scrollbars ───────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -43,10 +176,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(118, 119, 125, 0.2);
+  background: rgba(100,116,139,0.18);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(118, 119, 125, 0.4);
+  background: rgba(100,116,139,0.35);
 }

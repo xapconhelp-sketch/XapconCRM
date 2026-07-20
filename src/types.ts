@@ -1,6 +1,5 @@
 export enum ViewType {
   DASHBOARD = "dashboard",
-  LEADS = "leads",
   INSURANCE_CLAIM = "insurance_claim",
   CLAIMS = "claims",
   PRODUCTION = "production",
@@ -22,8 +21,8 @@ export interface KPI {
 export interface Lead {
   id: string;
   name: string;
-  status: "Nuevo" | "Consulta" | "Inspección Programada" | "Inspección Completada" | "Estimado Creado" | "Firmado";
-  address: string;
+  status: string;
+  address?: string;
   phone: string;
   phone2?: string;
   email: string;
@@ -44,9 +43,14 @@ export interface Lead {
   assignedRep: string;
   assignedRepAvatar: string;
   createdAt: string;
+  created_at?: string;
   timeline: TimelineEvent[];
   documents: DocumentItem[];
   tasks: TaskItem[];
+  company?: string;
+  organizationId?: string;
+  is_insurance_claim?: boolean;
+  estimate?: Estimate;
 }
 
 export interface TimelineEvent {
@@ -57,6 +61,7 @@ export interface TimelineEvent {
   title: string;
   content: string;
   timestamp: string;
+  date?: string;
   duration?: string;
   photos?: string[];
 }
@@ -67,6 +72,7 @@ export interface DocumentItem {
   size: string;
   category: "Reporte" | "Contrato" | "Foto" | "Seguro";
   url?: string;
+  filePath?: string;
 }
 
 export interface TaskItem {
@@ -74,7 +80,10 @@ export interface TaskItem {
   title: string;
   dueDate: string;
   status: "pending" | "completed";
-  priority: "high" | "medium" | "low";
+  priority?: "high" | "medium" | "low";
+  assignedTo?: string;
+  createdById?: string;
+  createdBy?: string;
 }
 
 
@@ -88,6 +97,28 @@ export interface EstimateItem {
   unitPrice: number;
   total: number;
   warning?: string;
+}
+
+export interface CashData {
+  rcv?: number;
+  acv?: number;
+  deducible?: number;
+  depreciacion?: number;
+  depreNoRecuperable?: number;
+  primerCheque?: number;
+  segundoCheque?: number;
+  tercerCheque?: number;
+  suplemento1?: number;
+  suplemento2?: number;
+  suplemento3?: number;
+  suplemento1Col2?: number;
+  suplemento2Col2?: number;
+  suplemento3Col2?: number;
+  valorMaterial?: number;
+  valorLabor?: number;
+  valorTax?: number;
+  valorPermisos?: number;
+  perdidaRepentina?: number;
 }
 
 export interface Estimate {
@@ -107,6 +138,7 @@ export interface Estimate {
   taxAmount: number;
   total: number;
   profitMargin: number; // e.g., 24.5
+  cashData?: CashData;
 }
 
 export interface KanbanProject {
@@ -122,6 +154,7 @@ export interface KanbanProject {
   crews?: { name: string; avatar: string }[];
   isWarning?: boolean;
   warningText?: string;
+  company?: string;
 }
 
 export interface Invoice {
@@ -131,13 +164,14 @@ export interface Invoice {
   projectCategory: string;
   amount: number;
   status: "Paid" | "Overdue" | "Pending";
+  company?: string;
 }
 
 export interface TeamMember {
   id: string;
   name: string;
   role: string;
-  roleCategory: "sales" | "pm" | "install" | "admin";
+  roleCategory: "sales" | "pm" | "install" | "admin" | "contractor";
   avatar: string;
   status: "Available" | "On Site (Busy)" | "Offline";
   activeLeads?: number;
@@ -146,6 +180,11 @@ export interface TeamMember {
   sitesInspected?: number;
   crewMembersCount?: number;
   onTimeRate?: number;
+  company?: string;
+  companyInviteCode?: string;
+  organizationId?: string;
+  email?: string;
+  phone?: string;
 }
 
 export interface CriticalAlert {
