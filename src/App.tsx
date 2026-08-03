@@ -1223,8 +1223,8 @@ export default function App() {
   const canceladoCount = filteredInsuranceClaims.filter(c => c.status === 'Cancelado').length;
 
   // Custom KPI logic:
-  // "el valor de 'casos activos' es la suma de todos los casos, menos los finalizados, menos los negados."
-  const casosActivosCount = filteredInsuranceClaims.length - finalizadoCount - negadosCount;
+  // "el valor de 'casos activos' es la suma de todos los casos, menos los finalizados, menos los negados, menos los cancelados."
+  const casosActivosCount = filteredInsuranceClaims.length - finalizadoCount - negadosCount - canceladoCount;
   // "los casos 'Construidos' debe siempre ser igual al valor de los casos finalizados, mas los de esperando depreciación."
   const construidosCount = finalizadoCount + esperandoDepreciacionCount;
 

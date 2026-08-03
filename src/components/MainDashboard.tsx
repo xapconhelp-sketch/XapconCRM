@@ -130,6 +130,7 @@ export default function MainDashboard({
     
     claims.forEach(claim => {
       if (!claim || !claim.tasks) return;
+      if (claim.status === "Finalizado" || claim.status === "Cancelado" || claim.status === "Negados") return;
       claim.tasks.forEach(t => {
         if (t.status !== "pending") return;
         // Strict deduplication by case name and task title

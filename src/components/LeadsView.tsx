@@ -525,7 +525,19 @@ export default function LeadsView({
         </div>
 
         {/* Horizontal Case Cards List */}
-        <div className="space-y-4 max-w-7xl mx-auto">
+        <div className="space-y-3 max-w-7xl mx-auto">
+          {/* Grid Column Headers for Desktop */}
+          {filteredLeadsForSearch.length > 0 && (
+            <div className="hidden lg:grid grid-cols-12 gap-4 px-5 py-2 text-[11px] font-bold text-[#64748B] uppercase tracking-wider border-b border-[#E2E4EA] mb-1 select-none">
+              <div className="col-span-3">Cliente</div>
+              <div className="col-span-3">Dirección</div>
+              <div className="col-span-2">Claim</div>
+              <div className="col-span-2">Empresa</div>
+              <div className="col-span-1 text-center">Etapa</div>
+              <div className="col-span-1 text-right">Días</div>
+            </div>
+          )}
+
           {filteredLeadsForSearch.length === 0 ? (
             <div className="text-center py-12 bg-white border border-[#c6c6cd]/30 rounded-2xl text-xs text-slate-500 font-semibold shadow-sm">
               No se encontraron casos para la búsqueda actual
@@ -533,7 +545,6 @@ export default function LeadsView({
           ) : (
             filteredLeadsForSearch.map((lead) => {
               const days = getDaysSinceLastUpdate(lead);
-              const updateText = days === 0 ? "Actualizado hoy" : `Sin actualizar hace ${days} ${days === 1 ? 'día' : 'días'}`;
               const statusBorderClass = ({
                 "Inspección": "lead-card-border-inspeccion",
                 "En disputa": "lead-card-border-disputa",
@@ -549,58 +560,65 @@ export default function LeadsView({
                 <div
                   key={lead.id}
                   onClick={() => onSelectLead(lead.id)}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-[#E2E4EA] rounded-xl ambient-shadow-hover cursor-pointer transition-all duration-200 gap-4 group ${statusBorderClass}`}
+                  className={`p-4 bg-white border border-[#E2E4EA] rounded-xl ambient-shadow-hover cursor-pointer transition-all duration-200 group ${statusBorderClass}`}
                 >
-                  <div className="flex items-center gap-4 min-w-0 flex-1">
-                    {/* Avatar icon */}
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[#FEF3C7]">
-                      <Home className="w-4 h-4 text-[#B8860B]" />
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+                    {/* Col 1: Icon + Client Name */}
+                    <div className="lg:col-span-3 flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[#FEF3C7]">
+                        <Home className="w-4 h-4 text-[#B8860B]" />
+                      </div>
+                      <span className="text-sm font-bold text-[#0F172A] tracking-tight group-hover:text-[#B8860B] transition-colors truncate">
+                        {lead.name}
+                      </span>
                     </div>
-                    
-                    {/* Homeowner Name & Info */}
-                    <div className="min-w-0 flex-1 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="min-w-[140px] shrink-0">
-                        <span className="text-sm font-bold text-[#0F172A] tracking-tight group-hover:text-[#B8860B] transition-colors block truncate">
-                          {lead.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-slate-500 flex-1 min-w-0">
-                        <MapPin className="w-3.5 h-3.5 shrink-0" />
-                        <span className="whitespace-normal break-words">{lead.address || "Sin dirección"}</span>
-                      </div>
-                      <div className="text-xs text-[#64748B] shrink-0 min-w-[125px]">
-                        <span className="text-slate-500">Claim:</span> {lead.claimNumber || "N/A"}
-                      </div>
-                      <div className="text-[11px] text-slate-600 flex flex-row items-center gap-3 shrink-0">
-                        {userRole === "admin" ? (
-                          <>
-                            <div className="whitespace-nowrap"><span className="text-slate-500">Empresa:</span> <span className="font-semibold text-[#0F172A]">{lead.company || "Xapcon Group"}</span></div>
-                            <div className="flex items-center gap-1 whitespace-nowrap"><span className="text-slate-500">Etapa:</span> <span className="px-1.5 py-0.5 bg-slate-100 text-[#0F172A] text-[9px] rounded font-bold uppercase tracking-wider">{lead.status}</span></div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="whitespace-nowrap"><span className="text-slate-500">Vendedor:</span> <span className="font-semibold text-[#0F172A]">{lead.assignedRep || "Sin asignar"}</span></div>
-                            <div className="flex items-center gap-1 whitespace-nowrap"><span className="text-slate-500">Etapa:</span> <span className="px-1.5 py-0.5 bg-slate-100 text-[#0F172A] text-[9px] rounded font-bold uppercase tracking-wider">{lead.status}</span></div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Days since last update & Chevron */}
-                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0">
-                    <span className={`text-[10px] px-2.5 py-1 rounded-full font-semibold ${
-                      days < 3
-                        ? "bg-emerald-50 text-emerald-700"
-                        : days === 3
-                        ? "bg-amber-50 text-amber-700"
-                        : "bg-red-50 text-red-600"
-                    }`}>
-                      {updateText}
-                    </span>
-                    <svg className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#B8860B] transition-colors hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
+                    {/* Col 2: Address */}
+                    <div className="lg:col-span-3 flex items-center gap-1.5 text-xs text-slate-500 min-w-0">
+                      <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                      <span className="truncate">{lead.address || "Sin dirección"}</span>
+                    </div>
+
+                    {/* Col 3: Claim Number */}
+                    <div className="lg:col-span-2 text-xs text-[#64748B] truncate">
+                      <span className="text-slate-400 lg:hidden font-semibold">Claim: </span>
+                      <span className="font-mono font-medium text-slate-700">{lead.claimNumber || "N/A"}</span>
+                    </div>
+
+                    {/* Col 4: Empresa */}
+                    <div className="lg:col-span-2 text-xs text-[#64748B] truncate">
+                      <span className="text-slate-400 lg:hidden font-semibold">Empresa: </span>
+                      <span className="font-semibold text-[#0F172A]">{lead.company || "Xapcon Group"}</span>
+                    </div>
+
+                    {/* Col 5: Etapa */}
+                    <div className="lg:col-span-1 flex items-center lg:justify-center">
+                      <span className="px-2.5 py-1 bg-[#eab308] text-[#0F172A] text-[9px] rounded-md font-extrabold uppercase tracking-wider whitespace-nowrap shadow-sm">
+                        {lead.status}
+                      </span>
+                    </div>
+
+                    {/* Col 6: Días / 3D Finalizado Checkmark Icon + Chevron */}
+                    <div className="lg:col-span-1 flex items-center justify-end gap-2.5 shrink-0">
+                      {lead.status === "Finalizado" ? (
+                        <div 
+                          className="w-8 h-8 rounded-full bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-700 text-white flex items-center justify-center shadow-[0_3px_8px_rgba(16,185,129,0.35),inset_0_1px_0_rgba(255,255,255,0.4)] border border-emerald-400/60 transition-transform hover:scale-105 shrink-0"
+                          title="Caso Finalizado"
+                        >
+                          <CheckCircle2 className="w-4 h-4 text-white fill-emerald-800 shrink-0 drop-shadow-sm" />
+                        </div>
+                      ) : (
+                        <div 
+                          className="w-8 h-8 rounded-full bg-gradient-to-b from-red-500 to-red-600 text-white font-extrabold text-xs flex items-center justify-center shadow-[0_2px_6px_rgba(239,68,68,0.35)] border border-red-400/40 shrink-0"
+                          title={`Sin actualizar hace ${days} ${days === 1 ? 'día' : 'días'}`}
+                        >
+                          {days}
+                        </div>
+                      )}
+                      <svg className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#B8860B] transition-colors hidden sm:block shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                      </svg>
+                    </div>
                   </div>
                 </div>
               );
