@@ -365,6 +365,19 @@ export default function App() {
   // Selected Lead helper
   const activeLead = filteredLeads.find((l) => l.id === activeLeadId) || filteredLeads[0];
 
+  const headerSearchResults = React.useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return [];
+    return filteredInsuranceClaims.filter(c => (
+      (c.name && c.name.toLowerCase().includes(term)) ||
+      (c.address && c.address.toLowerCase().includes(term)) ||
+      (c.claimNumber && c.claimNumber.toLowerCase().includes(term)) ||
+      (c.company && c.company.toLowerCase().includes(term)) ||
+      (c.policyNumber && c.policyNumber.toLowerCase().includes(term)) ||
+      (c.assignedRep && c.assignedRep.toLowerCase().includes(term))
+    ));
+  }, [searchTerm, filteredInsuranceClaims]);
+
   const handleUpdateTeamMember = async (
     memberId: string, 
     updatedData: { 
@@ -1143,7 +1156,11 @@ export default function App() {
 
     let currentIdx = stages.indexOf(claim.status);
     if (currentIdx === -1) {
-      currentIdx = 0; // Fallback to first column
+      if (claim.status === "Nuevo") {
+        currentIdx = 0;
+      } else {
+        currentIdx = 1;
+      }
     }
 
     let newIdx = currentIdx;
@@ -1329,14 +1346,7 @@ export default function App() {
                 type="text"
                 placeholder="Buscar homeowner, claim o dirección..."
                 value={searchTerm}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setSearchTerm(val);
-                  if (val.trim() !== "") {
-                    setCurrentView(ViewType.INSURANCE_CLAIM);
-                    setSelectedInsuranceClaimId("");
-                  }
-                }}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-8 py-1.5 bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-xl text-xs text-[#131b2e] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#eab308] focus:border-[#eab308] shadow-sm transition-all"
               />
               <div className="absolute left-7 top-1/2 -translate-y-1/2 text-slate-500">
@@ -1352,6 +1362,53 @@ export default function App() {
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
+              )}
+
+              {/* Search Autocomplete Dropdown Results */}
+              {searchTerm.trim() !== "" && (
+                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-[#E2E4EA] rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto divide-y divide-[#c6c6cd]/20">
+                  {headerSearchResults.length === 0 ? (
+                    <div className="p-4 text-xs text-slate-500 text-center font-medium">
+                      No se encontraron casos que coincidan con "<span className="font-bold">{searchTerm}</span>".
+                    </div>
+                  ) : (
+                    headerSearchResults.map((claim) => (
+                      <div
+                        key={claim.id}
+                        onClick={() => {
+                          handleNavigateToInsuranceClaim(claim.id);
+                          setSearchTerm("");
+                        }}
+                        className="p-3 hover:bg-[#F8F9FB] cursor-pointer transition-colors flex items-center justify-between gap-3 group"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-[#0F172A] group-hover:text-[#B8860B] transition-colors truncate">
+                              {claim.name}
+                            </span>
+                            {claim.claimNumber && (
+                              <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100 shrink-0">
+                                {claim.claimNumber}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                            {claim.address || "Sin dirección"}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="px-2 py-0.5 bg-[#eab308] text-[#0F172A] text-[9px] rounded font-bold uppercase tracking-wider">
+                            {claim.status}
+                          </span>
+                          <svg className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#B8860B] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                          </svg>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               )}
             </div>
 
@@ -1380,14 +1437,7 @@ export default function App() {
                 type="text"
                 placeholder="Buscar homeowner, claim o dirección..."
                 value={searchTerm}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setSearchTerm(val);
-                  if (val.trim() !== "") {
-                    setCurrentView(ViewType.INSURANCE_CLAIM);
-                    setSelectedInsuranceClaimId("");
-                  }
-                }}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-8 py-1.5 bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-xl text-xs text-[#131b2e] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#eab308] focus:border-[#eab308] shadow-sm transition-all"
               />
               <div className="absolute left-7 top-1/2 -translate-y-1/2 text-slate-500">
@@ -1403,6 +1453,53 @@ export default function App() {
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
+              )}
+
+              {/* Search Autocomplete Dropdown Results */}
+              {searchTerm.trim() !== "" && (
+                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-[#E2E4EA] rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto divide-y divide-[#c6c6cd]/20">
+                  {headerSearchResults.length === 0 ? (
+                    <div className="p-4 text-xs text-slate-500 text-center font-medium">
+                      No se encontraron casos que coincidan con "<span className="font-bold">{searchTerm}</span>".
+                    </div>
+                  ) : (
+                    headerSearchResults.map((claim) => (
+                      <div
+                        key={claim.id}
+                        onClick={() => {
+                          handleNavigateToInsuranceClaim(claim.id);
+                          setSearchTerm("");
+                        }}
+                        className="p-3 hover:bg-[#F8F9FB] cursor-pointer transition-colors flex items-center justify-between gap-3 group"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-[#0F172A] group-hover:text-[#B8860B] transition-colors truncate">
+                              {claim.name}
+                            </span>
+                            {claim.claimNumber && (
+                              <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100 shrink-0">
+                                {claim.claimNumber}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                            {claim.address || "Sin dirección"}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="px-2 py-0.5 bg-[#eab308] text-[#0F172A] text-[9px] rounded font-bold uppercase tracking-wider">
+                            {claim.status}
+                          </span>
+                          <svg className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#B8860B] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                          </svg>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               )}
             </div>
 
@@ -1465,6 +1562,7 @@ export default function App() {
                 onUpdateLead={handleUpdateLead}
                 activeOrganizationId={activeOrganization?.id}
                 onNavigateToView={setCurrentView}
+                onMoveProject={handleMoveProject}
               />
             </ErrorBoundary>
           )}

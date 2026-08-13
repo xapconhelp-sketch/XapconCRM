@@ -24,7 +24,9 @@ import {
   Trash2,
   X,
   ArrowLeft,
-  TrendingUp
+  TrendingUp,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { CashData } from "../types";
 const INSURANCE_COMPANIES = [
@@ -96,6 +98,7 @@ interface LeadsViewProps {
   onUpdateLead?: (leadId: string, updatedFields: Partial<Lead>) => Promise<void> | void;
   activeOrganizationId?: string;
   onNavigateToView?: (view: ViewType) => void;
+  onMoveProject?: (projectId: string, direction: "next" | "prev") => void;
 }
 
 export default function LeadsView({
@@ -123,7 +126,8 @@ export default function LeadsView({
   searchTerm = "",
   onUpdateLead,
   activeOrganizationId,
-  onNavigateToView
+  onNavigateToView,
+  onMoveProject
 }: LeadsViewProps) {
   const [activeTab, setActiveTab] = useState<"timeline" | "documents" | "cash" | "tasks">("timeline");
   const [newNote, setNewNote] = useState("");
@@ -245,6 +249,54 @@ export default function LeadsView({
 
   const selectedLead = selectedLeadId ? (leads.find((l) => l.id === selectedLeadId) || leads[0]) : null;
 
+  const PIPELINE_STAGES = [
+    "Negados",
+    "Inspección",
+    "En disputa",
+    "Esperando Scope",
+    "Aprobado y Suplementado",
+    "Construcción",
+    "Esperando Depreciación",
+    "Finalizado",
+    "Cancelado"
+  ];
+
+  let currentStageIndex = -1;
+  if (selectedLead) {
+    if (selectedLead.status === "Nuevo") {
+      currentStageIndex = 0; // Treat 'Nuevo' as initial state before Inspección
+    } else {
+      currentStageIndex = PIPELINE_STAGES.indexOf(selectedLead.status);
+      if (currentStageIndex === -1) {
+        currentStageIndex = 1; // Fallback to Inspección for active custom states
+      }
+    }
+  }
+
+  const handleStageMove = (direction: "next" | "prev") => {
+    if (!selectedLead) return;
+
+    let targetIdx = currentStageIndex;
+    if (selectedLead.status === "Nuevo") {
+      targetIdx = direction === "next" ? 1 : 0;
+    } else {
+      if (direction === "next" && targetIdx < PIPELINE_STAGES.length - 1) {
+        targetIdx = targetIdx + 1;
+      } else if (direction === "prev" && targetIdx > 0) {
+        targetIdx = targetIdx - 1;
+      }
+    }
+
+    const newStatus = PIPELINE_STAGES[targetIdx];
+
+    if (onMoveProject) {
+      onMoveProject(selectedLead.id, direction);
+    }
+    if (onUpdateLead && newStatus !== selectedLead.status) {
+      onUpdateLead(selectedLead.id, { status: newStatus });
+    }
+  };
+
   // Filter allowed team members for assignments and mentions
   const allowedTeamMembers = selectedLead ? teamMembers.filter(m => {
     if (userRole === 'admin') {
@@ -260,6 +312,30 @@ export default function LeadsView({
 
   // Sync cash inputs text values from lead's database object
   useEffect(() => {
+    setIsEditingLead(false);
+    if (selectedLead) {
+      setEditInsuranceProvider(selectedLead.insuranceProvider || "");
+      setEditClaimNumber(selectedLead.claimNumber || "");
+      setEditPolicyNumber(selectedLead.policyNumber || "");
+      setEditDamageType(selectedLead.damageType || "");
+      setEditLossDate(selectedLead.lossDate || "");
+      setEditAdjusterName(selectedLead.adjusterName || "");
+      setEditInsurancePhone1(selectedLead.insurancePhone1 || "");
+      setEditInsurancePhone2(selectedLead.insurancePhone2 || "");
+      setEditAssignedRep(selectedLead.assignedRep || "");
+      setEditOrgId(selectedLead.organizationId || "");
+      setEditName(selectedLead.name || "");
+      setEditAddress(selectedLead.address || "");
+      setEditPhone(selectedLead.phone || "");
+      setEditPhone2(selectedLead.phone2 || "");
+      setEditEmail(selectedLead.email || "");
+      setEditEmail2(selectedLead.email2 || "");
+      setEditPropertyType(selectedLead.propertyType || "Residential - Single Family");
+      setEditSqft(selectedLead.sqft ? selectedLead.sqft.toString() : "");
+      setEditInsuranceEmail1(selectedLead.insuranceEmail1 || "");
+      setEditInsuranceEmail2(selectedLead.insuranceEmail2 || "");
+    }
+
     if (selectedLead && selectedLead.estimate?.cashData) {
       const data = selectedLead.estimate.cashData;
       const inputs: Record<string, string> = {};
@@ -1165,328 +1241,365 @@ export default function LeadsView({
       {selectedLead && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* Columna 2: Ficha Técnica del Reclamo */}
-        <div className="lg:col-span-3 bg-white border border-[#c6c6cd]/30 rounded-2xl p-4 shadow-sm flex flex-col space-y-4">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-2 w-full">
-            <div className="flex items-center gap-2">
-              <button onClick={() => onSelectLead("")} className="text-slate-500 hover:text-[#eab308] transition-colors">
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <h2 className="font-sans text-xs font-bold text-[#131b2e]">Datos del Reclamo</h2>
-            </div>
-            {!isEditingLead && onUpdateLead && (
-              <button 
-                type="button"
-                onClick={handleStartEdit} 
-                className="text-[#ca8a04] hover:text-[#eab308] text-[10px] font-bold transition-colors cursor-pointer"
-              >
-                Editar
-              </button>
-            )}
-          </div>
+        {/* Columna 2: Ficha Técnica (Dividida en 2 Cuadros: Homeowner e Información del Seguro) */}
+        <div className="lg:col-span-3 flex flex-col space-y-4">
           
-          {isEditingLead ? (
-            <div className="flex-1 overflow-y-auto space-y-3.5 text-xs pr-1 scrollbar-thin max-h-[calc(100vh-22rem)]">
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nombre Propietario</label>
-                <input 
-                  type="text" 
-                  value={editName} 
-                  onChange={(e) => setEditName(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                  required
-                />
+          {/* CUADRO 1: Información del Homeowner */}
+          <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-4 shadow-sm flex flex-col space-y-3">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-2 w-full">
+              <div className="flex items-center gap-2">
+                <Home className="w-4 h-4 text-[#B8860B]" />
+                <h2 className="font-sans text-xs font-bold text-[#131b2e]">Información del Homeowner</h2>
               </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Dirección Física</label>
-                <input 
-                  type="text" 
-                  value={editAddress} 
-                  onChange={(e) => setEditAddress(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Teléfono Principal</label>
-                <input 
-                  type="text" 
-                  value={editPhone} 
-                  onChange={(e) => setEditPhone(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Teléfono Secundario</label>
-                <input 
-                  type="text" 
-                  value={editPhone2} 
-                  onChange={(e) => setEditPhone2(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Electrónico</label>
-                <input 
-                  type="email" 
-                  value={editEmail} 
-                  onChange={(e) => setEditEmail(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Secundario</label>
-                <input 
-                  type="email" 
-                  value={editEmail2} 
-                  onChange={(e) => setEditEmail2(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipo de Propiedad</label>
-                <select 
-                  value={editPropertyType} 
-                  onChange={(e) => setEditPropertyType(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+              {!isEditingLead && onUpdateLead && (
+                <button 
+                  type="button"
+                  onClick={handleStartEdit} 
+                  className="text-[#ca8a04] hover:text-[#eab308] text-[10px] font-bold transition-colors cursor-pointer"
                 >
-                  <option value="Residential - Single Family">Residencial - Single Family</option>
-                  <option value="Residential - Multi Family">Residencial - Multi Family</option>
-                  <option value="Commercial">Comercial</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Pies Cuadrados (Sqft)</label>
-                <input 
-                  type="number" 
-                  value={editSqft} 
-                  onChange={(e) => setEditSqft(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Compañía de Seguros</label>
-                <select 
-                  value={editInsuranceProvider} 
-                  onChange={(e) => setEditInsuranceProvider(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                >
-                  {INSURANCE_COMPANIES.map(company => (
-                    <option key={company} value={company}>{company}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Número de Claim</label>
-                <input 
-                  type="text" 
-                  value={editClaimNumber} 
-                  onChange={(e) => setEditClaimNumber(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Número de Póliza</label>
-                <input 
-                  type="text" 
-                  value={editPolicyNumber} 
-                  onChange={(e) => setEditPolicyNumber(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipo de Daño</label>
-                <select 
-                  value={editDamageType} 
-                  onChange={(e) => setEditDamageType(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                >
-                  {DAMAGE_TYPES.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Fecha de Pérdida</label>
-                <input 
-                  type="date" 
-                  value={editLossDate} 
-                  onChange={(e) => setEditLossDate(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Perito / Ajustador</label>
-                <input 
-                  type="text" 
-                  value={editAdjusterName} 
-                  onChange={(e) => setEditAdjusterName(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Teléfono Seguro 1</label>
-                <input 
-                  type="text" 
-                  value={editInsurancePhone1} 
-                  onChange={(e) => setEditInsurancePhone1(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Teléfono Seguro 2</label>
-                <input 
-                  type="text" 
-                  value={editInsurancePhone2} 
-                  onChange={(e) => setEditInsurancePhone2(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Seguro 1</label>
-                <input 
-                  type="email" 
-                  value={editInsuranceEmail1} 
-                  onChange={(e) => setEditInsuranceEmail1(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Seguro 2</label>
-                <input 
-                  type="email" 
-                  value={editInsuranceEmail2} 
-                  onChange={(e) => setEditInsuranceEmail2(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Vendedor (Rep. Asignado)</label>
-                <input 
-                  type="text" 
-                  value={editAssignedRep} 
-                  onChange={(e) => setEditAssignedRep(e.target.value)} 
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                />
-              </div>
+                  Editar
+                </button>
+              )}
             </div>
-          ) : (
-            <div className="space-y-4 text-xs text-center overflow-y-auto pr-1 scrollbar-thin max-h-[calc(100vh-22rem)]">
-              <div>
-                <span className="text-[#7c839b] font-medium block">Aseguradora</span>
-                <span className="text-[#131b2e] font-bold block">{selectedLead.insuranceProvider}</span>
+
+            {isEditingLead ? (
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nombre Propietario</label>
+                  <input 
+                    type="text" 
+                    value={editName} 
+                    onChange={(e) => setEditName(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Dirección Física</label>
+                  <input 
+                    type="text" 
+                    value={editAddress} 
+                    onChange={(e) => setEditAddress(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Teléfono Principal</label>
+                  <input 
+                    type="text" 
+                    value={editPhone} 
+                    onChange={(e) => setEditPhone(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Teléfono Secundario</label>
+                  <input 
+                    type="text" 
+                    value={editPhone2} 
+                    onChange={(e) => setEditPhone2(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Electrónico</label>
+                  <input 
+                    type="email" 
+                    value={editEmail} 
+                    onChange={(e) => setEditEmail(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Secundario</label>
+                  <input 
+                    type="email" 
+                    value={editEmail2} 
+                    onChange={(e) => setEditEmail2(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipo de Propiedad</label>
+                  <select 
+                    value={editPropertyType} 
+                    onChange={(e) => setEditPropertyType(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  >
+                    <option value="Residential - Single Family">Residencial - Single Family</option>
+                    <option value="Residential - Multi Family">Residencial - Multi Family</option>
+                    <option value="Commercial">Comercial</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Pies Cuadrados (Sqft)</label>
+                  <input 
+                    type="number" 
+                    value={editSqft} 
+                    onChange={(e) => setEditSqft(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Vendedor (Rep. Asignado)</label>
+                  <input 
+                    type="text" 
+                    value={editAssignedRep} 
+                    onChange={(e) => setEditAssignedRep(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
               </div>
-              <div>
-                <span className="text-[#7c839b] font-medium block">Número de Claim</span>
-                <span className="text-[#131b2e] font-bold block">{selectedLead.claimNumber}</span>
-              </div>
-              {selectedLead.policyNumber && (
+            ) : (
+              <div className="space-y-3 text-xs text-center">
                 <div>
-                  <span className="text-[#7c839b] font-medium block">Número de Póliza</span>
-                  <span className="text-[#131b2e] font-bold block">{selectedLead.policyNumber}</span>
+                  <span className="text-[#7c839b] font-medium block">Propietario</span>
+                  <span className="text-[#131b2e] font-bold block">{selectedLead.name}</span>
                 </div>
-              )}
-              {selectedLead.damageType && (
                 <div>
-                  <span className="text-[#7c839b] font-medium block">Tipo de Daño</span>
-                  <span className="text-[#131b2e] font-bold block">{selectedLead.damageType}</span>
+                  <span className="text-[#7c839b] font-medium block">Dirección</span>
+                  <span className="text-[#131b2e] font-bold block">{selectedLead.address || "Sin dirección"}</span>
                 </div>
-              )}
-              {selectedLead.lossDate && (
                 <div>
-                  <span className="text-[#7c839b] font-medium block">Fecha de Pérdida</span>
-                  <span className="text-[#131b2e] font-bold block">{selectedLead.lossDate}</span>
+                  <span className="text-[#7c839b] font-medium block">Teléfono Principal</span>
+                  <span className="text-[#131b2e] font-bold block">{selectedLead.phone || "No registrado"}</span>
                 </div>
-              )}
-              <div>
-                <span className="text-[#7c839b] font-medium block">Perito / Ajustador</span>
-                <span className="text-[#131b2e] font-bold block">{selectedLead.adjusterName}</span>
-              </div>
-              {selectedLead.insurancePhone1 && (
+                {selectedLead.phone2 && (
+                  <div>
+                    <span className="text-[#7c839b] font-medium block">Teléfono Secundario</span>
+                    <span className="text-[#131b2e] font-bold block">{selectedLead.phone2}</span>
+                  </div>
+                )}
                 <div>
-                  <span className="text-[#7c839b] font-medium block">Teléfono Seguro 1</span>
-                  <span className="text-[#131b2e] font-bold block">{selectedLead.insurancePhone1}</span>
+                  <span className="text-[#7c839b] font-medium block">Correo Electrónico</span>
+                  <span className="text-[#131b2e] font-bold block truncate">{selectedLead.email || "No registrado"}</span>
                 </div>
-              )}
-              {selectedLead.insurancePhone2 && (
+                {selectedLead.email2 && (
+                  <div>
+                    <span className="text-[#7c839b] font-medium block">Correo Secundario</span>
+                    <span className="text-[#131b2e] font-bold block truncate">{selectedLead.email2}</span>
+                  </div>
+                )}
                 <div>
-                  <span className="text-[#7c839b] font-medium block">Teléfono Seguro 2</span>
-                  <span className="text-[#131b2e] font-bold block">{selectedLead.insurancePhone2}</span>
+                  <span className="text-[#7c839b] font-medium block">Tipo de Propiedad</span>
+                  <span className="text-[#131b2e] font-bold block">{selectedLead.propertyType || "Residencial"}</span>
                 </div>
-              )}
-              {selectedLead.insuranceEmail1 && (
                 <div>
-                  <span className="text-[#7c839b] font-medium block">Correo Seguro 1</span>
-                  <span className="text-[#131b2e] font-bold block truncate">{selectedLead.insuranceEmail1}</span>
-                </div>
-              )}
-              {selectedLead.insuranceEmail2 && (
-                <div>
-                  <span className="text-[#7c839b] font-medium block">Correo Seguro 2</span>
-                  <span className="text-[#131b2e] font-bold block truncate">{selectedLead.insuranceEmail2}</span>
-                </div>
-              )}
-              {!isInsuranceView && (
-                <div>
-                  <span className="text-[#7c839b] font-medium block">Superficie de Techo</span>
+                  <span className="text-[#7c839b] font-medium block">Superficie</span>
                   <span className="text-[#131b2e] font-bold block">{selectedLead.sqft} SQFT (~{(selectedLead.sqft / 100).toFixed(1)} SQ)</span>
                 </div>
-              )}
-              
-              {(selectedLead.phone2 || selectedLead.email2 || selectedLead.notes) && (
-                <div className="pt-3 border-t border-dashed border-[#c6c6cd]/30 space-y-2 text-center">
-                  <h4 className="font-sans text-[10px] font-bold text-[#131b2e] uppercase text-center">Información Adicional</h4>
-                  <div className="space-y-3 text-xs text-center">
-                    {selectedLead.phone2 && (
-                      <div>
-                        <span className="text-[#7c839b] font-medium block">Teléfono 2</span>
-                        <span className="text-[#131b2e] font-bold block">{selectedLead.phone2}</span>
-                      </div>
-                    )}
-                    {selectedLead.email2 && (
-                      <div>
-                        <span className="text-[#7c839b] font-medium block">Correo 2</span>
-                        <span className="text-[#131b2e] font-bold block">{selectedLead.email2}</span>
-                      </div>
-                    )}
-                    {selectedLead.notes && (
-                      <div className="bg-[#f2f4f6]/60 border border-[#c6c6cd]/30 rounded-xl p-3 mt-1">
-                        <span className="text-[#7c839b] font-bold block text-[10px] uppercase mb-1">Notas</span>
-                        <p className="text-[#191c1e] text-xs leading-relaxed font-medium italic text-center">"{selectedLead.notes}"</p>
-                      </div>
-                    )}
+                {selectedLead.assignedRep && (
+                  <div>
+                    <span className="text-[#7c839b] font-medium block">Rep. Asignado</span>
+                    <span className="text-[#131b2e] font-bold block">{selectedLead.assignedRep}</span>
                   </div>
+                )}
+                {selectedLead.notes && (
+                  <div className="bg-[#f2f4f6]/60 border border-[#c6c6cd]/30 rounded-xl p-3 mt-1">
+                    <span className="text-[#7c839b] font-bold block text-[10px] uppercase mb-1">Notas</span>
+                    <p className="text-[#191c1e] text-xs leading-relaxed font-medium italic text-center">"{selectedLead.notes}"</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* CUADRO 2: Información del Seguro */}
+          <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-4 shadow-sm flex flex-col space-y-3">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-2 w-full">
+              <div className="flex items-center gap-2">
+                <FileCheck2 className="w-4 h-4 text-blue-600" />
+                <h2 className="font-sans text-xs font-bold text-[#131b2e]">Información del Seguro</h2>
+              </div>
+            </div>
+
+            {isEditingLead ? (
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Compañía de Seguros</label>
+                  <select 
+                    value={editInsuranceProvider} 
+                    onChange={(e) => setEditInsuranceProvider(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  >
+                    {INSURANCE_COMPANIES.map(company => (
+                      <option key={company} value={company}>{company}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
-            </div>
-          )}
-          
-          {isEditingLead ? (
-            <div className="pt-3 border-t border-[#c6c6cd]/30 flex flex-col gap-2 mt-auto">
-              <button 
-                type="button"
-                onClick={handleSaveEdit} 
-                className="btn-gold-3d w-full text-center py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg transition-colors cursor-pointer"
-              >
-                Guardar
-              </button>
-              <button 
-                type="button"
-                onClick={() => setIsEditingLead(false)} 
-                className="w-full text-center py-2 border border-gray-300 text-gray-700 font-bold text-xs rounded-lg transition-colors cursor-pointer hover:bg-slate-50"
-              >
-                Cancelar
-              </button>
-            </div>
-          ) : (
-            <div className="pt-3 border-t border-[#c6c6cd]/30 flex flex-col gap-2 mt-auto">
-              <button className="btn-gold-3d w-full text-center py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg transition-colors">
-                Escribir Correo a Ajustador
-              </button>
-              <button className="btn-gold-3d w-full text-center py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg transition-colors">
-                Escribir Correo al HO
-              </button>
-            </div>
-          )}
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Número de Claim</label>
+                  <input 
+                    type="text" 
+                    value={editClaimNumber} 
+                    onChange={(e) => setEditClaimNumber(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Número de Póliza</label>
+                  <input 
+                    type="text" 
+                    value={editPolicyNumber} 
+                    onChange={(e) => setEditPolicyNumber(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipo de Daño</label>
+                  <select 
+                    value={editDamageType} 
+                    onChange={(e) => setEditDamageType(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  >
+                    {DAMAGE_TYPES.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Fecha de Pérdida</label>
+                  <input 
+                    type="date" 
+                    value={editLossDate} 
+                    onChange={(e) => setEditLossDate(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Perito / Ajustador</label>
+                  <input 
+                    type="text" 
+                    value={editAdjusterName} 
+                    onChange={(e) => setEditAdjusterName(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Teléfono Seguro 1</label>
+                  <input 
+                    type="text" 
+                    value={editInsurancePhone1} 
+                    onChange={(e) => setEditInsurancePhone1(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Teléfono Seguro 2</label>
+                  <input 
+                    type="text" 
+                    value={editInsurancePhone2} 
+                    onChange={(e) => setEditInsurancePhone2(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Seguro 1</label>
+                  <input 
+                    type="email" 
+                    value={editInsuranceEmail1} 
+                    onChange={(e) => setEditInsuranceEmail1(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Seguro 2</label>
+                  <input 
+                    type="email" 
+                    value={editInsuranceEmail2} 
+                    onChange={(e) => setEditInsuranceEmail2(e.target.value)} 
+                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  />
+                </div>
+
+                <div className="pt-3 border-t border-[#c6c6cd]/30 flex flex-col gap-2">
+                  <button 
+                    type="button"
+                    onClick={handleSaveEdit} 
+                    className="btn-gold-3d w-full text-center py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                  >
+                    Guardar Cambios
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setIsEditingLead(false)} 
+                    className="w-full text-center py-2 border border-gray-300 text-gray-700 font-bold text-xs rounded-lg transition-colors cursor-pointer hover:bg-slate-50"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 text-xs text-center">
+                <div>
+                  <span className="text-[#7c839b] font-medium block">Aseguradora</span>
+                  <span className="text-[#131b2e] font-bold block">{selectedLead.insuranceProvider || "No especificada"}</span>
+                </div>
+                <div>
+                  <span className="text-[#7c839b] font-medium block">Número de Claim</span>
+                  <span className="text-[#131b2e] font-bold block">{selectedLead.claimNumber || "Sin claim"}</span>
+                </div>
+                {selectedLead.policyNumber && (
+                  <div>
+                    <span className="text-[#7c839b] font-medium block">Número de Póliza</span>
+                    <span className="text-[#131b2e] font-bold block">{selectedLead.policyNumber}</span>
+                  </div>
+                )}
+                {selectedLead.damageType && (
+                  <div>
+                    <span className="text-[#7c839b] font-medium block">Tipo de Daño</span>
+                    <span className="text-[#131b2e] font-bold block">{selectedLead.damageType}</span>
+                  </div>
+                )}
+                {selectedLead.lossDate && (
+                  <div>
+                    <span className="text-[#7c839b] font-medium block">Fecha de Pérdida</span>
+                    <span className="text-[#131b2e] font-bold block">{selectedLead.lossDate}</span>
+                  </div>
+                )}
+                {selectedLead.adjusterName && (
+                  <div>
+                    <span className="text-[#7c839b] font-medium block">Perito / Ajustador</span>
+                    <span className="text-[#131b2e] font-bold block">{selectedLead.adjusterName}</span>
+                  </div>
+                )}
+                {selectedLead.insurancePhone1 && (
+                  <div>
+                    <span className="text-[#7c839b] font-medium block">Teléfono Seguro 1</span>
+                    <span className="text-[#131b2e] font-bold block">{selectedLead.insurancePhone1}</span>
+                  </div>
+                )}
+                {selectedLead.insurancePhone2 && (
+                  <div>
+                    <span className="text-[#7c839b] font-medium block">Teléfono Seguro 2</span>
+                    <span className="text-[#131b2e] font-bold block">{selectedLead.insurancePhone2}</span>
+                  </div>
+                )}
+                {selectedLead.insuranceEmail1 && (
+                  <div>
+                    <span className="text-[#7c839b] font-medium block">Correo Seguro 1</span>
+                    <span className="text-[#131b2e] font-bold block truncate">{selectedLead.insuranceEmail1}</span>
+                  </div>
+                )}
+                {selectedLead.insuranceEmail2 && (
+                  <div>
+                    <span className="text-[#7c839b] font-medium block">Correo Seguro 2</span>
+                    <span className="text-[#131b2e] font-bold block truncate">{selectedLead.insuranceEmail2}</span>
+                  </div>
+                )}
+
+                <div className="pt-3 border-t border-[#c6c6cd]/30 flex flex-col gap-2">
+                  <button className="btn-gold-3d w-full text-center py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg transition-colors cursor-pointer">
+                    Escribir Correo a Ajustador
+                  </button>
+                  <button className="btn-gold-3d w-full text-center py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg transition-colors cursor-pointer">
+                    Escribir Correo al HO
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* Columna 3: Expediente Completo */}
@@ -1523,31 +1636,55 @@ export default function LeadsView({
               </div>
             </div>
             
-            <div className="text-left md:text-right">
-              <span className="text-xs text-[#7c839b] uppercase block font-semibold">Rep. Asignado</span>
-              <span className="text-sm text-[#131b2e] font-bold block">{selectedLead.assignedRep}</span>
-              <div className="mt-1 flex justify-start md:justify-end">
-                <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${
+            <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
+              {/* Renglón 3 conservado: Estado del Caso */}
+              <div className="flex items-center gap-2">
+                <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${
                   selectedLead.status === "Negados"
-                    ? "bg-rose-50 text-rose-700 border-rose-100"
+                    ? "bg-rose-50 text-rose-700 border-rose-200"
                     : selectedLead.status === "Inspección"
-                    ? "bg-sky-50 text-sky-700 border-sky-100"
+                    ? "bg-sky-50 text-sky-700 border-sky-200"
                     : selectedLead.status === "En disputa"
-                    ? "bg-amber-50 text-amber-700 border-amber-100"
+                    ? "bg-amber-50 text-amber-700 border-amber-200"
                     : selectedLead.status === "Esperando Scope"
-                    ? "bg-violet-50 text-violet-700 border-violet-100"
+                    ? "bg-violet-50 text-violet-700 border-violet-200"
                     : selectedLead.status === "Aprobado y Suplementado"
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                     : selectedLead.status === "Construcción"
-                    ? "bg-indigo-50 text-indigo-700 border-indigo-100"
+                    ? "bg-indigo-50 text-indigo-700 border-indigo-200"
                     : selectedLead.status === "Esperando Depreciación"
-                    ? "bg-teal-50 text-teal-700 border-teal-100"
+                    ? "bg-teal-50 text-teal-700 border-teal-200"
                     : selectedLead.status === "Finalizado"
-                    ? "bg-yellow-50 text-[#854d0e] border-yellow-200"
-                    : "bg-slate-50 text-slate-600 border-slate-100"
+                    ? "bg-yellow-50 text-[#854d0e] border-yellow-300"
+                    : "bg-slate-50 text-slate-600 border-slate-200"
                 }`}>
                   {selectedLead.status}
                 </span>
+              </div>
+
+              {/* Botones de Retroceder y Avanzar para cambiar el estado automáticamente */}
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={() => handleStageMove("prev")}
+                  disabled={selectedLead.status === "Negados"}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border border-slate-200 shadow-sm active:scale-95 cursor-pointer"
+                  title="Retroceder a la etapa anterior en el Kanban"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Retroceder</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleStageMove("next")}
+                  disabled={selectedLead.status === "Cancelado"}
+                  className="px-3 py-1.5 bg-[#eab308] hover:bg-[#ca8a04] disabled:opacity-40 disabled:cursor-not-allowed text-slate-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer"
+                  title="Avanzar a la siguiente etapa en el Kanban"
+                >
+                  <span>Avanzar</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           </div>
