@@ -1,18 +1,15 @@
 import React from "react";
-import { KPI, CriticalAlert, InspectionAppointment, ViewType, Lead, TaskItem } from "../types";
+import { KPI, CriticalAlert, ViewType, Lead, TaskItem } from "../types";
 import { 
   Users, 
   FileText, 
   HardHat, 
   DollarSign, 
-  AlertTriangle, 
-  Calendar, 
   ArrowUpRight, 
   ArrowDownRight,
   TrendingUp,
   Clock,
   CheckCircle2,
-  BellRing,
   XCircle,
   Search,
   Scale,
@@ -23,18 +20,19 @@ import {
   ChevronRight,
   BarChart3,
   Zap,
-  AlertCircle
+  AlertCircle,
+  Home
 } from "lucide-react";
 
 interface MainDashboardProps {
   kpis: KPI[];
   alerts: CriticalAlert[];
-  inspections: InspectionAppointment[];
   onResolveAlert: (alert: CriticalAlert) => void;
   onNavigateToView: (view: ViewType) => void;
   onNavigateToLead: (leadId: string) => void;
   claims: Lead[];
   onToggleTask?: (leadId: string, taskId: string) => void;
+  userRole?: string;
 }
 
 const ICON_MAP: Record<string, any> = {
@@ -62,12 +60,12 @@ const KPI_THEMES = [
 export default function MainDashboard({
   kpis,
   alerts,
-  inspections,
   onResolveAlert,
   onNavigateToView,
   onNavigateToLead,
   claims = [],
-  onToggleTask
+  onToggleTask,
+  userRole
 }: MainDashboardProps) {
 
   const parseEventDate = (ev: any) => {
@@ -158,46 +156,51 @@ export default function MainDashboard({
   return (
     <div className="flex-1 overflow-y-auto bg-[#F0F2F7]" style={{ minHeight: 0 }}>
 
-      {/* ── Top Hero Header ─────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-[#0F172A] via-[#1e293b] to-[#0F172A] px-8 py-6 border-b border-white/5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-8 h-8 rounded-lg bg-[#eab308] flex items-center justify-center shadow-lg shadow-yellow-500/30">
-                <Zap className="w-4 h-4 text-[#0F172A]" />
-              </div>
-              <h1 className="text-xl font-black text-white tracking-tight">Xapcon CRM</h1>
-              <span className="px-2 py-0.5 bg-[#eab308]/20 text-[#eab308] text-[9px] font-bold rounded-full border border-[#eab308]/30 uppercase tracking-widest">Dashboard</span>
-            </div>
-            <p className="text-[11px] text-slate-400 ml-11 capitalize">{todayStr}</p>
-          </div>
 
-          <div className="flex items-center gap-3">
-            {urgentClaims > 0 && (
-              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 px-3 py-1.5 rounded-lg">
-                <Flame className="w-3.5 h-3.5 text-red-400 animate-pulse" />
-                <span className="text-red-300 text-[11px] font-bold">{urgentClaims} casos urgentes</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg">
-              <Activity className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-emerald-400 text-[11px] font-bold">{totalActive} activos</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-[11px] text-slate-400 font-mono">
-              <Clock className="w-3.5 h-3.5 text-slate-500" />
-              {new Date().toISOString().substring(11, 16)} UTC
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className="p-6 space-y-6">
 
-        {/* ── KPI Cards ─────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {/* ── KPI Cards (Contenedores con Forma Real de Casa Centrados) ─────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+
+          {/* Proyectos — total de casos registrados */}
+          <div
+            onClick={() => onNavigateToView(ViewType.PRODUCTION)}
+            className="cursor-pointer group transition-transform duration-200 hover:-translate-y-1 filter drop-shadow-sm hover:drop-shadow-md"
+            style={{
+              clipPath: "polygon(50% 0%, 100% 18px, 100% 100%, 0% 100%, 0% 18px)",
+              background: "#0F172A",
+              padding: "1.5px",
+            }}
+          >
+            <div
+              className="w-full h-full bg-white p-4 pt-5 flex flex-col items-center justify-between text-center"
+              style={{ clipPath: "polygon(50% 0%, 100% 17px, 100% 100%, 0% 100%, 0% 17px)" }}
+            >
+              {/* Roof Accent Top Bar inside the peak */}
+              <div className="w-12 h-1 bg-[#0F172A] rounded-full mb-1 opacity-90 mx-auto" />
+
+              <div className="flex items-center justify-center gap-1.5 w-full">
+                <div className="w-5 h-5 rounded bg-[#0F172A]/10 text-[#0F172A] group-hover:bg-[#0F172A] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+                  <Home className="w-3 h-3" />
+                </div>
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest truncate">Proyectos</span>
+              </div>
+
+              <div className="my-1">
+                <span className="text-3xl font-black text-[#0F172A] leading-none">{claims.length}</span>
+              </div>
+
+              <div className="pt-1.5 border-t border-slate-100 w-full text-center">
+                <span className="text-[10px] text-slate-400 leading-tight block truncate">Total registrados</span>
+              </div>
+            </div>
+          </div>
+
           {kpis.map((kpi, index) => {
+            const BRAND_COLORS = ["#EAB308", "#2563EB", "#0F172A"];
+            const accent = BRAND_COLORS[index % BRAND_COLORS.length];
             const Icon = ICON_MAP[kpi.icon] || FileText;
-            const theme = KPI_THEMES[index % KPI_THEMES.length];
             return (
               <div
                 key={index}
@@ -206,90 +209,65 @@ export default function MainDashboard({
                   else if (kpi.icon === "dollar-sign") onNavigateToView(ViewType.FINANCIALS);
                   else onNavigateToView(ViewType.PRODUCTION);
                 }}
-                className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${theme.bg} p-5 cursor-pointer group transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl shadow-lg`}
+                className="cursor-pointer group transition-transform duration-200 hover:-translate-y-1 filter drop-shadow-sm hover:drop-shadow-md"
+                style={{
+                  clipPath: "polygon(50% 0%, 100% 18px, 100% 100%, 0% 100%, 0% 18px)",
+                  background: accent,
+                  padding: "1.5px",
+                }}
               >
-                {/* Decorative circle */}
-                <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-10" style={{ background: theme.accent }} />
+                <div
+                  className="w-full h-full bg-white p-4 pt-5 flex flex-col items-center justify-between text-center"
+                  style={{ clipPath: "polygon(50% 0%, 100% 17px, 100% 100%, 0% 100%, 0% 17px)" }}
+                >
+                  {/* Roof Accent Top Bar inside the peak */}
+                  <div className="w-12 h-1 rounded-full mb-1 opacity-90 mx-auto" style={{ background: accent }} />
 
-                <div className="relative flex items-start justify-between mb-3">
-                  <div className={`w-9 h-9 rounded-xl ${theme.iconBg} flex items-center justify-center backdrop-blur-sm`}>
-                    <Icon className={`w-4.5 h-4.5 ${theme.iconColor}`} style={{ width: 18, height: 18 }} />
+                  <div className="flex items-center justify-center gap-1.5 w-full">
+                    <div className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors" style={{ backgroundColor: `${accent}15`, color: accent }}>
+                      <Icon className="w-3 h-3" />
+                    </div>
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest truncate">{kpi.title}</span>
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-white/20 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all" />
-                </div>
 
-                <div className="relative">
-                  <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest mb-1 truncate">{kpi.title}</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-white tracking-tighter">{kpi.value}</span>
+                  <div className="flex items-baseline justify-center gap-1 my-1">
+                    <span className="text-3xl font-black text-[#0F172A] leading-none">{kpi.value}</span>
                     {kpi.trend && (
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${kpi.trendDirection === "up" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                      <span className={`text-[9px] font-bold ${kpi.trendDirection === "up" ? "text-emerald-500" : "text-red-400"}`}>
                         {kpi.trendDirection === "up" ? "↑" : "↓"} {kpi.trend}
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-white/40 mt-0.5 truncate leading-tight">{kpi.subtitle}</p>
-                </div>
 
-                {kpi.progress !== undefined && (
-                  <div className="relative mt-3">
-                    <div className="w-full bg-white/10 rounded-full h-1 overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${kpi.progress}%`, background: theme.accent }} />
-                    </div>
+                  <div className="pt-1.5 border-t border-slate-100 w-full text-center">
+                    <span className="text-[10px] text-slate-400 truncate block leading-tight">{kpi.subtitle}</span>
                   </div>
-                )}
+                </div>
               </div>
             );
           })}
         </div>
 
-        {/* ── Pipeline Stage Bar ───────────────────────────── */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#E2E4EA]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
-                <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
-              </div>
-              <h2 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">Pipeline de Casos</h2>
-            </div>
-            <button onClick={() => onNavigateToView(ViewType.PRODUCTION)} className="text-[10px] text-blue-500 hover:text-blue-700 font-semibold transition-colors flex items-center gap-1">
-              Ver Kanban <ChevronRight className="w-3 h-3" />
-            </button>
-          </div>
-          <div className="grid grid-cols-9 gap-1.5">
-            {PIPELINE_STAGES.map(stage => {
-              const count = getStageCount(stage.key);
-              const pct = totalActive > 0 ? (count / Math.max(1, claims.length)) * 100 : 0;
-              return (
-                <div key={stage.key} className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={() => onNavigateToView(ViewType.PRODUCTION)}>
-                  <span className="text-[8px] font-bold text-[#64748B] uppercase tracking-wide text-center leading-tight h-7 flex items-end justify-center">{stage.label}</span>
-                  <div className="w-full bg-[#F1F5F9] rounded-lg overflow-hidden" style={{ height: 48 }}>
-                    <div
-                      className="w-full rounded-lg transition-all duration-500 group-hover:opacity-80"
-                      style={{ height: `${Math.max(pct, count > 0 ? 15 : 0)}%`, background: stage.color, marginTop: `${100 - Math.max(pct, count > 0 ? 15 : 0)}%`, minHeight: count > 0 ? 8 : 0 }}
-                    />
-                  </div>
-                  <span className="text-sm font-black" style={{ color: stage.color }}>{count}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* ── Main 3-col layout ────────────────────────────── */}
+
+
+        {/* ── Main 2-col layout ────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-          {/* Col 1 & 2: Tareas Pendientes (wide) */}
-          <div className="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-[#E2E4EA] flex flex-col overflow-hidden">
+          {/* Col 1: Tareas Pendientes */}
+          <div className="lg:col-span-6 bg-white rounded-2xl shadow-sm border border-[#E2E4EA] flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F5F9] bg-gradient-to-r from-[#FFF8EB] to-white">
+            <div 
+              className="flex items-center justify-between px-5 py-4 text-white"
+              style={{ background: 'linear-gradient(90deg, #0F172A 0%, #1e293b 50%, #0F172A 100%)' }}
+            >
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#FEF3C7] flex items-center justify-center">
-                  <CheckSquare className="w-4 h-4 text-[#B8860B]" />
+                <div className="w-8 h-8 rounded-xl bg-[#eab308]/20 border border-[#eab308]/30 flex items-center justify-center">
+                  <CheckSquare className="w-4 h-4 text-[#eab308]" />
                 </div>
                 <div>
-                  <h2 className="text-xs font-bold text-[#0F172A] uppercase tracking-wide">Tareas Pendientes</h2>
-                  <p className="text-[9px] text-slate-400">{pendingTasks.length} tarea{pendingTasks.length !== 1 ? "s" : ""} activa{pendingTasks.length !== 1 ? "s" : ""}</p>
+                  <h2 className="text-xs font-bold text-white uppercase tracking-wide">Tareas Pendientes</h2>
+                  <p className="text-[9px] text-slate-300">{pendingTasks.length} tarea{pendingTasks.length !== 1 ? "s" : ""} activa{pendingTasks.length !== 1 ? "s" : ""}</p>
                 </div>
               </div>
               {pendingTasks.length > 0 && (
@@ -345,66 +323,19 @@ export default function MainDashboard({
             </div>
           </div>
 
-          {/* Col 3: Próximas Inspecciones */}
-          <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-[#E2E4EA] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F5F9] bg-gradient-to-r from-blue-50/50 to-white">
+          {/* Col 2: Gestión / Inactividad */}
+          <div className="lg:col-span-6 bg-white rounded-2xl shadow-sm border border-[#E2E4EA] flex flex-col overflow-hidden">
+            <div 
+              className="flex items-center justify-between px-5 py-4 text-white"
+              style={{ background: 'linear-gradient(90deg, #0F172A 0%, #1e293b 50%, #0F172A 100%)' }}
+            >
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <Calendar className="w-4 h-4 text-blue-600" />
+                <div className="w-8 h-8 rounded-xl bg-emerald-400/20 border border-emerald-400/30 flex items-center justify-center">
+                  <Activity className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div>
-                  <h2 className="text-xs font-bold text-[#0F172A] uppercase tracking-wide">Inspecciones</h2>
-                  <p className="text-[9px] text-slate-400">{inspections.length} próxima{inspections.length !== 1 ? "s" : ""}</p>
-                </div>
-              </div>
-              <button onClick={() => onNavigateToView(ViewType.INSURANCE_CLAIM)} className="text-[10px] text-blue-500 hover:text-blue-700 font-bold transition-colors flex items-center gap-0.5">
-                Agenda <ChevronRight className="w-3 h-3" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto max-h-[380px] divide-y divide-[#F1F5F9]">
-              {inspections.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-8 gap-2 text-center">
-                  <Calendar className="w-8 h-8 text-slate-200" />
-                  <p className="text-xs text-slate-400">Sin inspecciones programadas.</p>
-                </div>
-              ) : (
-                inspections.map(insp => (
-                  <div key={insp.id} className="px-4 py-3 hover:bg-slate-50/60 transition-colors cursor-pointer">
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-[#0F172A] text-[#eab308] font-black text-[9px] flex items-center justify-center shrink-0">
-                        {insp.inspectorInitials}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <p className="text-xs font-bold text-[#0F172A] truncate">{insp.clientName}</p>
-                          <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-bold rounded border border-blue-100 shrink-0">{insp.type}</span>
-                        </div>
-                        <p className="text-[10px] text-slate-400 truncate">{insp.address}</p>
-                        <div className="flex items-center justify-between mt-1.5">
-                          <span className="text-[10px] font-mono font-bold text-[#0F172A]">{insp.dateTime}</span>
-                          {insp.timeRemaining && (
-                            <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">{insp.timeRemaining}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Col 4: Gestión / Inactividad */}
-          <div className="lg:col-span-4 bg-white rounded-2xl shadow-sm border border-[#E2E4EA] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F5F9] bg-gradient-to-r from-emerald-50/40 to-white">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
-                  <Activity className="w-4 h-4 text-emerald-600" />
-                </div>
-                <div>
-                  <h2 className="text-xs font-bold text-[#0F172A] uppercase tracking-wide">Monitoreo de Gestión</h2>
-                  <p className="text-[9px] text-slate-400">Casos sin actualización reciente</p>
+                  <h2 className="text-xs font-bold text-white uppercase tracking-wide">Monitoreo de Gestión</h2>
+                  <p className="text-[9px] text-slate-300">Casos sin actualización reciente</p>
                 </div>
               </div>
             </div>

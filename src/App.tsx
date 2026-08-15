@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import logo from "../LogoNegativo-copia.png";
+import logo479 from "../479RoofingRestoration.jpg";
 import { ViewType, Lead, Estimate, EstimateItem, KanbanProject, Invoice, TeamMember, CriticalAlert, InspectionAppointment, TimelineEvent, TaskItem } from "./types";
 import { 
   initialLeads, 
@@ -56,8 +57,25 @@ class ErrorBoundary extends React.Component<any, any> {
   }
 }
 
+function LiveDateTime() {
+  const [now, setNow] = React.useState(new Date());
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const dateStr = now.toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const timeStr = now.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return (
+    <span className="text-[11px] text-slate-400 font-medium tracking-wide capitalize">
+      {dateStr} &nbsp;·&nbsp; {timeStr}
+    </span>
+  );
+}
+
+
 export default function App() {
   const { session, profile, activeOrganization, organizations, setActiveOrganization, signOut, loading } = useAuth();
+
 
   // Mapear los roles de Supabase al estado de la vista
   // SOLO el super_admin (Xapcon Group) ve el panel de administración
@@ -1325,19 +1343,31 @@ export default function App() {
         
         {/* Visual Top Bar for Company Selection */}
         {userRole === "admin" && (
-          <div className="no-print bg-white border-b border-[#c6c6cd]/30 px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 select-none shadow-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Visualizando Empresa:</span>
-              <select 
-                value={selectedCompanyFilter}
-                onChange={(e) => handleSetCompanyFilter(e.target.value)}
-                className="bg-gray-50 border border-gray-300 rounded-lg py-1 px-3 text-xs font-bold text-[#131b2e] focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] cursor-pointer"
-              >
-                <option value="Todas">Todas las Empresas (Vista Consolidada)</option>
-                {organizations.map(org => (
-                   <option key={org.id} value={org.name}>{org.name}</option>
-                ))}
-              </select>
+          <div className="no-print bg-white border-b border-[#c6c6cd]/30 px-6 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 select-none shadow-sm">
+            {/* Left: Admin Welcome + Live Clock & Company Filter */}
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col justify-center">
+                <span className="text-sm font-semibold text-[#1e293b] tracking-wide">
+                  Bienvenido, {profile?.full_name || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "Usuario"}
+                </span>
+                <LiveDateTime />
+              </div>
+
+              <div className="h-7 w-px bg-slate-200 hidden sm:block" />
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Empresa:</span>
+                <select 
+                  value={selectedCompanyFilter}
+                  onChange={(e) => handleSetCompanyFilter(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl py-1 px-3 text-xs font-bold text-[#131b2e] focus:outline-none focus:ring-1 focus:ring-[#eab308] cursor-pointer shadow-sm"
+                >
+                  <option value="Todas">Todas las Empresas (Vista Consolidada)</option>
+                  {organizations.map(org => (
+                     <option key={org.id} value={org.name}>{org.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Center: Search Bar */}
@@ -1397,10 +1427,7 @@ export default function App() {
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="px-2 py-0.5 bg-[#eab308] text-[#0F172A] text-[9px] rounded font-bold uppercase tracking-wider">
-                            {claim.status}
-                          </span>
+                        <div className="flex items-center shrink-0">
                           <svg className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#B8860B] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                           </svg>
@@ -1412,10 +1439,13 @@ export default function App() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-bold text-[#ca8a04]">
-              <span className="w-2 h-2 rounded-full bg-[#eab308] animate-pulse"></span>
-              <span>Modo Administrador (Xapcon Team)</span>
-              <div className="ml-4 border-l border-gray-200 pl-4">
+            {/* Right: Superadmin Badge & Notifications */}
+            <div className="flex items-center gap-3">
+              <span className="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200/60 text-[10px] font-bold rounded-lg uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                Super Admin
+              </span>
+              <div className="border-l border-gray-200 pl-3">
                 <NotificationBell userId={session.user.id} organizationId={activeOrganization?.id} />
               </div>
             </div>
@@ -1423,12 +1453,20 @@ export default function App() {
         )}
 
         {userRole === "contractor" && (
-          <div className="no-print bg-white border-b border-[#c6c6cd]/30 px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 select-none shadow-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Portal de Cliente:</span>
-              <span className="px-2.5 py-1 bg-sky-50 text-sky-800 text-xs font-bold rounded-lg border border-sky-100 uppercase tracking-wider">
-                🏢 {contractorCompany}
-              </span>
+          <div className="no-print bg-white border-b border-[#c6c6cd]/30 px-6 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 select-none shadow-sm">
+            {/* Company Logo & Welcome Header */}
+            <div className="flex items-center gap-3">
+              <img 
+                src={logo479} 
+                alt="479 Roofing Restoration" 
+                className="h-11 w-auto object-contain shrink-0"
+              />
+              <div className="flex flex-col justify-center">
+                <span className="text-sm font-semibold text-[#1e293b] tracking-wide">
+                  Bienvenido, {profile?.full_name || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "Usuario"}
+                </span>
+                <LiveDateTime />
+              </div>
             </div>
 
             {/* Center: Search Bar */}
@@ -1488,10 +1526,7 @@ export default function App() {
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="px-2 py-0.5 bg-[#eab308] text-[#0F172A] text-[9px] rounded font-bold uppercase tracking-wider">
-                            {claim.status}
-                          </span>
+                        <div className="flex items-center shrink-0">
                           <svg className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#B8860B] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                           </svg>
@@ -1504,7 +1539,7 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-4">
-              <span className="text-xs font-semibold text-slate-500">Acceso restringido a tu empresa</span>
+
               <div className="border-l border-gray-200 pl-4">
                 <NotificationBell userId={session.user.id} organizationId={activeOrganization?.id} />
               </div>
@@ -1524,12 +1559,12 @@ export default function App() {
                 { title: "Finalizados", value: `${finalizadoCount}`, trend: "", trendDirection: "up", subtitle: "Casos cerrados", icon: "flag" }
               ]}
               alerts={userRole === "admin" ? criticalAlerts : []}
-              inspections={userRole === "admin" ? inspections : []}
               onResolveAlert={handleResolveAlert}
               onNavigateToView={setCurrentView}
               onNavigateToLead={handleNavigateToInsuranceClaim}
               claims={filteredInsuranceClaims}
               onToggleTask={handleToggleInsuranceClaimTask}
+              userRole={userRole}
             />
           )}
 
