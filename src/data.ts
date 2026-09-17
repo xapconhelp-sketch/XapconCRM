@@ -12,6 +12,7 @@ export const initialLeads: Lead[] = [
     sqft: 2400,
     insuranceProvider: "State Farm",
     claimNumber: "SF-99482-TX",
+    insuranceEmail1: "statefarmfireclaims@statefarm.com",
     adjusterName: "David Chen",
     assignedRep: "Michael Chen",
     assignedRepAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCOMn-jxxsxze-KxE7RjITjibnMpECd9pRZt1yZyyDI5eazYLGRCAFWs9B1gPugfJKxBDA3-yro9u2C0jFV-hNcuCsA2C5HKO4x0IDFsMjuyEEdVA779oxdqiVl1wcSGhBwJAFEY6SMnvjhwRmD-MgiRxcXe5-EEND8x0mJLrnlHXmvXrCH8fuMGbKw-yA8vlL8HA10YP-v5XdlZ1J1tU5QaON6ngK6M9bPDxJzwpKF5OBqDCEKUTYULl2f224zGtFpozg6XEPqYAUC",

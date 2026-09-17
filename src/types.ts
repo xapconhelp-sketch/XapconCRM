@@ -4,7 +4,35 @@ export enum ViewType {
   CLAIMS = "claims",
   PRODUCTION = "production",
   FINANCIALS = "financials",
+  INSURANCE_DIRECTORY = "insurance_directory",
   TEAM = "team"
+}
+
+export interface InsuranceContact {
+  email?: string;
+  phone?: string;
+  department?: string;
+  source?: "official" | "detected_from_claim" | "manual";
+  notes?: string;
+}
+
+export interface InsuranceCompanyStats {
+  id: string;
+  name: string;
+  aliases: string[];
+  website?: string;
+  portalUrl?: string;
+  emails: string[];
+  phones: string[];
+  totalClaims: number;
+  activeClaims: number;
+  approvedClaims: number;
+  finalizedClaims: number;
+  deniedClaims: number;
+  inDisputeClaims: number;
+  adjusters: string[];
+  claims: Lead[];
+  customNotes?: string;
 }
 
 export interface KPI {

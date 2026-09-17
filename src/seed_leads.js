@@ -39,6 +39,7 @@ async function seedLeads() {
       sqft: 2400,
       insurance_provider: "State Farm",
       claim_number: "SF-99482-TX",
+      insurance_email1: "statefarmfireclaims@statefarm.com",
       adjuster_name: "David Chen",
       assigned_rep: "Michael Chen",
       assigned_rep_avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCOMn-jxxsxze-KxE7RjITjibnMpECd9pRZt1yZyyDI5eazYLGRCAFWs9B1gPugfJKxBDA3-yro9u2C0jFV-hNcuCsA2C5HKO4x0IDFsMjuyEEdVA779oxdqiVl1wcSGhBwJAFEY6SMnvjhwRmD-MgiRxcXe5-EEND8x0mJLrnlHXmvXrCH8fuMGbKw-yA8vlL8HA10YP-v5XdlZ1J1tU5QaON6ngK6M9bPDxJzwpKF5OBqDCEKUTYULl2f224zGtFpozg6XEPqYAUC",

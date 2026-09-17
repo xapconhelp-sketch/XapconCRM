@@ -11,7 +11,8 @@ import {
   Settings, 
   ChevronLeft,
   ChevronRight,
-  LogOut
+  LogOut,
+  ShieldCheck
 } from "lucide-react";
 
 interface SidebarProps {
@@ -31,7 +32,8 @@ const SECTION_MANAGEMENT = [
 ];
 
 const SECTION_ADMIN = [
-  { type: ViewType.FINANCIALS, label: "Financials Overview", icon: DollarSign },
+  { type: ViewType.FINANCIALS,          label: "Financials Overview",      icon: DollarSign },
+  { type: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras",  icon: ShieldCheck },
 ];
 
 const SECTION_TEAM = [
@@ -101,8 +103,12 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
         <SectionLabel label="Gestión" />
         {SECTION_MANAGEMENT.map(renderItem)}
 
-        <SectionLabel label="Administración" />
-        {SECTION_ADMIN.map(renderItem)}
+        {userRole === "admin" && (
+          <>
+            <SectionLabel label="Administración" />
+            {SECTION_ADMIN.map(renderItem)}
+          </>
+        )}
 
         <SectionLabel label="Equipo" />
         {SECTION_TEAM.map(renderItem)}

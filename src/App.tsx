@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import logo from "../LogoNegativo-copia.png";
 import logo479 from "../479RoofingRestoration.jpg";
 import { ViewType, Lead, Estimate, EstimateItem, KanbanProject, Invoice, TeamMember, CriticalAlert, InspectionAppointment, TimelineEvent, TaskItem } from "./types";
@@ -20,6 +20,8 @@ import LeadsView from "./components/LeadsView";
 import EstimatorView from "./components/EstimatorView";
 import ProductionView from "./components/ProductionView";
 import FinancialsView from "./components/FinancialsView";
+import InsuranceDirectoryView from "./components/InsuranceDirectoryView";
+import { fetchDbInsuranceCompanies, getAllInsuranceCompanyNames } from "./data/insuranceDirectoryData";
 import TeamView from "./components/TeamView";
 import LoginView from "./components/LoginView";
 import { NotificationBell } from "./components/NotificationBell";
@@ -125,6 +127,18 @@ export default function App() {
     return localStorage.getItem("crm_selected_claim_id") || "";
   });
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [insuranceRefreshKey, setInsuranceRefreshKey] = useState(0);
+
+  // Sync Insurance Directory with Supabase on mount
+  useEffect(() => {
+    fetchDbInsuranceCompanies().then(() => {
+      setInsuranceRefreshKey(k => k + 1);
+    });
+  }, []);
+
+  const availableInsuranceCompanies = useMemo(() => {
+    return getAllInsuranceCompanyNames([...leads, ...insuranceClaims]);
+  }, [leads, insuranceClaims, insuranceRefreshKey]);
 
   useEffect(() => {
     localStorage.setItem("crm_current_view", currentView);
@@ -1311,6 +1325,7 @@ export default function App() {
             { id: ViewType.PRODUCTION, label: "Production Pipeline" },
             ...(userRole === "admin" ? [
               { id: ViewType.FINANCIALS, label: "Financials Overview" },
+              { id: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras" },
             ] : []),
             { id: ViewType.TEAM, label: "Personal & Crews" }
           ].map((item) => (
@@ -1598,6 +1613,7 @@ export default function App() {
                 activeOrganizationId={activeOrganization?.id}
                 onNavigateToView={setCurrentView}
                 onMoveProject={handleMoveProject}
+                insuranceCompanies={availableInsuranceCompanies}
               />
             </ErrorBoundary>
           )}
@@ -1623,6 +1639,14 @@ export default function App() {
               invoices={filteredInvoices}
               leads={[...leads, ...insuranceClaims]}
               onNavigateToLead={handleNavigateToInsuranceClaim}
+            />
+          )}
+
+          {currentView === ViewType.INSURANCE_DIRECTORY && userRole === "admin" && (
+            <InsuranceDirectoryView
+              claims={[...leads, ...insuranceClaims]}
+              onNavigateToClaim={handleNavigateToInsuranceClaim}
+              onInsuranceRegistered={() => setInsuranceRefreshKey(k => k + 1)}
             />
           )}
 

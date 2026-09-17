@@ -26,33 +26,16 @@ import {
   ArrowLeft,
   TrendingUp,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  BookOpen,
+  ShieldCheck,
+  Copy,
+  Check,
+  ExternalLink
 } from "lucide-react";
 import { CashData } from "../types";
-const INSURANCE_COMPANIES = [
-  "Assurant",
-  "State Farm",
-  "Allstate",
-  "USAA",
-  "Liberty Mutual",
-  "Farmers Insurance",
-  "Travelers",
-  "American Family Insurance",
-  "Nationwide",
-  "Progressive",
-  "Auto-Owners Insurance",
-  "Cincinnati Financial",
-  "Auto Club Enterprises (AAA)",
-  "Kemper",
-  "Mercury Insurance",
-  "Saffeco Insurance",
-  "The Hartford",
-  "National General",
-  "CSAA General",
-  "Proctor Insurance",
-  "Homesite Insurance",
-  "Pinnacle Claim Service"
-];
+import { getKnownContactsForInsurance, getAllInsuranceCompanyNames } from "../data/insuranceDirectoryData";
 
 const DAMAGE_TYPES = [
   "Hail Damage",
@@ -99,6 +82,7 @@ interface LeadsViewProps {
   activeOrganizationId?: string;
   onNavigateToView?: (view: ViewType) => void;
   onMoveProject?: (projectId: string, direction: "next" | "prev") => void;
+  insuranceCompanies?: string[];
 }
 
 export default function LeadsView({
@@ -127,8 +111,16 @@ export default function LeadsView({
   onUpdateLead,
   activeOrganizationId,
   onNavigateToView,
-  onMoveProject
+  onMoveProject,
+  insuranceCompanies
 }: LeadsViewProps) {
+  const dynamicInsuranceCompanies = React.useMemo(() => {
+    if (insuranceCompanies && insuranceCompanies.length > 0) {
+      return insuranceCompanies;
+    }
+    return getAllInsuranceCompanyNames(leads);
+  }, [insuranceCompanies, leads]);
+
   const [activeTab, setActiveTab] = useState<"timeline" | "documents" | "cash" | "tasks">("timeline");
   const [newNote, setNewNote] = useState("");
   const [selectedOrgId, setSelectedOrgId] = useState("");
@@ -189,6 +181,31 @@ export default function LeadsView({
   const [editSqft, setEditSqft] = useState("");
   const [editInsuranceEmail1, setEditInsuranceEmail1] = useState("");
   const [editInsuranceEmail2, setEditInsuranceEmail2] = useState("");
+  const [showExpressDirectoryModal, setShowExpressDirectoryModal] = useState<string | null>(null);
+
+  // Smart Known Contacts for New Claim
+  const newClaimKnownContacts = React.useMemo(() => {
+    return getKnownContactsForInsurance(leadInsurance, leads);
+  }, [leadInsurance, leads]);
+
+  const handleAutofillNewClaim = () => {
+    if (newClaimKnownContacts.phones[0] && !insPhone1) setInsPhone1(newClaimKnownContacts.phones[0]);
+    if (newClaimKnownContacts.phones[1] && !insPhone2) setInsPhone2(newClaimKnownContacts.phones[1]);
+    if (newClaimKnownContacts.emails[0] && !insEmail1) setInsEmail1(newClaimKnownContacts.emails[0]);
+    if (newClaimKnownContacts.emails[1] && !insEmail2) setInsEmail2(newClaimKnownContacts.emails[1]);
+  };
+
+  // Smart Known Contacts for Edit Claim
+  const editKnownContacts = React.useMemo(() => {
+    return getKnownContactsForInsurance(editInsuranceProvider, leads);
+  }, [editInsuranceProvider, leads]);
+
+  const handleAutofillEditClaim = () => {
+    if (editKnownContacts.phones[0] && !editInsurancePhone1) setEditInsurancePhone1(editKnownContacts.phones[0]);
+    if (editKnownContacts.phones[1] && !editInsurancePhone2) setEditInsurancePhone2(editKnownContacts.phones[1]);
+    if (editKnownContacts.emails[0] && !editInsuranceEmail1) setEditInsuranceEmail1(editKnownContacts.emails[0]);
+    if (editKnownContacts.emails[1] && !editInsuranceEmail2) setEditInsuranceEmail2(editKnownContacts.emails[1]);
+  };
 
   const handleStartEdit = () => {
     if (!selectedLead) return;
@@ -1012,17 +1029,51 @@ export default function LeadsView({
                   </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#45464d] mb-1">Compañía de Seguros</label>
+                    <div className="md:col-span-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-bold text-[#45464d]">Compañía de Seguros</label>
+                        {(newClaimKnownContacts.emails.length > 0 || newClaimKnownContacts.phones.length > 0) && (
+                          <button
+                            type="button"
+                            onClick={() => setShowExpressDirectoryModal(leadInsurance)}
+                            className="text-[10px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1"
+                          >
+                            <BookOpen className="w-3 h-3" />
+                            <span>Ver Directorio ({newClaimKnownContacts.emails.length + newClaimKnownContacts.phones.length})</span>
+                          </button>
+                        )}
+                      </div>
                       <select 
                         value={leadInsurance}
                         onChange={(e) => setLeadInsurance(e.target.value)}
                         className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
                       >
-                        {INSURANCE_COMPANIES.map((company) => (
+                        {dynamicInsuranceCompanies.map((company) => (
                           <option key={company} value={company}>{company}</option>
                         ))}
                       </select>
+
+                      {(newClaimKnownContacts.emails.length > 0 || newClaimKnownContacts.phones.length > 0) && (
+                        <div className="mt-2 p-2.5 bg-blue-50/80 border border-blue-200/80 rounded-xl flex items-center justify-between gap-2">
+                          <div className="text-[11px] text-blue-900 leading-tight min-w-0">
+                            <span className="font-bold flex items-center gap-1 text-blue-800">
+                              <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              Contactos conocidos para {leadInsurance}:
+                            </span>
+                            <span className="text-[10px] text-blue-700 block mt-0.5 truncate">
+                              {newClaimKnownContacts.emails[0] || ""} {newClaimKnownContacts.phones[0] ? `• ${newClaimKnownContacts.phones[0]}` : ""}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleAutofillNewClaim}
+                            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-lg transition-colors shrink-0 shadow-xs flex items-center gap-1"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            <span>Autocompletar</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Número de Claim</label>
@@ -1198,7 +1249,7 @@ export default function LeadsView({
                     onChange={(e) => setLeadInsurance(e.target.value)}
                     className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
                   >
-                    {INSURANCE_COMPANIES.map((company) => (
+                    {dynamicInsuranceCompanies.map((company) => (
                       <option key={company} value={company}>{company}</option>
                     ))}
                   </select>
@@ -1416,16 +1467,50 @@ export default function LeadsView({
             {isEditingLead ? (
               <div className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Compañía de Seguros</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Compañía de Seguros</label>
+                    {(editKnownContacts.emails.length > 0 || editKnownContacts.phones.length > 0) && (
+                      <button
+                        type="button"
+                        onClick={() => setShowExpressDirectoryModal(editInsuranceProvider)}
+                        className="text-[9px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1"
+                      >
+                        <BookOpen className="w-2.5 h-2.5" />
+                        <span>Directorio ({editKnownContacts.emails.length + editKnownContacts.phones.length})</span>
+                      </button>
+                    )}
+                  </div>
                   <select 
                     value={editInsuranceProvider} 
                     onChange={(e) => setEditInsuranceProvider(e.target.value)} 
                     className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
                   >
-                    {INSURANCE_COMPANIES.map(company => (
+                    {dynamicInsuranceCompanies.map(company => (
                       <option key={company} value={company}>{company}</option>
                     ))}
                   </select>
+
+                  {(editKnownContacts.emails.length > 0 || editKnownContacts.phones.length > 0) && (
+                    <div className="mt-2 p-2 bg-blue-50/80 border border-blue-200/80 rounded-xl flex items-center justify-between gap-2">
+                      <div className="text-[10px] text-blue-900 leading-tight min-w-0">
+                        <span className="font-bold flex items-center gap-1 text-blue-800 text-[10px]">
+                          <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
+                          Datos disponibles:
+                        </span>
+                        <span className="text-[9px] text-blue-700 block truncate max-w-[130px]">
+                          {editKnownContacts.emails[0] || editKnownContacts.phones[0]}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAutofillEditClaim}
+                        className="px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white text-[9px] font-bold rounded-lg transition-colors shrink-0 shadow-xs flex items-center gap-1"
+                      >
+                        <Sparkles className="w-2.5 h-2.5" />
+                        <span>Rellenar</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Número de Claim</label>
@@ -2093,8 +2178,133 @@ export default function LeadsView({
                 </div>
               )}
             </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Express Directory Modal for fast copy / insert */}
+      {showExpressDirectoryModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in select-none">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#0F172A] text-[#eab308] flex items-center justify-center font-bold text-xs">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-[#0F172A]">{showExpressDirectoryModal}</h3>
+                  <p className="text-[10px] text-slate-400">Directorio rápido de contactos conocidos</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowExpressDirectoryModal(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {(() => {
+              const info = getKnownContactsForInsurance(showExpressDirectoryModal, leads);
+              return (
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                      Correos de Reclamos Disponibles:
+                    </span>
+                    {info.emails.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic">No hay correos registrados para esta aseguradora.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {info.emails.map(email => (
+                          <div key={email} className="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2">
+                            <span className="font-mono text-xs text-slate-800 truncate">{email}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isEditingLead) setEditInsuranceEmail1(email);
+                                  else setInsEmail1(email);
+                                  setShowExpressDirectoryModal(null);
+                                }}
+                                className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-lg transition-colors"
+                              >
+                                Usar como Correo 1
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isEditingLead) setEditInsuranceEmail2(email);
+                                  else setInsEmail2(email);
+                                  setShowExpressDirectoryModal(null);
+                                }}
+                                className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
+                              >
+                                Correo 2
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                      Teléfonos Disponibles:
+                    </span>
+                    {info.phones.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic">No hay teléfonos registrados para esta aseguradora.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {info.phones.map(phone => (
+                          <div key={phone} className="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2">
+                            <span className="font-mono text-xs text-slate-800">{phone}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isEditingLead) setEditInsurancePhone1(phone);
+                                  else setInsPhone1(phone);
+                                  setShowExpressDirectoryModal(null);
+                                }}
+                                className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-lg transition-colors"
+                              >
+                                Usar Teléfono 1
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isEditingLead) setEditInsurancePhone2(phone);
+                                  else setInsPhone2(phone);
+                                  setShowExpressDirectoryModal(null);
+                                }}
+                                className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
+                              >
+                                Teléfono 2
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="mt-5 pt-3 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowExpressDirectoryModal(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
