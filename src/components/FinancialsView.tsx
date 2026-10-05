@@ -1,5 +1,5 @@
 import React from "react";
-import { Invoice, Lead, ViewType } from "../types";
+import { Invoice, Lead } from "../types";
 import { 
   TrendingUp, 
   DollarSign, 
@@ -8,7 +8,6 @@ import {
   AlertCircle,
   TrendingDown,
   Layers,
-  Activity
 } from "lucide-react";
 
 interface FinancialsViewProps {
@@ -150,13 +149,13 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
   return (
     <div className="flex-1 p-6 space-y-6 overflow-y-auto font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#c6c6cd]/30 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#D8E0E6]/30 pb-4">
         <div>
-          <h1 className="text-[26px] font-bold text-[#131b2e] tracking-tight">Financial Overview</h1>
+          <h1 className="text-[26px] font-bold text-[#17314A] tracking-tight">Financial Overview</h1>
           <p className="text-xs text-[#7c839b] mt-1 font-medium">Control de utilidades y flujos de caja consolidados en base a los expedientes de reclamos activos.</p>
         </div>
         {isDemoData && (
-          <span className="px-3 py-1 bg-yellow-50 text-[#ca8a04] text-[10px] rounded-lg font-bold border border-yellow-200 animate-pulse flex items-center gap-1">
+          <span className="px-3 py-1 bg-yellow-50 text-[#955B32] text-[10px] rounded-lg font-bold border border-yellow-200 animate-pulse flex items-center gap-1">
             <AlertCircle className="w-3.5 h-3.5" />
             Mostrando Datos Demo (Robertson & Rostova)
           </span>
@@ -168,7 +167,7 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
       {/* Primary KPI Cards (Directly fed by cash section) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 select-none">
         {/* RCV Aprobado */}
-        <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white border border-[#D8E0E6]/30 rounded-2xl p-5 shadow-sm">
           <div className="flex justify-between items-center">
             <span className="text-xs font-semibold text-[#7c839b]">RCV Aprobado Consolidado</span>
             <div className="w-8 h-8 rounded bg-slate-50 flex items-center justify-center text-yellow-600">
@@ -176,7 +175,7 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
             </div>
           </div>
           <div className="mt-2.5 flex items-baseline gap-1.5">
-            <span className="text-2xl font-bold text-[#131b2e] tracking-tight font-mono">
+            <span className="text-2xl font-bold text-[#17314A] tracking-tight font-mono">
               ${totalRCV.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </span>
           </div>
@@ -186,7 +185,7 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
         </div>
 
         {/* Recaudado (Cash In) */}
-        <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white border border-[#D8E0E6]/30 rounded-2xl p-5 shadow-sm">
           <div className="flex justify-between items-center">
             <span className="text-xs font-semibold text-[#7c839b]">Total Recaudado (Efectivo)</span>
             <div className="w-8 h-8 rounded bg-slate-50 flex items-center justify-center text-emerald-600">
@@ -204,7 +203,7 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
         </div>
 
         {/* Cuentas Por Cobrar */}
-        <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white border border-[#D8E0E6]/30 rounded-2xl p-5 shadow-sm">
           <div className="flex justify-between items-center">
             <span className="text-xs font-semibold text-[#7c839b]">Por Cobrar (AR de Reclamos)</span>
             <div className="w-8 h-8 rounded bg-slate-50 flex items-center justify-center text-red-600">
@@ -222,7 +221,7 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
         </div>
 
         {/* Margen Operativo Neto */}
-        <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white border border-[#D8E0E6]/30 rounded-2xl p-5 shadow-sm">
           <div className="flex justify-between items-center">
             <span className="text-xs font-semibold text-[#7c839b]">Margen Neto del Portafolio</span>
             <div className="w-8 h-8 rounded bg-slate-50 flex items-center justify-center text-teal-600">
@@ -249,9 +248,9 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
         {/* Left Side: Cost Breakdown & Payment Stages */}
         <div className="lg:col-span-5 space-y-6">
           {/* Consolidated Cost Breakdown */}
-          <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="bg-white border border-[#D8E0E6]/30 rounded-2xl p-5 shadow-sm space-y-4">
             <div>
-              <h2 className="text-xs font-bold text-[#131b2e]">Desglose de Egresos Consolidado</h2>
+              <h2 className="text-xs font-bold text-[#17314A]">Desglose de Egresos Consolidado</h2>
               <p className="text-[10px] text-[#7c839b]">Distribución del dinero invertido frente a la utilidad neta.</p>
             </div>
 
@@ -296,9 +295,9 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
           </div>
 
           {/* Payment Collection Stages */}
-          <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="bg-white border border-[#D8E0E6]/30 rounded-2xl p-5 shadow-sm space-y-4">
             <div>
-              <h2 className="text-xs font-bold text-[#131b2e]">Estado de Recaudación de Cheques</h2>
+              <h2 className="text-xs font-bold text-[#17314A]">Estado de Recaudación de Cheques</h2>
               <p className="text-[10px] text-[#7c839b]">Cheques procesados por la aseguradora y cobrados al cliente.</p>
             </div>
 
@@ -314,7 +313,7 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
                       <div className={`w-2 h-2 rounded-full ${stage.color}`}></div>
-                      <span className="text-xs font-bold text-[#131b2e]">{stage.label}</span>
+                      <span className="text-xs font-bold text-[#17314A]">{stage.label}</span>
                     </div>
                     <span className="text-[10px] text-[#7c839b] block pl-4">{stage.desc}</span>
                   </div>
@@ -328,16 +327,16 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
         </div>
 
         {/* Right Side: Detailed Table list of leads */}
-        <div className="lg:col-span-7 bg-white border border-[#c6c6cd]/30 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="lg:col-span-7 bg-white border border-[#D8E0E6]/30 rounded-2xl p-5 shadow-sm space-y-4">
           <div>
-            <h2 className="text-xs font-bold text-[#131b2e]">Rentabilidad y Control de Flujo por Proyecto</h2>
+            <h2 className="text-xs font-bold text-[#17314A]">Rentabilidad y Control de Flujo por Proyecto</h2>
             <p className="text-[10px] text-[#7c839b]">Detalle individualizado por caso para toma de decisiones.</p>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse select-none">
               <thead>
-                <tr className="bg-[#f7f9fb] border-b border-[#eceef0] text-[#7c839b] text-[10px] font-mono uppercase tracking-wider font-semibold">
+                <tr className="bg-[#F5F7F8] border-b border-[#EEF1F3] text-[#7c839b] text-[10px] font-mono uppercase tracking-wider font-semibold">
                   <th className="py-2.5 px-3">Caso / Claim</th>
                   <th className="py-2.5 px-3">Ingresos</th>
                   <th className="py-2.5 px-3">Gastos</th>
@@ -346,7 +345,7 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
                   <th className="py-2.5 px-3 text-center">Acción</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#eceef0] text-xs">
+              <tbody className="divide-y divide-[#EEF1F3] text-xs">
                 {displayLeadsWithCash.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-8 text-center text-slate-400 font-sans font-medium text-xs">
@@ -390,7 +389,7 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
                         {onNavigateToLead && (
                           <button
                             onClick={() => onNavigateToLead(lead.id)}
-                            className="p-1 text-[#ca8a04] hover:bg-[#ca8a04]/10 rounded-lg transition-colors inline-flex items-center gap-0.5"
+                            className="p-1 text-[#955B32] hover:bg-[#955B32]/10 rounded-lg transition-colors inline-flex items-center gap-0.5"
                             title="Auditar en Expediente"
                           >
                             <Eye className="w-3.5 h-3.5" />
@@ -410,16 +409,16 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
       </div>
 
       {/* Invoices and traditional accounts section */}
-      <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-5 shadow-sm space-y-4">
+      <div className="bg-white border border-[#D8E0E6]/30 rounded-2xl p-5 shadow-sm space-y-4">
         <div>
-          <h2 className="text-xs font-bold text-[#131b2e]">Facturas Comerciales Emitidas & Estado de Pago</h2>
+          <h2 className="text-xs font-bold text-[#17314A]">Facturas Comerciales Emitidas & Estado de Pago</h2>
           <p className="text-[10px] text-[#7c839b]">Lista general de facturación y cobranza.</p>
         </div>
         
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse select-none">
             <thead>
-              <tr className="bg-[#f7f9fb] border-b border-[#eceef0] text-[#7c839b] text-[10px] font-mono uppercase tracking-wider font-semibold">
+              <tr className="bg-[#F5F7F8] border-b border-[#EEF1F3] text-[#7c839b] text-[10px] font-mono uppercase tracking-wider font-semibold">
                 <th className="py-2.5 px-4">Factura</th>
                 <th className="py-2.5 px-4">Cliente</th>
                 <th className="py-2.5 px-4">Línea de Obra</th>
@@ -427,13 +426,13 @@ export default function FinancialsView({ invoices, leads, onNavigateToLead }: Fi
                 <th className="py-2.5 px-4 text-center">Estado</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#eceef0] text-xs">
+            <tbody className="divide-y divide-[#EEF1F3] text-xs">
               {invoices.map((inv) => (
                 <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-3 px-4 font-mono font-bold text-[#131b2e]">{inv.invoiceNumber}</td>
+                  <td className="py-3 px-4 font-mono font-bold text-[#17314A]">{inv.invoiceNumber}</td>
                   <td className="py-3 px-4 font-bold text-[#191c1e]">{inv.clientName}</td>
                   <td className="py-3 px-4 text-[#7c839b]">{inv.projectCategory}</td>
-                  <td className="py-3 px-4 text-right font-mono font-bold text-[#131b2e]">${inv.amount.toLocaleString()}</td>
+                  <td className="py-3 px-4 text-right font-mono font-bold text-[#17314A]">${inv.amount.toLocaleString()}</td>
                   <td className="py-3 px-4 text-center">
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
                       inv.status === "Paid" 

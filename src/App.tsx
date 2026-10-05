@@ -1,33 +1,30 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { lazy, Suspense, useState, useEffect, useMemo, useRef } from "react";
 import logo from "../LogoNegativo-copia.png";
-import logo479 from "../479RoofingRestoration.jpg";
-import { ViewType, Lead, Estimate, EstimateItem, KanbanProject, Invoice, TeamMember, CriticalAlert, InspectionAppointment, TimelineEvent, TaskItem } from "./types";
-import { 
-  initialLeads, 
-  initialEstimate, 
-  initialProjects, 
-  initialInvoices, 
-  initialTeamMembers, 
-  initialCriticalAlerts, 
-  initialInspections 
+import { ViewType, Lead, Estimate, Invoice, TeamMember, TimelineEvent, TaskItem } from "./types";
+import {
+  initialInvoices,
 } from "./data";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
 
 import Sidebar from "./components/Sidebar";
-import MainDashboard from "./components/MainDashboard";
-import LeadsView from "./components/LeadsView";
-import EstimatorView from "./components/EstimatorView";
-import ProductionView from "./components/ProductionView";
-import FinancialsView from "./components/FinancialsView";
-import InsuranceDirectoryView from "./components/InsuranceDirectoryView";
+const MainDashboard = lazy(() => import("./components/MainDashboard"));
+const ContractorDashboard = lazy(() => import("./components/ContractorDashboard"));
+const LeadsView = lazy(() => import("./components/LeadsView"));
+const EstimatorView = lazy(() => import("./components/EstimatorView"));
+const ProductionView = lazy(() => import("./components/ProductionView"));
+const FinancialsView = lazy(() => import("./components/FinancialsView"));
+const InsuranceDirectoryView = lazy(() => import("./components/InsuranceDirectoryView"));
 import { fetchDbInsuranceCompanies, getAllInsuranceCompanyNames } from "./data/insuranceDirectoryData";
-import TeamView from "./components/TeamView";
+const TeamView = lazy(() => import("./components/TeamView"));
+const SettingsView = lazy(() => import("./components/SettingsView"));
 import LoginView from "./components/LoginView";
 import { NotificationBell } from "./components/NotificationBell";
-import { notificationService } from "./services/notificationService";
+import { eligibleCaseMembers, memberBelongsToOrganization } from "./lib/teamAccess.js";
+import PasswordRecoveryView from "./components/PasswordRecoveryView";
+import ContractorWeather from "./components/ContractorWeather";
 
-import { Menu, X, HelpCircle } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 class ErrorBoundary extends React.Component<any, any> {
   constructor(props: any) {
@@ -76,12 +73,24 @@ function LiveDateTime() {
 
 
 export default function App() {
-  const { session, profile, activeOrganization, organizations, setActiveOrganization, signOut, loading } = useAuth();
+  const { session, profile, setProfile, activeOrganization, organizations, setOrganizations, setActiveOrganization, signOut, loading, accountError, retryAccount, passwordRecovery, finishPasswordRecovery } = useAuth();
+
+  useEffect(() => {
+    try {
+      const density = localStorage.getItem(`xapcon_settings_density_${profile?.id || "guest"}`);
+      document.documentElement.dataset.uiDensity = density === "compact" ? "compact" : "comfortable";
+    } catch {
+      document.documentElement.dataset.uiDensity = "comfortable";
+    }
+  }, [profile?.id]);
 
 
   // Mapear los roles de Supabase al estado de la vista
   // SOLO el super_admin (Xapcon Group) ve el panel de administración
   const userRole = profile?.role === 'super_admin' ? 'admin' : 'contractor';
+  const canManageTeam = profile?.role === "super_admin" || activeOrganization?.membership_role === "owner";
+  const dataContext = useRef('');
+  dataContext.current = `${session?.user.id || ''}:${activeOrganization?.id || ''}:${userRole}`;
   const contractorCompany = activeOrganization?.name || "Desconocida";
   const selectedCompanyFilter = activeOrganization?.name || "Todas";
 
@@ -90,7 +99,7 @@ export default function App() {
       setActiveOrganization(null);
       window.history.pushState({}, '', '/admin/dashboard');
     } else {
-      const org = organizations.find(o => o.name === val) || null;
+      const org = organizations.find(o => o.id === val) || null;
       setActiveOrganization(org);
       if (org) {
         window.history.pushState({}, '', `/${userRole}/${org.id}/dashboard`);
@@ -110,18 +119,20 @@ export default function App() {
   }, [session, activeOrganization, userRole]);
 
   // Views and collapsible menus
-  const [currentView, setCurrentView] = useState<ViewType>(() => {
-    const saved = localStorage.getItem("crm_current_view");
-    return (saved as ViewType) || ViewType.DASHBOARD;
-  });
+  // Never restore a view from browser storage: it may have been saved by a
+  // different account (for example, a superadmin using a shared workstation).
+  const [currentView, setCurrentView] = useState<ViewType>(ViewType.DASHBOARD);
+  const [openClaimFormOnEnter, setOpenClaimFormOnEnter] = useState(false);
+  useEffect(() => {
+    if (userRole === "contractor" && (currentView === ViewType.FINANCIALS || currentView === ViewType.INSURANCE_DIRECTORY)) {
+      setCurrentView(ViewType.DASHBOARD);
+    }
+  }, [currentView, userRole]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Core CRM States
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [selectedLeadId, setSelectedLeadId] = useState<string>(() => {
-    return localStorage.getItem("crm_selected_lead_id") || "";
-  });
   const [insuranceClaims, setInsuranceClaims] = useState<Lead[]>([]);
   const [selectedInsuranceClaimId, setSelectedInsuranceClaimId] = useState<string>(() => {
     return localStorage.getItem("crm_selected_claim_id") || "";
@@ -131,40 +142,31 @@ export default function App() {
 
   // Sync Insurance Directory with Supabase on mount
   useEffect(() => {
+    if (!session) return;
     fetchDbInsuranceCompanies().then(() => {
       setInsuranceRefreshKey(k => k + 1);
     });
-  }, []);
+  }, [session]);
 
   const availableInsuranceCompanies = useMemo(() => {
     return getAllInsuranceCompanyNames([...leads, ...insuranceClaims]);
   }, [leads, insuranceClaims, insuranceRefreshKey]);
 
   useEffect(() => {
-    localStorage.setItem("crm_current_view", currentView);
-  }, [currentView]);
-
-  const [estimate, setEstimate] = useState<Estimate | null>(initialEstimate);
-
-  useEffect(() => {
-    localStorage.setItem("crm_selected_lead_id", selectedLeadId);
-  }, [selectedLeadId]);
-
-  useEffect(() => {
     localStorage.setItem("crm_selected_claim_id", selectedInsuranceClaimId);
   }, [selectedInsuranceClaimId]);
 
-  const [projects, setProjects] = useState<KanbanProject[]>(initialProjects);
-  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+  const invoices: Invoice[] = initialInvoices;
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlert[]>(initialCriticalAlerts);
-  const [inspections, setInspections] = useState<InspectionAppointment[]>(initialInspections);
-  const [teamFetchError, setTeamFetchError] = useState<string>("");
+  useEffect(() => {
+    setLeads([]); setInsuranceClaims([]); setTeamMembers([]);
+  }, [session?.user.id, activeOrganization?.id]);
 
   // Carga asíncrona de datos desde Supabase
   const fetchLeads = async () => {
-    if (!session) return;
-    
+    if (!session || !profile) return;
+    const context = dataContext.current;
+
     let query = supabase
       .from('leads')
       .select('*, organizations(name)')
@@ -180,7 +182,7 @@ export default function App() {
       }
     } else {
       if (selectedCompanyFilter !== 'Todas') {
-        const selectedOrg = organizations.find(o => o.name === selectedCompanyFilter);
+        const selectedOrg = activeOrganization;
         if (selectedOrg) {
           query = query.eq('organization_id', selectedOrg.id);
         }
@@ -195,28 +197,7 @@ export default function App() {
 
     if (data) {
       const mappedLeads: Lead[] = await Promise.all(data.map(async (item: any) => {
-        const rawTasks = item.tasks || [];
-        const uniqueTasks: any[] = [];
-        const seen = new Set<string>();
-        for (const t of rawTasks) {
-          const normalizedTitle = t.title ? t.title.trim().toLowerCase() : "";
-          
-          // Skip the auto-generated default tasks based on user request
-          if (normalizedTitle === "inspección de daños" || normalizedTitle === "inspección del ajustador") {
-            continue;
-          }
-
-          if (!seen.has(normalizedTitle)) {
-            seen.add(normalizedTitle);
-            uniqueTasks.push(t);
-          }
-        }
-        
-        // Auto-heal the database if duplicates were found or default tasks were removed
-        if (uniqueTasks.length < rawTasks.length) {
-          console.log(`Auto-healing tasks for case ${item.name}`);
-          supabase.from('leads').update({ tasks: uniqueTasks }).eq('id', item.id).then();
-        }
+        const caseTasks = item.tasks || [];
 
         return {
           id: item.id,
@@ -228,8 +209,8 @@ export default function App() {
           email: item.email || "",
           email2: item.email2 || "",
           propertyType: item.property_type || "Residential - Single Family",
-          sqft: item.sqft || 2000,
-          insuranceProvider: item.insurance_provider || "State Farm",
+          sqft: item.sqft ?? 0,
+          insuranceProvider: item.insurance_provider || "No registrada",
           claimNumber: item.claim_number || "Por reclamar",
           policyNumber: item.policy_number || "",
           damageType: item.damage_type || "",
@@ -239,14 +220,15 @@ export default function App() {
           insuranceEmail1: item.insurance_email1 || "",
           insuranceEmail2: item.insurance_email2 || "",
           notes: item.notes || "",
+          insuranceNotes: item.insurance_notes || "",
           adjusterName: item.adjuster_name || "Por asignar",
-          assignedRep: item.assigned_rep || "Michael Chen",
+          assignedRep: item.assigned_rep || "Por asignar",
           assignedRepAvatar: item.assigned_rep_avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuCOMn-jxxsxze-KxE7RjITjibnMpECd9pRZt1yZyyDI5eazYLGRCAFWs9B1gPugfJKxBDA-yro9u2C0jFV-hNcuCsA2C5HKO4x0IDFsMjuyEEdVA779oxdqiVl1wcSGhBwJAFEY6SMnvjhwRmD-MgiRxcXe5-EEND8x0mJLrnlHXmvXrCH8fuMGbKw-yA8vlL8HA10YP-v5XdlZ1J1tU5QaON6ngK6M9bPDxJzwpKF5OBqDCEKUTYULl2f224zGtFpozg6XEPqYAUC",
           createdAt: new Date(item.created_at).toLocaleDateString(),
           created_at: item.created_at,
           timeline: item.timeline || [],
           documents: item.documents || [],
-          tasks: uniqueTasks,
+          tasks: caseTasks,
           company: item.organizations?.name || "Desconocida",
           organizationId: item.organization_id,
           is_insurance_claim: item.is_insurance_claim,
@@ -257,13 +239,15 @@ export default function App() {
       const normalLeads = mappedLeads.filter(l => !l.is_insurance_claim);
       const claims = mappedLeads.filter(l => l.is_insurance_claim);
 
+      if (context !== dataContext.current) return;
       setLeads(normalLeads);
       setInsuranceClaims(claims);
     }
   };
 
   const fetchTeamMembers = async () => {
-    if (!session) return;
+    if (!session || !profile) return;
+    const context = dataContext.current;
 
     // Fetch all profiles from Supabase, including their organization details
     const { data, error } = await supabase
@@ -273,6 +257,8 @@ export default function App() {
         email,
         full_name,
         role,
+        organization_id,
+        job_title,
         avatar_url,
         phone,
         address,
@@ -293,30 +279,28 @@ export default function App() {
 
     if (error) {
       console.error("Error al obtener perfiles de equipo:", error.message);
-      setTeamFetchError(error.message);
       return;
     }
 
     if (data) {
-      if (data.length === 0) {
-        setTeamFetchError("SUCCESS, BUT 0 ROWS RETURNED FROM PROFILES TABLE.");
-      } else {
-        setTeamFetchError(`SUCCESS, ${data.length} ROWS RETURNED.`);
-      }
-      
       try {
         const mappedMembers: TeamMember[] = data.map((item: any) => {
-          const orgData = item.user_organizations?.[0]?.organizations;
+          const memberships = item.user_organizations || [];
+          const orgData = memberships.find((m: any) => m.organization_id === activeOrganization?.id)?.organizations || memberships.find((m: any) => m.organization_id === item.organization_id)?.organizations || memberships[0]?.organizations;
+          const organizationIds = memberships.map((m: any) => m.organization_id);
           const orgName = orgData?.name || "Xapcon Group";
           const inviteCode = orgData?.invite_code || "";
-        
+
         // Map roles to readable client terms
         let roleText = item.role || "Colaborador";
-        let roleCat: "sales" | "pm" | "install" | "admin" | "contractor" = "pm";
-        
+        let roleCat: TeamMember["roleCategory"] = "pm";
+
         if (item.role === 'super_admin') {
-          roleText = "Dueño de Xapcon Group";
+          roleText = "Superadministrador de Xapcon Group";
           roleCat = "admin";
+        } else if (item.role === 'platform_staff') {
+          roleText = `${item.job_title || 'Colaborador'} de Xapcon Group`;
+          roleCat = 'staff';
         } else if (item.role === 'owner' || item.role === 'Dueño') {
           roleText = `Dueño de ${orgName}`;
           roleCat = "contractor";
@@ -326,8 +310,14 @@ export default function App() {
         } else if (item.role === 'Vendedor' || item.role === 'Gerente de Ventas') {
           roleCat = "sales";
         } else if (item.role === 'employee' || item.role === 'Colaborador') {
-          roleText = `Colaborador de ${orgName}`;
-          roleCat = "pm"; 
+          const jobTitle = item.job_title || "Colaborador";
+          roleText = `${jobTitle} de ${orgName}`;
+          const normalizedTitle = jobTitle.toLowerCase();
+          roleCat = normalizedTitle.includes('venta') || normalizedTitle.includes('sales') || normalizedTitle.includes('vendedor') || normalizedTitle.includes('asesor') || normalizedTitle.includes('comercial')
+            ? "sales"
+            : normalizedTitle.includes('crew') || normalizedTitle.includes('instal') || normalizedTitle.includes('cuadrilla') || normalizedTitle.includes('equipo')
+              ? "install"
+              : "pm";
         }
 
           return {
@@ -340,6 +330,7 @@ export default function App() {
           company: orgName,
           companyInviteCode: inviteCode,
           organizationId: orgData?.id || "",
+          organizationIds,
           email: item.email,
           phone: item.phone || "",
           address: item.address || "",
@@ -352,11 +343,12 @@ export default function App() {
         };
       });
 
+        if (context !== dataContext.current) return;
         // Contractor role sees only members of their own company/org PLUS admins
         if (userRole === "contractor") {
-          const filtered = mappedMembers.filter(m => 
-            m.company === contractorCompany || 
-            m.roleCategory === "admin" || 
+          const filtered = mappedMembers.filter(m =>
+            memberBelongsToOrganization(m, activeOrganization?.id) ||
+            m.roleCategory === "admin" ||
             m.role === "Dueño de Xapcon Group" ||
             m.role === "super_admin"
           );
@@ -366,36 +358,32 @@ export default function App() {
         }
       } catch (err: any) {
         console.error("Mapping error:", err);
-        setTeamFetchError(`MAPPING ERROR: ${err.message}`);
       }
     }
   };
 
   useEffect(() => {
-    fetchLeads();
-    fetchTeamMembers();
-  }, [session, activeOrganization, selectedCompanyFilter, userRole, organizations]);
+    if (!session || !profile || accountError) return;
+    const refresh = () => { void fetchLeads(); void fetchTeamMembers(); };
+    refresh();
+    const interval = setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    const channel = supabase.channel(`company-members-${session.user.id}-${activeOrganization?.id || 'all'}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void fetchTeamMembers())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_organizations' }, () => void fetchTeamMembers())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => void fetchLeads()).subscribe();
+    return () => { clearInterval(interval); window.removeEventListener('focus', refresh); void supabase.removeChannel(channel); };
+  }, [session?.user.id, profile?.id, activeOrganization?.id, userRole, accountError]);
 
   // Filtered lists (fallback logic for local rendering)
-  const filteredLeads = leads;
   const filteredInsuranceClaims = insuranceClaims;
-  const filteredProjects = projects.filter((p) => 
-    selectedCompanyFilter === "Todas" || p.company === selectedCompanyFilter
-  );
-  const filteredInvoices = invoices.filter((inv) => 
+  const filteredInvoices = invoices.filter((inv) =>
     selectedCompanyFilter === "Todas" || inv.company === selectedCompanyFilter
   );
-
-  const activeLeadId = selectedLeadId === "" 
-    ? "" 
-    : (filteredLeads.some(l => l.id === selectedLeadId) ? selectedLeadId : "");
 
   const activeInsuranceClaimId = selectedInsuranceClaimId === ""
     ? ""
     : (filteredInsuranceClaims.some(c => c.id === selectedInsuranceClaimId) ? selectedInsuranceClaimId : "");
-
-  // Selected Lead helper
-  const activeLead = filteredLeads.find((l) => l.id === activeLeadId) || filteredLeads[0];
 
   const headerSearchResults = React.useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -411,13 +399,13 @@ export default function App() {
   }, [searchTerm, filteredInsuranceClaims]);
 
   const handleUpdateTeamMember = async (
-    memberId: string, 
-    updatedData: { 
-      name: string; 
-      phone: string; 
-      address: string; 
-      avatarFile?: File; 
-      companyName?: string; 
+    memberId: string,
+    updatedData: {
+      name: string;
+      phone: string;
+      address: string;
+      avatarFile?: File;
+      companyName?: string;
       organizationId?: string;
       companyEmail?: string;
       companyWebsite?: string;
@@ -432,7 +420,7 @@ export default function App() {
       const fileExt = updatedData.avatarFile.name.split('.').pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
       const filePath = `avatars/${memberId}_${fileName}`;
-      
+
       const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, updatedData.avatarFile);
@@ -483,240 +471,105 @@ export default function App() {
     return true;
   };
 
+  const handleUpdateOrganizationBranding = async (
+    organizationId: string,
+    branding: {
+      companyName: string;
+      companyEmail: string;
+      companyPhone: string;
+      companyAddress: string;
+      companyWebsite: string;
+      registrationNumber: string;
+      licenseNumber: string;
+      primaryColor: string;
+      accentColor: string;
+      retailTaxPercent: string;
+      retailDefaultFee: string;
+      logoFile?: File;
+    }
+  ) => {
+    if (!session) return false;
+
+    let logoUrl = activeOrganization?.id === organizationId ? activeOrganization.logo_url : undefined;
+    if (branding.logoFile) {
+      const extension = branding.logoFile.name.split(".").pop()?.toLowerCase() || "png";
+      const filePath = `company-logos/${organizationId}/brand-${Date.now()}.${extension}`;
+      const { error: uploadError } = await supabase.storage
+        .from("documents")
+        .upload(filePath, branding.logoFile, { upsert: true, contentType: branding.logoFile.type });
+
+      if (uploadError) {
+        alert("No se pudo guardar el logo de la empresa: " + uploadError.message);
+        return false;
+      }
+      logoUrl = supabase.storage.from("documents").getPublicUrl(filePath).data.publicUrl;
+    }
+
+    const organizationPatch = {
+      name: branding.companyName.trim(),
+      company_name: branding.companyName.trim(),
+      company_email: branding.companyEmail.trim() || null,
+      company_phone: branding.companyPhone.trim() || null,
+      company_address: branding.companyAddress.trim() || null,
+      company_website: branding.companyWebsite.trim() || null,
+      registration_number: branding.registrationNumber.trim() || null,
+      license_number: branding.licenseNumber.trim() || null,
+      brand_primary_color: branding.primaryColor,
+      brand_accent_color: branding.accentColor,
+      retail_tax_rate: Number(branding.retailTaxPercent) / 100,
+      retail_default_fee: Number(branding.retailDefaultFee),
+      ...(logoUrl ? { logo_url: logoUrl } : {})
+    };
+
+    const { data: updatedOrganization, error } = await supabase
+      .from("organizations")
+      .update(organizationPatch)
+      .eq("id", organizationId)
+      .select("id")
+      .maybeSingle();
+
+    if (error || !updatedOrganization) {
+      alert("No se pudo guardar la identidad de la empresa: " + (error?.message || "No tienes permisos para editar esta organización."));
+      return false;
+    }
+
+    setOrganizations(previous => previous.map(org => org.id === organizationId ? { ...org, ...organizationPatch, logo_url: logoUrl || org.logo_url } : org));
+    setActiveOrganization(previous => previous?.id === organizationId ? { ...previous, ...organizationPatch, logo_url: logoUrl || previous.logo_url } : previous);
+    return true;
+  };
+
   const handleAddTeamMember = async (newMember: Omit<TeamMember, "id" | "avatar" | "status">) => {
-    if (!session) return;
-
-    let dbRole = "contractor";
-    if (newMember.roleCategory === "admin") {
-      dbRole = "super_admin";
-    } else if (newMember.roleCategory === "contractor") {
-      dbRole = "owner";
-    } else {
-      dbRole = "employee";
-    }
-
-    const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-      email: newMember.email,
-      password: "TemporaryPassword123!",
-      options: {
-        data: {
-          full_name: newMember.name,
-          role: dbRole
-        }
-      }
+    if (!session || !canManageTeam) throw new Error('No tienes permisos para invitar usuarios.');
+    const dbRole = newMember.roleCategory === 'admin' ? 'super_admin' : newMember.roleCategory === 'staff'
+      ? 'platform_staff' : newMember.roleCategory === 'contractor' ? 'owner' : 'employee';
+    const organizationId = ['super_admin', 'platform_staff'].includes(dbRole) ? null
+      : userRole === 'contractor' ? activeOrganization?.id : newMember.organizationId;
+    const { error } = await supabase.rpc('save_xapcon_invitation', {
+      p_email: newMember.email?.trim().toLowerCase(), p_full_name: newMember.name.trim(), p_role: dbRole,
+      p_organization_id: organizationId || null, p_job_title: newMember.role,
+      p_company_details: { phone: newMember.phone, companyEmail: newMember.companyEmail, companyWebsite: newMember.companyWebsite,
+        registrationNumber: newMember.registrationNumber, licenseNumber: newMember.licenseNumber }
     });
-
-    if (signUpErr) {
-      console.error("Error al registrar miembro:", signUpErr.message);
-      alert("Error al registrar miembro: " + signUpErr.message);
-      return;
-    }
-
-    if (signUpData?.user) {
-      // Find Organization ID by name
-      let orgId = null;
-      if (newMember.company) {
-        const org = organizations.find(o => o.name === newMember.company);
-        orgId = org?.id || null;
-      }
-
-      if (orgId) {
-        const { error: relErr } = await supabase
-          .from("user_organizations")
-          .insert({
-            user_id: signUpData.user.id,
-            organization_id: orgId
-          });
-
-        if (relErr) {
-          console.error("Error al vincular organización:", relErr.message);
-        }
-      }
-
-      // Save contractor company metadata in profiles table
-      if (newMember.roleCategory === "contractor") {
-        const { error: profileUpdateErr } = await supabase
-          .from("profiles")
-          .update({
-            company_email: newMember.companyEmail || null,
-            company_website: newMember.companyWebsite || null,
-            registration_number: newMember.registrationNumber || null,
-            license_number: newMember.licenseNumber || null
-          })
-          .eq("id", signUpData.user.id);
-          
-        if (profileUpdateErr) {
-          console.error("Error updating profile metadata:", profileUpdateErr.message);
-        }
-      }
-
-      alert(`¡Usuario registrado con éxito! Contraseña temporal para el acceso: TemporaryPassword123!`);
-      await fetchTeamMembers();
-    }
-  };
-
-  // Helper: Estimate recalculator
-  const recalculateEstimate = (items: EstimateItem[]): Estimate => {
-    let subMaterials = 0;
-    let subLabor = 0;
-    let subFees = 350; // default permits & fees pass-through
-
-    items.forEach((item) => {
-      item.total = item.qty * item.unitPrice;
-      if (item.category === "material") {
-        subMaterials += item.total;
-      } else if (item.category === "labor") {
-        subLabor += item.total;
-      } else {
-        subFees += item.total;
-      }
+    if (error) throw new Error(error.message);
+    const { error: inviteError } = await supabase.auth.signInWithOtp({
+      email: newMember.email!.trim(), options: { shouldCreateUser: true, emailRedirectTo: window.location.origin }
     });
-
-    const subGross = subMaterials + subLabor + subFees;
-    const taxAmount = Math.round(subGross * 0.0825 * 100) / 100;
-    const total = Math.round((subGross + taxAmount) * 100) / 100;
-
-    // Calculate realistic cost based on materials and crew labor costs
-    let totalCost = 0;
-    items.forEach((item) => {
-      let costFactor = 0.6; // standard default cost factor (40% profit margin default)
-      if (item.description.includes("Shingle") || item.description.includes("Teja")) {
-        costFactor = 80 / 120; // shingles cost 80, sell 120 (33% margin)
-      } else if (item.description.includes("Underlayment") || item.description.includes("Membrana")) {
-        costFactor = 50 / 85; // underlayment cost 50, sell 85 (41% margin)
-      } else if (item.description.includes("Ridge") || item.description.includes("Venting")) {
-        costFactor = 8 / 12.5; // venting cost 8, sell 12.5 (36% margin)
-      } else if (item.description.includes("Labor") || item.description.includes("Mano")) {
-        costFactor = 60 / 95; // crew costs 60/SQ, sold at 95 (36.8% margin)
-      } else if (item.category === "fee") {
-        costFactor = 1.0; // fees are pass-through
-      }
-      totalCost += item.qty * (item.unitPrice * costFactor);
-    });
-
-    const profit = subGross - totalCost;
-    const profitMargin = subGross > 0 ? Math.round((profit / subGross) * 100 * 10) / 10 : 0;
-
-    return {
-      id: estimate?.id || "EST-2409-A",
-      leadId: estimate?.leadId || "APX-9824",
-      clientName: estimate?.clientName ?? "James Robertson",
-      address: estimate?.address ?? "1244 Maplewood Dr, Austin, TX 78704",
-      clientPhone: estimate?.clientPhone ?? "",
-      clientEmail: estimate?.clientEmail ?? "",
-      status: estimate?.status || "Draft",
-      items,
-      subtotalMaterials: subMaterials,
-      subtotalLabor: subLabor,
-      subtotalFees: subFees,
-      subtotalGross: subGross,
-      taxRate: 0.0825,
-      taxAmount,
-      total,
-      profitMargin
-    };
-  };
-
-  // Actions: Leads View
-  const handleSelectLead = (leadId: string) => {
-    setSelectedLeadId(leadId);
-  };
-
-  const handleAddTimelineEvent = async (leadId: string, event: Omit<TimelineEvent, "id" | "timestamp">) => {
-    if (event.type === "note") {
-      const currentUserName = profile?.full_name || session?.user?.email?.split('@')[0] || "Usuario";
-      let currentUserRole = "Colaborador";
-      if (profile?.role === 'super_admin') currentUserRole = "G. Xapcon Group";
-      else if (profile?.role === 'owner' || profile?.role === 'Dueño') currentUserRole = "Dueño";
-      else if (profile?.role === 'contractor' || profile?.role === 'Contratista') currentUserRole = "Contratista";
-      else if (profile?.role === 'Vendedor' || profile?.role === 'Gerente de Ventas') currentUserRole = "Vendedor";
-
-      event.author = currentUserName;
-      event.title = `${currentUserName} (${currentUserRole})`;
-    }
-
-    const now = new Date();
-    const formattedDate = `${now.toLocaleDateString()} a las ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-    
-    const newEvent: TimelineEvent = {
-      ...event,
-      id: `timeline-${Date.now()}`,
-      timestamp: formattedDate,
-      date: now.toISOString()
-    };
-
-    // ALWAYS fetch current timeline from DB to avoid stale closure
-    const { data: dbRow, error: fetchErr } = await supabase.from('leads').select('timeline').eq('id', leadId).single();
-    if (fetchErr || !dbRow) {
-      console.error("Error fetching timeline:", fetchErr?.message);
-      return;
-    }
-    
-    const currentTimeline: TimelineEvent[] = dbRow.timeline || [];
-    const updatedTimeline = [newEvent, ...currentTimeline];
-
-    const { error } = await supabase.from('leads').update({ timeline: updatedTimeline }).eq('id', leadId);
-    if (error) {
-      console.error("Error saving timeline:", error.message);
-      return;
-    }
-
-    // Update both state lists since we don't know which one holds this ID
-    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, timeline: updatedTimeline } : l));
-    setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, timeline: updatedTimeline } : l));
-
-    // Detección de Menciones
-    if (event.type === "note" && event.content) {
-      const mentionedUsers = teamMembers.filter((member) => {
-        const firstName = member.name ? member.name.split(" ")[0] : "";
-        return firstName && event.content!.includes(`@${firstName}`);
-      });
-      for (const userToNotify of mentionedUsers) {
-        notificationService.trigger(
-          "mention",
-          leadId,
-          "lead",
-          {
-            author_name: event.author,
-            content: event.content,
-            recipient_name: userToNotify.name
-          },
-          userToNotify.id,
-          userToNotify.organizationId
-        );
-      }
-    }
+    // Preserve the pending invitation on an email failure so the owner can retry.
+    if (inviteError) throw new Error(`La invitación quedó pendiente, pero no se pudo enviar el correo: ${inviteError.message}. Puedes reenviarla desde este formulario.`);
   };
 
   const handleDeleteTimelineEvent = async (leadId: string, eventId: string) => {
-    const { data: dbRow, error: fetchErr } = await supabase.from('leads').select('timeline').eq('id', leadId).single();
-    if (fetchErr || !dbRow) return;
-
-    const currentTimeline: TimelineEvent[] = dbRow.timeline || [];
-    const updatedTimeline = currentTimeline.filter(e => e.id !== eventId);
-
-    const { error } = await supabase.from('leads').update({ timeline: updatedTimeline }).eq('id', leadId);
-    if (error) {
-      console.error("Error deleting timeline event:", error.message);
-      return;
-    }
-
-    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, timeline: updatedTimeline } : l));
-    setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, timeline: updatedTimeline } : l));
+    const { data, error } = await supabase.rpc('delete_xapcon_timeline_event', { p_lead_id: leadId, p_event_id: eventId });
+    if (error) { alert(`No se pudo eliminar la nota: ${error.message}`); return; }
+    const timeline = data as TimelineEvent[];
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, timeline } : l));
+    setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, timeline } : l));
   };
 
-  const handleToggleTask = async (leadId: string, taskId: string) => {
-    const { data: dbRow, error: fetchErr } = await supabase.from('leads').select('tasks').eq('id', leadId).single();
-    if (fetchErr || !dbRow) return;
-
-    const currentTasks: TaskItem[] = dbRow.tasks || [];
-    const updatedTasks = currentTasks.map((t) => 
-      (t.id === taskId ? { ...t, status: t.status === "completed" ? "pending" : "completed" } : t)
-    );
-
-    await supabase.from('leads').update({ tasks: updatedTasks }).eq('id', leadId);
-    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, tasks: updatedTasks } : l));
-    setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, tasks: updatedTasks } : l));
+  const handleUpdateStaffAccess = async (userId: string, organizationIds: string[]) => {
+    const { error } = await supabase.rpc('set_xapcon_staff_organizations', { p_user_id: userId, p_organization_ids: organizationIds });
+    if (error) throw new Error(error.message);
+    await fetchTeamMembers();
   };
 
   const handleAddLead = async (newLeadData: Omit<Lead, "id" | "timeline" | "documents" | "tasks" | "createdAt">) => {
@@ -727,7 +580,7 @@ export default function App() {
       if (userRole === "contractor") {
         targetOrgId = activeOrganization?.id;
       } else {
-        const currentOrg = organizations.find(o => o.name === selectedCompanyFilter);
+        const currentOrg = organizations.find(o => o.id === selectedCompanyFilter);
         targetOrgId = currentOrg?.id || organizations[0]?.id || null;
       }
     }
@@ -772,7 +625,6 @@ export default function App() {
 
     if (data) {
       await fetchLeads();
-      setSelectedLeadId(data.id);
     }
   };
 
@@ -787,148 +639,54 @@ export default function App() {
   };
 
   const handleAddInsuranceClaimTimelineEvent = async (claimId: string, event: Omit<TimelineEvent, "id" | "timestamp">) => {
-    if (event.type === "note") {
-      const currentUserName = profile?.full_name || session?.user?.email?.split('@')[0] || "Usuario";
-      let currentUserRole = "Colaborador";
-      if (profile?.role === 'super_admin') currentUserRole = "G. Xapcon Group";
-      else if (profile?.role === 'owner' || profile?.role === 'Dueño') currentUserRole = "Dueño";
-      else if (profile?.role === 'contractor' || profile?.role === 'Contratista') currentUserRole = "Contratista";
-      else if (profile?.role === 'Vendedor' || profile?.role === 'Gerente de Ventas') currentUserRole = "Vendedor";
-
-      event.author = currentUserName;
-      event.title = `${currentUserName} (${currentUserRole})`;
-    }
-
-    const now = new Date();
-    const formattedDate = `${now.toLocaleDateString()} a las ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-    
-    const newEvent: TimelineEvent = {
-      ...event,
-      id: `timeline-${Date.now()}`,
-      timestamp: formattedDate,
-      date: now.toISOString()
-    };
-
-    // ALWAYS fetch current timeline from DB to avoid stale closure
-    const { data: dbRow, error: fetchErr } = await supabase.from('leads').select('timeline').eq('id', claimId).single();
-    if (fetchErr || !dbRow) {
-      console.error("Error fetching claim timeline:", fetchErr?.message);
-      return;
-    }
-    
-    const currentTimeline: TimelineEvent[] = dbRow.timeline || [];
-    const updatedTimeline = [newEvent, ...currentTimeline];
-
-    const { error } = await supabase.from('leads').update({ timeline: updatedTimeline }).eq('id', claimId);
-    if (error) {
-      console.error("Error saving claim timeline:", error.message);
-      return;
-    }
-
-    // Update both state lists
-    setInsuranceClaims(prev => prev.map(l => l.id === claimId ? { ...l, timeline: updatedTimeline } : l));
-    setLeads(prev => prev.map(l => l.id === claimId ? { ...l, timeline: updatedTimeline } : l));
-
-    // Detección de Menciones
-    if (event.type === "note" && event.content) {
-      const mentionedUsers = teamMembers.filter((member) => {
-        const firstName = member.name ? member.name.split(" ")[0] : "";
-        return firstName && event.content!.includes(`@${firstName}`);
-      });
-      for (const userToNotify of mentionedUsers) {
-        notificationService.trigger(
-          "mention",
-          claimId,
-          "lead",
-          {
-            author_name: event.author,
-            content: event.content,
-            recipient_name: userToNotify.name
-          },
-          userToNotify.id,
-          userToNotify.organizationId
-        );
-      }
-    }
+    const { data, error } = await supabase.rpc('add_xapcon_timeline_event', { p_lead_id: claimId, p_event: event });
+    if (error) throw new Error(error.message);
+    const timeline = data as TimelineEvent[];
+    setInsuranceClaims(prev => prev.map(l => l.id === claimId ? { ...l, timeline } : l));
+    setLeads(prev => prev.map(l => l.id === claimId ? { ...l, timeline } : l));
+    window.dispatchEvent(new Event('xapcon-notifications-changed'));
   };
 
   const handleToggleInsuranceClaimTask = async (claimId: string, taskId: string) => {
-    const { data: dbRow, error: fetchErr } = await supabase.from('leads').select('tasks, name').eq('id', claimId).single();
-    if (fetchErr || !dbRow) return;
-
-    const currentTasks: TaskItem[] = dbRow.tasks || [];
-    const targetTask = currentTasks.find(t => t.id === taskId);
-
-    const updatedTasks = currentTasks.map((t) => 
-      (t.id === taskId ? { ...t, status: t.status === "completed" ? "pending" : "completed" } : t)
-    );
-
-    await supabase.from('leads').update({ tasks: updatedTasks }).eq('id', claimId);
-    setLeads(prev => prev.map(l => l.id === claimId ? { ...l, tasks: updatedTasks } : l));
-    setInsuranceClaims(prev => prev.map(l => l.id === claimId ? { ...l, tasks: updatedTasks } : l));
-
-    // Notify the task creator/tagger when transitioning to completed
-    if (targetTask && targetTask.status === "pending") {
-      const creatorId = targetTask.createdById;
-      if (creatorId && creatorId !== session?.user?.id) {
-        try {
-          await notificationService.trigger(
-            "mention",
-            claimId,
-            "lead",
-            {
-              author_name: profile?.full_name || session?.user?.email || "Un colaborador",
-              content: `Completó la tarea: "${targetTask.title}" en el caso ${dbRow.name}`
-            },
-            creatorId,
-            activeOrganization?.id || undefined
-          );
-        } catch (err) {
-          console.error("Error triggering completion notification:", err);
-        }
-      }
-    }
+    const claim = insuranceClaims.find(l => l.id === claimId) || leads.find(l => l.id === claimId);
+    const task = claim?.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const { data, error } = await supabase.rpc('set_xapcon_task_completed', {
+      p_lead_id: claimId, p_task_id: taskId, p_completed: task.status !== 'completed'
+    });
+    if (error) { alert(`No se pudo actualizar la tarea: ${error.message}`); return; }
+    const tasks = data as TaskItem[];
+    setLeads(prev => prev.map(l => l.id === claimId ? { ...l, tasks } : l));
+    setInsuranceClaims(prev => prev.map(l => l.id === claimId ? { ...l, tasks } : l));
+    window.dispatchEvent(new Event('xapcon-notifications-changed'));
   };
 
-  const handleAddTask = async (leadId: string, taskTitle: string, assignedTo?: string) => {
-    const { data: dbRow, error: fetchErr } = await supabase.from('leads').select('tasks').eq('id', leadId).single();
-    if (fetchErr || !dbRow) return;
-
-    const currentTasks: TaskItem[] = dbRow.tasks || [];
-    
-    // Prevent duplicate tasks with the exact same title
-    const normalizedTitle = taskTitle.trim().toLowerCase();
-    if (currentTasks.some(t => t.title && t.title.trim().toLowerCase() === normalizedTitle)) {
-      console.warn("Task with this title already exists.");
-      return;
-    }
-
-    const newTask: TaskItem = {
-      id: `task-${Date.now()}`,
-      title: taskTitle,
-      status: "pending",
-      dueDate: new Date().toLocaleDateString("es-ES", { day: "numeric", month: "short" }),
-      assignedTo,
-      createdById: session?.user?.id,
-      createdBy: profile?.full_name || session?.user?.email || "Usuario"
-    };
-    const updatedTasks = [...currentTasks, newTask];
-
-    await supabase.from('leads').update({ tasks: updatedTasks }).eq('id', leadId);
-    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, tasks: updatedTasks } : l));
-    setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, tasks: updatedTasks } : l));
+  const handleAddTask = async (leadId: string, taskTitle: string, assignedToId?: string,
+    details?: { dueDate?: string; priority?: 'high' | 'medium' | 'low'; kind?: 'task' | 'inspection' | 'adjuster_meeting' | 'installation'; category?: TaskItem['category']; scheduledTime?: string }
+  ) => {
+    const claim = insuranceClaims.find(l => l.id === leadId) || leads.find(l => l.id === leadId);
+    if (assignedToId && !eligibleCaseMembers(teamMembers, claim?.organizationId).some(m => m.id === assignedToId))
+      throw new Error('El responsable no pertenece a la empresa de este caso.');
+    const { data, error } = await supabase.rpc('add_xapcon_task', {
+      p_lead_id: leadId, p_title: taskTitle, p_assigned_to: assignedToId || null, p_details: details || {}
+    });
+    if (error) throw new Error(error.message);
+    const tasks = data as TaskItem[];
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, tasks } : l));
+    setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, tasks } : l));
+    window.dispatchEvent(new Event('xapcon-notifications-changed'));
   };
 
-  const handleDeleteTask = async (leadId: string, taskId: string) => {
-    const { data: dbRow, error: fetchErr } = await supabase.from('leads').select('tasks').eq('id', leadId).single();
-    if (fetchErr || !dbRow) return;
-
-    const currentTasks: TaskItem[] = dbRow.tasks || [];
-    const updatedTasks = currentTasks.filter((t) => t.id !== taskId);
-
-    await supabase.from('leads').update({ tasks: updatedTasks }).eq('id', leadId);
-    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, tasks: updatedTasks } : l));
-    setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, tasks: updatedTasks } : l));
+  const handleNotificationClick = async (notification: { reference_id?: string; reference_type?: string; organization_id?: string }) => {
+    if (!notification.reference_id || notification.reference_type !== 'lead') return;
+    const { data, error } = await supabase.from('leads').select('id, organization_id, is_insurance_claim').eq('id', notification.reference_id).single();
+    if (error || !data) { alert('El caso ya no está disponible o no tienes acceso.'); return; }
+    if (activeOrganization?.id !== data.organization_id) {
+      const org = organizations.find(o => o.id === data.organization_id);
+      if (org) setActiveOrganization(org);
+    }
+    if (data.is_insurance_claim) handleNavigateToInsuranceClaim(data.id);
+    else setCurrentView(ViewType.CLAIMS);
   };
 
   const handleAddInsuranceClaim = async (newClaimData: Omit<Lead, "id" | "timeline" | "documents" | "tasks" | "createdAt">) => {
@@ -939,7 +697,7 @@ export default function App() {
       if (userRole === "contractor") {
         targetOrgId = activeOrganization?.id;
       } else {
-        const currentOrg = organizations.find(o => o.name === selectedCompanyFilter);
+        const currentOrg = organizations.find(o => o.id === selectedCompanyFilter);
         targetOrgId = currentOrg?.id || organizations[0]?.id || null;
       }
     }
@@ -966,6 +724,7 @@ export default function App() {
         insurance_email1: newClaimData.insuranceEmail1,
         insurance_email2: newClaimData.insuranceEmail2,
         notes: newClaimData.notes,
+        insurance_notes: newClaimData.insuranceNotes,
         adjuster_name: newClaimData.adjusterName,
         assigned_rep: newClaimData.assignedRep,
         organization_id: targetOrgId,
@@ -1001,17 +760,17 @@ export default function App() {
   // Actions: Document Management
   const handleUploadDocuments = async (leadId: string, files: File[], category: string = "Reporte") => {
     if (!session) return false;
-    
+
     const targetLead = leads.find(l => l.id === leadId) || insuranceClaims.find(c => c.id === leadId);
     if (!targetLead) return false;
 
     const newDocs: any[] = [];
-    
+
     for (const file of files) {
       // Preserve original name using a subfolder with timestamp and short random suffix to prevent collisions
       const randomSuffix = Math.random().toString(36).substring(2, 5);
       const filePath = `${leadId}/${Date.now()}_${randomSuffix}/${file.name}`;
-      
+
       const { error: uploadError } = await supabase.storage
         .from('documents')
         .upload(filePath, file);
@@ -1023,7 +782,7 @@ export default function App() {
 
       const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
       const sizeInMB = (file.size / (1024 * 1024)).toFixed(1);
-      
+
       newDocs.push({
         id: `doc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         name: file.name,
@@ -1040,7 +799,7 @@ export default function App() {
 
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, documents: updatedDocs } : l));
     setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, documents: updatedDocs } : l));
-    
+
     const { error: dbError } = await supabase.from('leads').update({ documents: updatedDocs }).eq('id', leadId);
     if (dbError) {
       alert("Error al guardar cambios en base de datos: " + dbError.message);
@@ -1062,12 +821,12 @@ export default function App() {
 
     const targetLead = leads.find(l => l.id === leadId) || insuranceClaims.find(c => c.id === leadId);
     if (!targetLead) return false;
-    
+
     const updatedDocs = targetLead.documents.filter(d => d.id !== docId);
 
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, documents: updatedDocs } : l));
     setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, documents: updatedDocs } : l));
-    
+
     await supabase.from('leads').update({ documents: updatedDocs }).eq('id', leadId);
     return true;
   };
@@ -1077,7 +836,7 @@ export default function App() {
     const fileExt = file.name.split('.').pop() || 'png';
     const fileName = `timeline_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
     const filePath = `timeline_images/${fileName}`;
-    
+
     const { error: uploadError } = await supabase.storage
       .from('documents')
       .upload(filePath, file);
@@ -1102,6 +861,7 @@ export default function App() {
     if (error) {
       console.error("Error al guardar estimación:", error.message);
       alert("Error al guardar estimación: " + error.message);
+      return;
     }
 
     // Actualizar estado local
@@ -1123,8 +883,7 @@ export default function App() {
 
     setLeads(prev => prev.filter(l => l.id !== leadId));
     setInsuranceClaims(prev => prev.filter(c => c.id !== leadId));
-    
-    if (selectedLeadId === leadId) setSelectedLeadId("");
+
     if (selectedInsuranceClaimId === leadId) setSelectedInsuranceClaimId("");
   };
 
@@ -1148,6 +907,7 @@ export default function App() {
     if (updatedFields.insurancePhone2 !== undefined) updatePayload.insurance_phone2 = updatedFields.insurancePhone2;
     if (updatedFields.insuranceEmail1 !== undefined) updatePayload.insurance_email1 = updatedFields.insuranceEmail1;
     if (updatedFields.insuranceEmail2 !== undefined) updatePayload.insurance_email2 = updatedFields.insuranceEmail2;
+    if (updatedFields.insuranceNotes !== undefined) updatePayload.insurance_notes = updatedFields.insuranceNotes;
     if (updatedFields.adjusterName !== undefined) updatePayload.adjuster_name = updatedFields.adjusterName;
     if (updatedFields.assignedRep !== undefined) updatePayload.assigned_rep = updatedFields.assignedRep;
     if (updatedFields.organizationId !== undefined) updatePayload.organization_id = updatedFields.organizationId;
@@ -1218,55 +978,29 @@ export default function App() {
       }
     }
   };
-  // Action: Dashboard Resolutions
-  const handleResolveAlert = (alert: CriticalAlert) => {
-    setCriticalAlerts((prev) => prev.filter((a) => a.id !== alert.id));
-    if (alert.targetId) {
-      if (alert.targetId.startsWith("APX")) {
-        setCurrentView(ViewType.CLAIMS);
-        setSelectedLeadId(alert.targetId);
-      } else {
-        setCurrentView(ViewType.PRODUCTION);
-      }
-    }
-  };
-
-  // Quick action CTA sidebar "Nuevo Proyecto"
-  const handleNewEstimateCTA = () => {
-    setCurrentView(ViewType.CLAIMS);
-    setEstimate({
-      ...initialEstimate,
-      status: "Draft",
-      profitMargin: 24.5
-    });
-  };
-
+  if (passwordRecovery && session) return <PasswordRecoveryView onComplete={finishPasswordRecovery} />;
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#131b2e] text-white">Cargando plataforma...</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-[#17314A] text-white">Cargando plataforma...</div>;
   }
 
   if (!session) {
     return <LoginView />;
   }
 
-  const pipelineStatuses = [
-    "Negados",
-    "Inspección",
-    "En disputa",
-    "Esperando Scope",
-    "Aprobado",
-    "Aprobado y Suplementado",
-    "Construcción",
-    "Esperando Depreciación",
-    "Finalizado",
-    "Cancelado"
-  ];
+  if (accountError || !profile) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#F5F7F8] p-6">
+      <div className="max-w-lg rounded-2xl bg-white p-8 shadow-sm">
+        <h1 className="text-xl font-bold text-[#17314A]">No se pudo preparar tu cuenta</h1>
+        <p role="alert" className="my-4 text-sm text-slate-600">{accountError || 'No se encontró tu perfil.'}</p>
+        <div className="flex gap-3"><button onClick={retryAccount} className="rounded-lg bg-[#17314A] px-4 py-2 text-white">Reintentar</button>
+          <button onClick={signOut} className="rounded-lg border px-4 py-2">Cerrar sesión</button></div>
+      </div>
+    </div>
+  );
 
   const negadosCount = filteredInsuranceClaims.filter(c => c.status === 'Negados').length;
-  const inspeccionCount = filteredInsuranceClaims.filter(c => c.status === 'Inspección' || !pipelineStatuses.includes(c.status)).length;
   const enDisputaCount = filteredInsuranceClaims.filter(c => c.status === 'En disputa').length;
   const esperandoScopeCount = filteredInsuranceClaims.filter(c => c.status === 'Esperando Scope').length;
-  const aprobadoSuplementadoCount = filteredInsuranceClaims.filter(c => c.status === 'Aprobado y Suplementado').length;
   const esperandoDepreciacionCount = filteredInsuranceClaims.filter(c => c.status === 'Esperando Depreciación').length;
   const finalizadoCount = filteredInsuranceClaims.filter(c => c.status === 'Finalizado').length;
   const canceladoCount = filteredInsuranceClaims.filter(c => c.status === 'Cancelado').length;
@@ -1278,15 +1012,14 @@ export default function App() {
   const construidosCount = finalizadoCount + esperandoDepreciacionCount;
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-[#f7f9fb] text-[#191c1e] font-sans antialiased overflow-hidden">
-      
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#F5F7F8] text-[#191c1e] font-sans antialiased overflow-hidden">
+
       {/* Sidebar - Desktop */}
-      <Sidebar 
-        currentView={currentView} 
+      <Sidebar
+        currentView={currentView}
         onViewChange={(view) => {
           setCurrentView(view);
           setMobileMenuOpen(false);
-          setSelectedLeadId("");
           setSelectedInsuranceClaimId("");
           setSearchTerm("");
         }}
@@ -1297,16 +1030,16 @@ export default function App() {
       />
 
       {/* Header - Mobile */}
-      <header className="no-print md:hidden flex items-center justify-between px-6 py-4 bg-[#131b2e] text-white border-b border-white/15 shrink-0 select-none">
+      <header className="no-print md:hidden flex items-center justify-between px-6 py-4 bg-[#17314A] text-white border-b border-white/15 shrink-0 select-none">
         <div className="flex items-center">
-          <img 
-            src={logo} 
-            alt="Xapcon Group Logo" 
+          <img
+            src={logo}
+            alt="Xapcon Group Logo"
             className="h-8 w-auto object-contain"
           />
         </div>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 text-white hover:bg-white/5 rounded-lg"
           >
@@ -1317,7 +1050,7 @@ export default function App() {
 
       {/* Mobile Drawer Navigation links */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-[65px] bg-[#131b2e] z-50 p-6 flex flex-col space-y-3 animate-fade-in select-none">
+        <div className="md:hidden fixed inset-0 top-[65px] bg-[#17314A] z-50 p-6 flex flex-col space-y-3 animate-fade-in select-none">
           {[
             { id: ViewType.DASHBOARD, label: "Dashboard" },
             { id: ViewType.INSURANCE_CLAIM, label: "Insurance Claim" },
@@ -1327,7 +1060,8 @@ export default function App() {
               { id: ViewType.FINANCIALS, label: "Financials Overview" },
               { id: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras" },
             ] : []),
-            { id: ViewType.TEAM, label: "Personal & Crews" }
+            { id: ViewType.TEAM, label: "Personal & Crews" },
+            { id: ViewType.SETTINGS, label: "Configuración" }
           ].map((item) => (
             <button
               key={item.id}
@@ -1336,8 +1070,8 @@ export default function App() {
                 setMobileMenuOpen(false);
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-150 ${
-                currentView === item.id 
-                  ? "bg-[#eab308] text-[#131b2e] font-bold" 
+                currentView === item.id
+                  ? "bg-[#B77A4B] text-[#17314A] font-bold"
                   : "text-[#7c839b] hover:text-white hover:bg-white/5"
               }`}
             >
@@ -1355,10 +1089,10 @@ export default function App() {
 
       {/* Main Container Content viewport */}
       <main className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ${sidebarCollapsed ? "md:ml-[76px]" : "md:ml-[280px]"}`}>
-        
+
         {/* Visual Top Bar for Company Selection */}
         {userRole === "admin" && (
-          <div className="no-print bg-white border-b border-[#c6c6cd]/30 px-6 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 select-none shadow-sm">
+          <div className="crm-topbar no-print bg-white border-b border-[#D8E0E6]/30 px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 select-none shadow-sm">
             {/* Left: Admin Welcome + Live Clock & Company Filter */}
             <div className="flex items-center gap-4">
               <div className="flex flex-col justify-center">
@@ -1372,14 +1106,14 @@ export default function App() {
 
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Empresa:</span>
-                <select 
-                  value={selectedCompanyFilter}
+                <select
+                  value={activeOrganization?.id || "Todas"}
                   onChange={(e) => handleSetCompanyFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl py-1 px-3 text-xs font-bold text-[#131b2e] focus:outline-none focus:ring-1 focus:ring-[#eab308] cursor-pointer shadow-sm"
+                  className="bg-slate-50 border border-slate-200 rounded-xl py-1 px-3 text-xs font-bold text-[#17314A] focus:outline-none focus:ring-1 focus:ring-[#B77A4B] cursor-pointer shadow-sm"
                 >
                   <option value="Todas">Todas las Empresas (Vista Consolidada)</option>
                   {organizations.map(org => (
-                     <option key={org.id} value={org.name}>{org.name}</option>
+                     <option key={org.id} value={org.id}>{org.name}</option>
                   ))}
                 </select>
               </div>
@@ -1392,7 +1126,7 @@ export default function App() {
                 placeholder="Buscar homeowner, claim o dirección..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-8 py-1.5 bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-xl text-xs text-[#131b2e] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#eab308] focus:border-[#eab308] shadow-sm transition-all"
+                className="w-full pl-9 pr-8 py-1.5 bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-xl text-xs text-[#17314A] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#B77A4B] focus:border-[#B77A4B] shadow-sm transition-all"
               />
               <div className="absolute left-7 top-1/2 -translate-y-1/2 text-slate-500">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1411,7 +1145,7 @@ export default function App() {
 
               {/* Search Autocomplete Dropdown Results */}
               {searchTerm.trim() !== "" && (
-                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-[#E2E4EA] rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto divide-y divide-[#c6c6cd]/20">
+                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-[#E2E4EA] rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto divide-y divide-[#D8E0E6]/20">
                   {headerSearchResults.length === 0 ? (
                     <div className="p-4 text-xs text-slate-500 text-center font-medium">
                       No se encontraron casos que coincidan con "<span className="font-bold">{searchTerm}</span>".
@@ -1428,7 +1162,7 @@ export default function App() {
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-[#0F172A] group-hover:text-[#B8860B] transition-colors truncate">
+                            <span className="text-xs font-bold text-[#17314A] group-hover:text-[#B77A4B] transition-colors truncate">
                               {claim.name}
                             </span>
                             {claim.claimNumber && (
@@ -1461,27 +1195,32 @@ export default function App() {
                 Super Admin
               </span>
               <div className="border-l border-gray-200 pl-3">
-                <NotificationBell userId={session.user.id} organizationId={activeOrganization?.id} />
+                <NotificationBell userId={session.user.id} organizationId={activeOrganization?.id} onNotificationClick={handleNotificationClick} />
               </div>
             </div>
           </div>
         )}
 
         {userRole === "contractor" && (
-          <div className="no-print bg-white border-b border-[#c6c6cd]/30 px-6 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 select-none shadow-sm">
+          <div className="crm-topbar contractor-topbar no-print bg-white border-b border-[#D8E0E6]/30 px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 select-none shadow-sm">
             {/* Company Logo & Welcome Header */}
-            <div className="flex items-center gap-3">
-              <img 
-                src={logo479} 
-                alt="479 Roofing Restoration" 
-                className="h-11 w-auto object-contain shrink-0"
-              />
-              <div className="flex flex-col justify-center">
-                <span className="text-sm font-semibold text-[#1e293b] tracking-wide">
+            <div className="contractor-topbar-brand">
+              {activeOrganization?.logo_url && (
+                <span className="contractor-topbar-logo">
+                  <img
+                    src={activeOrganization.logo_url}
+                    alt={`${activeOrganization.company_name || activeOrganization.name} logo`}
+                    onError={(event) => { event.currentTarget.style.visibility = "hidden"; }}
+                  />
+                </span>
+              )}
+              <div className="contractor-topbar-intro">
+                <span className="contractor-topbar-greeting">
                   Bienvenido, {profile?.full_name || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "Usuario"}
                 </span>
                 <LiveDateTime />
               </div>
+              <ContractorWeather address={activeOrganization?.company_address} />
             </div>
 
             {/* Center: Search Bar */}
@@ -1491,9 +1230,9 @@ export default function App() {
                 placeholder="Buscar homeowner, claim o dirección..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-8 py-1.5 bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-xl text-xs text-[#131b2e] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#eab308] focus:border-[#eab308] shadow-sm transition-all"
+                className="w-full pl-9 pr-8 py-1.5 bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-xl text-xs text-[#17314A] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#B77A4B] focus:border-[#B77A4B] shadow-sm transition-all"
               />
-              <div className="absolute left-7 top-1/2 -translate-y-1/2 text-slate-500">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
@@ -1510,7 +1249,7 @@ export default function App() {
 
               {/* Search Autocomplete Dropdown Results */}
               {searchTerm.trim() !== "" && (
-                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-[#E2E4EA] rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto divide-y divide-[#c6c6cd]/20">
+                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-[#E2E4EA] rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto divide-y divide-[#D8E0E6]/20">
                   {headerSearchResults.length === 0 ? (
                     <div className="p-4 text-xs text-slate-500 text-center font-medium">
                       No se encontraron casos que coincidan con "<span className="font-bold">{searchTerm}</span>".
@@ -1527,7 +1266,7 @@ export default function App() {
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-[#0F172A] group-hover:text-[#B8860B] transition-colors truncate">
+                            <span className="text-xs font-bold text-[#17314A] group-hover:text-[#B77A4B] transition-colors truncate">
                               {claim.name}
                             </span>
                             {claim.claimNumber && (
@@ -1555,8 +1294,15 @@ export default function App() {
 
             <div className="flex items-center gap-4">
 
+              {organizations.length > 1 && <label className="text-xs font-semibold text-[#17314A]">Empresa
+                <select aria-label="Cambiar empresa" value={activeOrganization?.id || ''} onChange={e => {
+                  const org = organizations.find(o => o.id === e.target.value); if (org) { setActiveOrganization(org); setSelectedInsuranceClaimId(''); }
+                }} className="ml-2 rounded-lg border bg-white p-2">
+                  {organizations.map(org => <option key={org.id} value={org.id}>{org.name}</option>)}
+                </select>
+              </label>}
               <div className="border-l border-gray-200 pl-4">
-                <NotificationBell userId={session.user.id} organizationId={activeOrganization?.id} />
+                <NotificationBell userId={session.user.id} organizationId={activeOrganization?.id} onNotificationClick={handleNotificationClick} />
               </div>
             </div>
           </div>
@@ -1564,23 +1310,42 @@ export default function App() {
 
         {/* View selections viewport */}
         <div className="flex flex-col flex-1 overflow-hidden">
+          <Suspense fallback={<div className="flex flex-1 items-center justify-center text-sm font-medium text-slate-500">Cargando sección…</div>}>
           {currentView === ViewType.DASHBOARD && (
-            <MainDashboard
-              kpis={[
-                { title: "Casos Activos", value: `${casosActivosCount}`, trend: "", trendDirection: "up", subtitle: "Total bajo gestión", icon: "check-circle" },
-                { title: "En disputa", value: `${enDisputaCount + esperandoScopeCount}`, trend: "", trendDirection: "up", subtitle: "Trámites con aseguradora", icon: "scale" },
-                { title: "Construidos", value: `${construidosCount}`, trend: "", trendDirection: "up", subtitle: "Obras finalizadas y en curso", icon: "hard-hat" },
-                { title: "Esp. Depreciación", value: `${esperandoDepreciacionCount}`, trend: "", trendDirection: "up", subtitle: "Falta recuperar fondos", icon: "clock" },
-                { title: "Finalizados", value: `${finalizadoCount}`, trend: "", trendDirection: "up", subtitle: "Casos cerrados", icon: "flag" }
-              ]}
-              alerts={userRole === "admin" ? criticalAlerts : []}
-              onResolveAlert={handleResolveAlert}
-              onNavigateToView={setCurrentView}
-              onNavigateToLead={handleNavigateToInsuranceClaim}
-              claims={filteredInsuranceClaims}
-              onToggleTask={handleToggleInsuranceClaimTask}
-              userRole={userRole}
-            />
+            userRole === "contractor" ? (
+              <ContractorDashboard
+                claims={filteredInsuranceClaims}
+                teamMembers={teamMembers}
+                currentUserId={session.user.id}
+                defaultTaskScope={canManageTeam ? "all" : "mine"}
+                onNavigateToView={setCurrentView}
+                onNavigateToLead={handleNavigateToInsuranceClaim}
+                onCreateClaim={() => {
+                  setSelectedInsuranceClaimId("");
+                  setOpenClaimFormOnEnter(true);
+                  setCurrentView(ViewType.INSURANCE_CLAIM);
+                }}
+                onToggleTask={handleToggleInsuranceClaimTask}
+                onAddTask={handleAddTask}
+              />
+            ) : (
+              <MainDashboard
+                kpis={[
+                  { title: "Casos Activos", value: `${casosActivosCount}`, trend: "", trendDirection: "up", subtitle: "Total bajo gestión", icon: "check-circle" },
+                  { title: "En disputa", value: `${enDisputaCount + esperandoScopeCount}`, trend: "", trendDirection: "up", subtitle: "Trámites con aseguradora", icon: "scale" },
+                  { title: "Construidos", value: `${construidosCount}`, trend: "", trendDirection: "up", subtitle: "Obras finalizadas y en curso", icon: "hard-hat" },
+                  { title: "Esp. Depreciación", value: `${esperandoDepreciacionCount}`, trend: "", trendDirection: "up", subtitle: "Falta recuperar fondos", icon: "clock" },
+                  { title: "Finalizados", value: `${finalizadoCount}`, trend: "", trendDirection: "up", subtitle: "Casos cerrados", icon: "flag" }
+                ]}
+                onNavigateToView={setCurrentView}
+                onNavigateToLead={handleNavigateToInsuranceClaim}
+                claims={filteredInsuranceClaims}
+                onToggleTask={handleToggleInsuranceClaimTask}
+                taskComposer={<ContractorDashboard composerOnly claims={filteredInsuranceClaims} teamMembers={teamMembers}
+                  currentUserId={session.user.id} onNavigateToView={setCurrentView} onNavigateToLead={handleNavigateToInsuranceClaim}
+                  onCreateClaim={() => setCurrentView(ViewType.INSURANCE_CLAIM)} onToggleTask={handleToggleInsuranceClaimTask} onAddTask={handleAddTask} />}
+              />
+            )
           )}
 
 
@@ -1592,9 +1357,6 @@ export default function App() {
                 onSelectLead={handleSelectInsuranceClaim}
                 onAddTimelineEvent={handleAddInsuranceClaimTimelineEvent}
                 onDeleteTimelineEvent={handleDeleteTimelineEvent}
-                onToggleTask={handleToggleInsuranceClaimTask}
-                onAddTask={handleAddTask}
-                onDeleteTask={handleDeleteTask}
                 onAddLead={handleAddInsuranceClaim}
                 onUploadDocuments={handleUploadDocuments}
                 onDeleteDocument={handleDeleteDocument}
@@ -1612,6 +1374,8 @@ export default function App() {
                 onUpdateLead={handleUpdateLead}
                 activeOrganizationId={activeOrganization?.id}
                 onNavigateToView={setCurrentView}
+                openCreateFormOnEnter={userRole === "contractor" && openClaimFormOnEnter}
+                onCreateFormOpened={() => setOpenClaimFormOnEnter(false)}
                 onMoveProject={handleMoveProject}
                 insuranceCompanies={availableInsuranceCompanies}
               />
@@ -1634,7 +1398,7 @@ export default function App() {
             />
           )}
 
-          {currentView === ViewType.FINANCIALS && (
+          {currentView === ViewType.FINANCIALS && userRole === "admin" && (
             <FinancialsView
               invoices={filteredInvoices}
               leads={[...leads, ...insuranceClaims]}
@@ -1654,16 +1418,33 @@ export default function App() {
             <ErrorBoundary>
               <TeamView
                 members={teamMembers}
-                onAddMember={handleAddTeamMember}
+                onAddMember={canManageTeam ? handleAddTeamMember : undefined}
                 onUpdateMember={handleUpdateTeamMember}
+                onUpdateStaffAccess={userRole === "admin" ? handleUpdateStaffAccess : undefined}
                 userRole={userRole}
                 organizations={organizations}
                 userCompany={contractorCompany}
-                companyInviteCode={activeOrganization?.invite_code}
+                companyInviteCode={canManageTeam && !activeOrganization?.is_internal ? activeOrganization?.invite_code : undefined}
+                activeOrganizationId={activeOrganization?.id}
                 currentUserId={session?.user?.id}
               />
             </ErrorBoundary>
           )}
+
+          {currentView === ViewType.SETTINGS && (
+            <ErrorBoundary>
+              <SettingsView
+                userRole={userRole}
+                session={session}
+                profile={profile}
+                onProfileUpdated={patch => setProfile(previous => previous ? { ...previous, ...patch } : previous)}
+                activeOrganization={activeOrganization}
+                canEditCompany={userRole === 'admin' || (activeOrganization?.membership_role === "owner" && !activeOrganization?.is_internal)}
+                onUpdateOrganizationBranding={handleUpdateOrganizationBranding}
+              />
+            </ErrorBoundary>
+          )}
+          </Suspense>
         </div>
 
       </main>

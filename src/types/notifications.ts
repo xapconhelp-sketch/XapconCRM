@@ -1,4 +1,4 @@
-export type NotificationType = "mention" | "status_changed" | "lead_created" | "task_assigned" | "document_uploaded";
+export type NotificationType = "mention" | "status_changed" | "lead_created" | "task_assigned" | "task_completed" | "document_uploaded";
 
 export interface Notification {
   id: string;

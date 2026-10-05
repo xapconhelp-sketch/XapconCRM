@@ -75,18 +75,18 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
 
   return (
     <nav
-      className={`hidden md:flex flex-col h-screen text-white fixed left-0 top-0 z-50 shrink-0 select-none transition-all duration-300 ${
-        collapsed ? "w-[68px]" : "w-[252px]"
+      className={`crm-sidebar hidden md:flex flex-col h-screen text-white fixed left-0 top-0 z-50 shrink-0 select-none transition-all duration-300 ${
+        collapsed ? "w-[76px]" : "w-[280px]"
       }`}
-      style={{ background: "#0D1117", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+      style={{ background: "linear-gradient(180deg, #172B40 0%, #102136 100%)", borderRight: "1px solid rgba(255,255,255,0.08)" }}
     >
       {/* Brand Header */}
-      <div className={`flex items-center border-b border-white/5 ${collapsed ? "justify-center py-4 px-2" : "justify-between px-5 py-4"}`}>
+      <div className={`flex items-center border-b border-white/10 ${collapsed ? "justify-center py-5 px-2" : "justify-between px-5 py-5"}`}>
         {!collapsed && (
           <img
             src={logo}
             alt="Xapcon Group"
-            className="h-8 w-auto object-contain"
+            className="h-9 w-auto object-contain"
           />
         )}
         <button
@@ -115,11 +115,13 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
       </div>
 
       {/* Footer */}
-      <div className="px-2 py-3 border-t border-white/5 space-y-0.5">
+      <div className="px-2 py-4 border-t border-white/10 space-y-1">
         <button
-          className={`btn-responsive nav-item-inactive flex items-center gap-3 text-sm transition-all duration-150 ${
-            collapsed ? "w-10 h-10 rounded-lg justify-center mx-auto" : "w-full px-4 py-2.5 rounded-lg"
-          }`}
+          onClick={() => onViewChange(ViewType.SETTINGS)}
+          aria-current={currentView === ViewType.SETTINGS ? "page" : undefined}
+          className={`btn-responsive flex items-center gap-3 text-sm transition-all duration-150 ${
+            currentView === ViewType.SETTINGS ? "nav-item-active" : "nav-item-inactive"
+          } ${collapsed ? "w-10 h-10 rounded-lg justify-center mx-auto" : "w-full px-4 py-2.5 rounded-lg"}`}
           title="Configuración"
         >
           <Settings className={`shrink-0 ${collapsed ? "w-5 h-5" : "w-4 h-4"}`} />

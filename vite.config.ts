@@ -1,14 +1,25 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import type { Plugin } from 'vite';
 import path from 'path';
+import { fileURLToPath } from 'node:url';
 import {defineConfig} from 'vite';
+import { contractorWeatherMiddleware } from './server/contractorWeather';
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+const contractorWeatherApi: Plugin = {
+  name: 'xapcon-contractor-weather-api',
+  configureServer(server) {
+    server.middlewares.use('/api/contractor-weather', contractorWeatherMiddleware);
+  },
+};
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [contractorWeatherApi, react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(projectRoot, '.'),
       },
     },
     server: {

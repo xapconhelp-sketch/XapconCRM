@@ -1,12 +1,10 @@
 import React from "react";
-import { KPI, CriticalAlert, ViewType, Lead, TaskItem } from "../types";
+import { KPI, ViewType, Lead, TaskItem } from "../types";
 import { 
   Users, 
   FileText, 
   HardHat, 
   DollarSign, 
-  ArrowUpRight, 
-  ArrowDownRight,
   TrendingUp,
   Clock,
   CheckCircle2,
@@ -16,23 +14,17 @@ import {
   PlusCircle,
   CheckSquare,
   Activity,
-  Flame,
-  ChevronRight,
-  BarChart3,
-  Zap,
   AlertCircle,
   Home
 } from "lucide-react";
 
 interface MainDashboardProps {
   kpis: KPI[];
-  alerts: CriticalAlert[];
-  onResolveAlert: (alert: CriticalAlert) => void;
+  taskComposer?: React.ReactNode;
   onNavigateToView: (view: ViewType) => void;
   onNavigateToLead: (leadId: string) => void;
   claims: Lead[];
   onToggleTask?: (leadId: string, taskId: string) => void;
-  userRole?: string;
 }
 
 const ICON_MAP: Record<string, any> = {
@@ -49,23 +41,13 @@ const ICON_MAP: Record<string, any> = {
   "plus-circle": PlusCircle
 };
 
-const KPI_THEMES = [
-  { bg: "from-[#0F172A] to-[#1e293b]", accent: "#eab308", iconBg: "bg-yellow-500/20", iconColor: "text-yellow-400", textColor: "text-white" },
-  { bg: "from-[#1e3a5f] to-[#1e40af]", accent: "#60a5fa", iconBg: "bg-blue-400/20", iconColor: "text-blue-300", textColor: "text-white" },
-  { bg: "from-[#064e3b] to-[#065f46]", accent: "#34d399", iconBg: "bg-emerald-400/20", iconColor: "text-emerald-300", textColor: "text-white" },
-  { bg: "from-[#4a1d96] to-[#5b21b6]", accent: "#c4b5fd", iconBg: "bg-violet-400/20", iconColor: "text-violet-300", textColor: "text-white" },
-  { bg: "from-[#7c2d12] to-[#9a3412]", accent: "#fb923c", iconBg: "bg-orange-400/20", iconColor: "text-orange-300", textColor: "text-white" },
-];
-
 export default function MainDashboard({
   kpis,
-  alerts,
-  onResolveAlert,
   onNavigateToView,
   onNavigateToLead,
   claims = [],
   onToggleTask,
-  userRole
+  taskComposer
 }: MainDashboardProps) {
 
   const parseEventDate = (ev: any) => {
@@ -105,11 +87,11 @@ export default function MainDashboard({
     .map(c => ({ claim: c, days: getInactivityDays(c) }))
     .sort((a, b) => b.days - a.days);
 
-  const getTaskDaysAgo = (taskId: string) => {
-    const parts = taskId.split("-");
-    const ts = parseInt(parts[1]);
-    if (isNaN(ts)) return 0;
-    return Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
+  const getTaskDaysAgo = (task: TaskItem) => {
+    const legacy = task.id.match(/^task-(\d{13})$/);
+    const ts = task.createdAt ? Date.parse(task.createdAt) : legacy ? Number(legacy[1]) : NaN;
+    if (!Number.isFinite(ts)) return 0;
+    return Math.max(0, Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24)));
   };
 
   const pendingTasks = React.useMemo(() => {
@@ -120,7 +102,7 @@ export default function MainDashboard({
       if (claim.status === "Finalizado" || claim.status === "Cancelado" || claim.status === "Negados") return;
       claim.tasks.forEach(t => {
         if (t.status !== "pending") return;
-        const key = `${claim.name}-${(t.title || "").trim().toLowerCase()}`;
+        const key = `${claim.id}-${t.id}`;
         if (!seen.has(key)) {
           seen.add(key);
           tasksList.push({ claimId: claim.id, claimName: claim.name, claimStatus: claim.status, task: t });
@@ -130,31 +112,9 @@ export default function MainDashboard({
     return tasksList;
   }, [claims]);
 
-  const PIPELINE_STAGES = [
-    { key: "Negados", label: "Negados", color: "#ef4444" },
-    { key: "Inspección", label: "Inspección", color: "#f59e0b" },
-    { key: "En disputa", label: "En Disputa", color: "#f97316" },
-    { key: "Esperando Scope", label: "Esp. Scope", color: "#8b5cf6" },
-    { key: "Aprobado y Suplementado", label: "Aprobado", color: "#3b82f6" },
-    { key: "Construcción", label: "Construcción", color: "#06b6d4" },
-    { key: "Esperando Depreciación", label: "Esp. Dep.", color: "#ec4899" },
-    { key: "Finalizado", label: "Finalizado", color: "#10b981" },
-    { key: "Cancelado", label: "Cancelado", color: "#6b7280" },
-  ];
-
-  const getStageCount = (key: string) =>
-    claims.filter(c => {
-      const knownStatuses = PIPELINE_STAGES.map(s => s.key);
-      if (key === "Inspección" && !knownStatuses.includes(c.status)) return true;
-      return c.status === key;
-    }).length;
-
-  const totalActive = claims.filter(c => c.status !== "Finalizado" && c.status !== "Cancelado").length;
-  const urgentClaims = claimsWithInactivity.filter(x => x.days >= 7).length;
-  const todayStr = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-
   return (
-    <div className="flex-1 overflow-y-auto bg-[#F0F2F7]" style={{ minHeight: 0 }}>
+    <div className="crm-workspace flex-1 overflow-y-auto bg-[#F0F2F7]" style={{ minHeight: 0 }}>
+      {taskComposer}
 
 
 
@@ -167,28 +127,24 @@ export default function MainDashboard({
           <div
             onClick={() => onNavigateToView(ViewType.PRODUCTION)}
             className="cursor-pointer group transition-transform duration-200 hover:-translate-y-1 filter drop-shadow-sm hover:drop-shadow-md"
-            style={{
-              clipPath: "polygon(50% 0%, 100% 18px, 100% 100%, 0% 100%, 0% 18px)",
-              background: "#0F172A",
-              padding: "1.5px",
-            }}
+              style={{ background: "#DCE4EA", padding: "1px", borderRadius: "16px" }}
           >
             <div
               className="w-full h-full bg-white p-4 pt-5 flex flex-col items-center justify-between text-center"
-              style={{ clipPath: "polygon(50% 0%, 100% 17px, 100% 100%, 0% 100%, 0% 17px)" }}
+              style={{ borderRadius: "15px" }}
             >
               {/* Roof Accent Top Bar inside the peak */}
-              <div className="w-12 h-1 bg-[#0F172A] rounded-full mb-1 opacity-90 mx-auto" />
+              <div className="w-10 h-1 bg-[#17314A] rounded-full mb-1 opacity-90 mx-auto" />
 
               <div className="flex items-center justify-center gap-1.5 w-full">
-                <div className="w-5 h-5 rounded bg-[#0F172A]/10 text-[#0F172A] group-hover:bg-[#0F172A] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+                <div className="w-5 h-5 rounded bg-[#17314A]/10 text-[#17314A] group-hover:bg-[#17314A] group-hover:text-white flex items-center justify-center transition-colors shrink-0">
                   <Home className="w-3 h-3" />
                 </div>
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest truncate">Proyectos</span>
               </div>
 
               <div className="my-1">
-                <span className="text-3xl font-black text-[#0F172A] leading-none">{claims.length}</span>
+                <span className="text-3xl font-black text-[#17314A] leading-none">{claims.length}</span>
               </div>
 
               <div className="pt-1.5 border-t border-slate-100 w-full text-center">
@@ -198,7 +154,7 @@ export default function MainDashboard({
           </div>
 
           {kpis.map((kpi, index) => {
-            const BRAND_COLORS = ["#EAB308", "#2563EB", "#0F172A"];
+            const BRAND_COLORS = ["#B77A4B", "#2563EB", "#17314A"];
             const accent = BRAND_COLORS[index % BRAND_COLORS.length];
             const Icon = ICON_MAP[kpi.icon] || FileText;
             return (
@@ -210,15 +166,11 @@ export default function MainDashboard({
                   else onNavigateToView(ViewType.PRODUCTION);
                 }}
                 className="cursor-pointer group transition-transform duration-200 hover:-translate-y-1 filter drop-shadow-sm hover:drop-shadow-md"
-                style={{
-                  clipPath: "polygon(50% 0%, 100% 18px, 100% 100%, 0% 100%, 0% 18px)",
-                  background: accent,
-                  padding: "1.5px",
-                }}
+                style={{ background: "#DCE4EA", padding: "1px", borderRadius: "16px" }}
               >
                 <div
                   className="w-full h-full bg-white p-4 pt-5 flex flex-col items-center justify-between text-center"
-                  style={{ clipPath: "polygon(50% 0%, 100% 17px, 100% 100%, 0% 100%, 0% 17px)" }}
+                  style={{ borderRadius: "15px" }}
                 >
                   {/* Roof Accent Top Bar inside the peak */}
                   <div className="w-12 h-1 rounded-full mb-1 opacity-90 mx-auto" style={{ background: accent }} />
@@ -231,7 +183,7 @@ export default function MainDashboard({
                   </div>
 
                   <div className="flex items-baseline justify-center gap-1 my-1">
-                    <span className="text-3xl font-black text-[#0F172A] leading-none">{kpi.value}</span>
+                    <span className="text-3xl font-black text-[#17314A] leading-none">{kpi.value}</span>
                     {kpi.trend && (
                       <span className={`text-[9px] font-bold ${kpi.trendDirection === "up" ? "text-emerald-500" : "text-red-400"}`}>
                         {kpi.trendDirection === "up" ? "↑" : "↓"} {kpi.trend}
@@ -259,11 +211,11 @@ export default function MainDashboard({
             {/* Header */}
             <div 
               className="flex items-center justify-between px-5 py-4 text-white"
-              style={{ background: 'linear-gradient(90deg, #0F172A 0%, #1e293b 50%, #0F172A 100%)' }}
+              style={{ background: 'linear-gradient(100deg, #17314A 0%, #25435B 100%)' }}
             >
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#eab308]/20 border border-[#eab308]/30 flex items-center justify-center">
-                  <CheckSquare className="w-4 h-4 text-[#eab308]" />
+                <div className="w-8 h-8 rounded-xl bg-[#B77A4B]/20 border border-[#B77A4B]/30 flex items-center justify-center">
+                  <CheckSquare className="w-4 h-4 text-[#B77A4B]" />
                 </div>
                 <div>
                   <h2 className="text-xs font-bold text-white uppercase tracking-wide">Tareas Pendientes</h2>
@@ -271,7 +223,7 @@ export default function MainDashboard({
                 </div>
               </div>
               {pendingTasks.length > 0 && (
-                <span className="min-w-[22px] h-5 px-1.5 bg-[#eab308] text-[#0F172A] text-[9px] font-black rounded-full flex items-center justify-center">{pendingTasks.length}</span>
+                <span className="min-w-[22px] h-5 px-1.5 bg-[#B77A4B] text-[#17314A] text-[9px] font-black rounded-full flex items-center justify-center">{pendingTasks.length}</span>
               )}
             </div>
 
@@ -284,8 +236,8 @@ export default function MainDashboard({
                   <p className="text-xs font-semibold text-slate-500">¡Todo al día! No hay tareas pendientes.</p>
                 </div>
               ) : (
-                pendingTasks.map(({ claimId, claimName, claimStatus, task }) => {
-                  const daysAgo = getTaskDaysAgo(task.id);
+                pendingTasks.map(({ claimId, claimName, task }) => {
+                  const daysAgo = getTaskDaysAgo(task);
                   const isUrgent = daysAgo >= 3;
                   return (
                     <div key={task.id} className={`px-5 py-3.5 hover:bg-slate-50/80 transition-colors duration-150 ${isUrgent ? "border-l-[3px] border-red-400 bg-red-50/20" : "border-l-[3px] border-transparent"}`}>
@@ -295,12 +247,12 @@ export default function MainDashboard({
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                            <span className="px-1.5 py-0.5 bg-[#0F172A] text-[#eab308] text-[8px] font-mono font-bold rounded-md">{claimName}</span>
+                            <span className="px-1.5 py-0.5 bg-[#17314A] text-[#B77A4B] text-[8px] font-mono font-bold rounded-md">{claimName}</span>
                             {task.assignedTo && (
                               <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-bold rounded-md">{task.assignedTo}</span>
                             )}
                           </div>
-                          <p className="text-xs font-semibold text-[#0F172A] leading-snug">{task.title}</p>
+                          <p className="text-xs font-semibold text-[#17314A] leading-snug">{task.title}</p>
                           <p className={`text-[10px] font-bold mt-0.5 ${isUrgent ? "text-red-500" : "text-slate-400"}`}>
                             {daysAgo === 0 ? "Asignado hoy" : `Hace ${daysAgo} día${daysAgo > 1 ? "s" : ""}`}
                             {isUrgent && " · URGENTE"}
@@ -309,7 +261,7 @@ export default function MainDashboard({
                         {onToggleTask && (
                           <button
                             onClick={() => onToggleTask(claimId, task.id)}
-                            className="shrink-0 flex items-center gap-1 px-3 py-1.5 bg-[#eab308] hover:bg-[#ca8a04] text-[#0F172A] font-bold text-[10px] rounded-lg transition-colors shadow-sm shadow-yellow-200"
+                            className="shrink-0 flex items-center gap-1 px-3 py-1.5 bg-[#B77A4B] hover:bg-[#955B32] text-[#17314A] font-bold text-[10px] rounded-lg transition-colors shadow-sm shadow-yellow-200"
                           >
                             <CheckCircle2 className="w-3 h-3" />
                             <span>Listo</span>
@@ -327,7 +279,7 @@ export default function MainDashboard({
           <div className="lg:col-span-6 bg-white rounded-2xl shadow-sm border border-[#E2E4EA] flex flex-col overflow-hidden">
             <div 
               className="flex items-center justify-between px-5 py-4 text-white"
-              style={{ background: 'linear-gradient(90deg, #0F172A 0%, #1e293b 50%, #0F172A 100%)' }}
+              style={{ background: 'linear-gradient(100deg, #17314A 0%, #25435B 100%)' }}
             >
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-emerald-400/20 border border-emerald-400/30 flex items-center justify-center">
@@ -364,7 +316,7 @@ export default function MainDashboard({
                     >
                       <div className={`w-2 h-2 rounded-full shrink-0 ${urgencyConfig.dot}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-[#0F172A] truncate group-hover:text-[#B8860B] transition-colors">{claim.name}</p>
+                        <p className="text-xs font-semibold text-[#17314A] truncate group-hover:text-[#B8860B] transition-colors">{claim.name}</p>
                         <p className="text-[9px] text-slate-400 truncate">{claim.address || "Sin dirección"} · {claim.status}</p>
                       </div>
                       <span className={`shrink-0 text-[10px] font-black px-2 py-1 rounded-lg ${urgencyConfig.badge}`}>

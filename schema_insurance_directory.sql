@@ -21,47 +21,53 @@ CREATE TABLE IF NOT EXISTS public.insurance_directory (
 -- Habilitar Row Level Security (RLS)
 ALTER TABLE public.insurance_directory ENABLE ROW LEVEL SECURITY;
 
--- Políticas de RLS:
--- 1. Permitir lectura a todos los usuarios (autenticados y anónimos)
-DO $$ 
+-- Directory lookups support signed-in contractor forms. Only superadmins may
+-- modify the shared directory; the UI check alone is not an authorization rule.
+DO $$
+DECLARE policy_row RECORD;
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'insurance_directory' AND policyname = 'Permitir lectura de directorio a todos'
-  ) THEN
-    CREATE POLICY "Permitir lectura de directorio a todos" 
-      ON public.insurance_directory FOR SELECT USING (true);
-  END IF;
-END $$;
+  FOR policy_row IN
+    SELECT policyname FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'insurance_directory'
+  LOOP
+    EXECUTE format('DROP POLICY %I ON public.insurance_directory', policy_row.policyname);
+  END LOOP;
+END;
+$$;
 
--- 2. Permitir inserción
-DO $$ 
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'insurance_directory' AND policyname = 'Permitir insercion en directorio'
-  ) THEN
-    CREATE POLICY "Permitir insercion en directorio" 
-      ON public.insurance_directory FOR INSERT WITH CHECK (true);
-  END IF;
-END $$;
+CREATE POLICY insurance_directory_authenticated_read
+  ON public.insurance_directory FOR SELECT TO authenticated
+  USING (auth.uid() IS NOT NULL);
 
--- 3. Permitir actualización
-DO $$ 
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'insurance_directory' AND policyname = 'Permitir actualizacion en directorio'
-  ) THEN
-    CREATE POLICY "Permitir actualizacion en directorio" 
-      ON public.insurance_directory FOR UPDATE USING (true);
-  END IF;
-END $$;
+CREATE POLICY insurance_directory_superadmin_insert
+  ON public.insurance_directory FOR INSERT TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid() AND profiles.role = 'super_admin'
+    )
+  );
 
--- 4. Permitir eliminación
-DO $$ 
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'insurance_directory' AND policyname = 'Permitir eliminacion en directorio'
-  ) THEN
-    CREATE POLICY "Permitir eliminacion en directorio" 
-      ON public.insurance_directory FOR DELETE USING (true);
-  END IF;
-END $$;
+CREATE POLICY insurance_directory_superadmin_update
+  ON public.insurance_directory FOR UPDATE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid() AND profiles.role = 'super_admin'
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid() AND profiles.role = 'super_admin'
+    )
+  );
+
+CREATE POLICY insurance_directory_superadmin_delete
+  ON public.insurance_directory FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid() AND profiles.role = 'super_admin'
+    )
+  );

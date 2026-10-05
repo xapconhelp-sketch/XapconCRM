@@ -230,11 +230,53 @@ export interface DbInsuranceCompany {
 }
 
 const LOCAL_STORAGE_CUSTOM_CONTACTS_KEY = "xapcon_insurance_custom_contacts";
+const LOCAL_STORAGE_DIRECTORY_EDITS_KEY = "xapcon_insurance_directory_edits";
+const LOCAL_STORAGE_DIRECTORY_DELETED_KEY = "xapcon_insurance_directory_deleted";
+const DIRECTORY_EMAIL_OVERRIDE = "__xapcon_directory_email_override__";
+const DIRECTORY_DELETED = "__xapcon_directory_deleted__";
 
 export interface CustomInsuranceContact {
   emails: string[];
   phones: string[];
   notes?: string;
+  emailsOverridden?: boolean;
+}
+
+export interface InsuranceDirectoryEdit {
+  emails: string[];
+  notes: string;
+}
+
+export function getInsuranceDirectoryKey(companyName: string): string {
+  const query = companyName.toLowerCase().trim();
+  const master = MASTER_INSURANCE_COMPANIES.find((company) =>
+    company.name.toLowerCase().trim() === query || company.aliases.some((alias) => alias.toLowerCase().trim() === query),
+  );
+  return master?.id || query.replace(/[^a-z0-9]/g, "-");
+}
+
+export function getInsuranceDirectoryEdits(): Record<string, InsuranceDirectoryEdit> {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_STORAGE_DIRECTORY_EDITS_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+export function getDeletedInsuranceDirectoryKeys(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_STORAGE_DIRECTORY_DELETED_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+export function restoreInsuranceDirectoryCompany(companyId: string) {
+  persistDeletedDirectoryKeys(getDeletedInsuranceDirectoryKeys().filter((key) => key !== companyId));
+}
+
+function persistDeletedDirectoryKeys(keys: string[]) {
+  localStorage.setItem(LOCAL_STORAGE_DIRECTORY_DELETED_KEY, JSON.stringify(Array.from(new Set(keys))));
 }
 
 export function getSavedCustomContacts(): Record<string, CustomInsuranceContact> {
@@ -285,9 +327,33 @@ export async function fetchDbInsuranceCompanies(): Promise<DbInsuranceCompany[]>
 
     if (data && data.length > 0) {
       const local = getSavedCustomContacts();
+      const edits = getInsuranceDirectoryEdits();
+      const deletedKeys = getDeletedInsuranceDirectoryKeys();
       data.forEach((item: any) => {
         const key = item.name.toLowerCase().trim();
+        const directoryKey = getInsuranceDirectoryKey(item.name);
+        const aliases = Array.isArray(item.aliases) ? item.aliases : [];
+        if (aliases.includes(DIRECTORY_DELETED)) {
+          deletedKeys.push(directoryKey);
+          delete local[key];
+          delete local[directoryKey];
+          delete edits[directoryKey];
+          return;
+        }
+
         const existing = local[key] || { emails: [], phones: [], notes: "" };
+        if (aliases.includes(DIRECTORY_EMAIL_OVERRIDE)) {
+          const emails = Array.isArray(item.emails) ? item.emails : [];
+          edits[directoryKey] = { emails, notes: item.notes || "" };
+          local[key] = {
+            emails,
+            phones: Array.from(new Set([...existing.phones, ...(Array.isArray(item.phones) ? item.phones : [])])),
+            notes: item.notes || "",
+            emailsOverridden: true,
+          };
+          return;
+        }
+
         const emails = Array.from(new Set([...existing.emails, ...(Array.isArray(item.emails) ? item.emails : [])]));
         const phones = Array.from(new Set([...existing.phones, ...(Array.isArray(item.phones) ? item.phones : [])]));
         local[key] = {
@@ -296,6 +362,8 @@ export async function fetchDbInsuranceCompanies(): Promise<DbInsuranceCompany[]>
           notes: item.notes || existing.notes || ""
         };
       });
+      localStorage.setItem(LOCAL_STORAGE_DIRECTORY_EDITS_KEY, JSON.stringify(edits));
+      persistDeletedDirectoryKeys(deletedKeys);
       localStorage.setItem(LOCAL_STORAGE_CUSTOM_CONTACTS_KEY, JSON.stringify(local));
       return data;
     }
@@ -333,11 +401,18 @@ export async function saveCustomContactToDb(
       name: companyName.trim(),
       emails: emails,
       phones: phones,
+      aliases: record.emailsOverridden ? [DIRECTORY_EMAIL_OVERRIDE] : [],
       notes: contact.notes !== undefined ? contact.notes : (record.notes || ""),
       portal_url: contact.portalUrl || "",
       website: contact.website || "",
       updated_at: new Date().toISOString()
     };
+
+    if (record.emailsOverridden) {
+      const edits = getInsuranceDirectoryEdits();
+      edits[getInsuranceDirectoryKey(companyName)] = { emails, notes: payload.notes };
+      localStorage.setItem(LOCAL_STORAGE_DIRECTORY_EDITS_KEY, JSON.stringify(edits));
+    }
 
     const { error } = await supabase
       .from('insurance_directory')
@@ -352,6 +427,68 @@ export async function saveCustomContactToDb(
   } catch (err: any) {
     console.error("Excepción guardando en Supabase:", err);
     return { success: false, error: err?.message };
+  }
+}
+
+export async function saveInsuranceDirectoryEdit(
+  companyId: string,
+  companyName: string,
+  edit: InsuranceDirectoryEdit,
+): Promise<{ success: boolean; error?: string }> {
+  const allEdits = getInsuranceDirectoryEdits();
+  allEdits[companyId] = { emails: edit.emails, notes: edit.notes };
+  localStorage.setItem(LOCAL_STORAGE_DIRECTORY_EDITS_KEY, JSON.stringify(allEdits));
+
+  const contacts = getSavedCustomContacts();
+  const contactKey = companyName.toLowerCase().trim();
+  const existing = contacts[contactKey] || { emails: [], phones: [], notes: "" };
+  contacts[contactKey] = { ...existing, emails: edit.emails, notes: edit.notes, emailsOverridden: true };
+  localStorage.setItem(LOCAL_STORAGE_CUSTOM_CONTACTS_KEY, JSON.stringify(contacts));
+
+  try {
+    const { error } = await supabase.from("insurance_directory").upsert({
+      name: companyName.trim(),
+      aliases: [DIRECTORY_EMAIL_OVERRIDE],
+      emails: edit.emails,
+      phones: existing.phones || [],
+      notes: edit.notes,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "name" });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "No fue posible sincronizar los cambios." };
+  }
+}
+
+export async function deleteInsuranceDirectoryCompany(
+  companyId: string,
+  companyName: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase.from("insurance_directory").upsert({
+      name: companyName.trim(),
+      aliases: [DIRECTORY_DELETED],
+      emails: [],
+      phones: [],
+      notes: "",
+      portal_url: "",
+      website: "",
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "name" });
+    if (error) return { success: false, error: error.message };
+
+    persistDeletedDirectoryKeys([...getDeletedInsuranceDirectoryKeys(), companyId]);
+    const contacts = getSavedCustomContacts();
+    delete contacts[companyName.toLowerCase().trim()];
+    delete contacts[companyId];
+    localStorage.setItem(LOCAL_STORAGE_CUSTOM_CONTACTS_KEY, JSON.stringify(contacts));
+    const edits = getInsuranceDirectoryEdits();
+    delete edits[companyId];
+    localStorage.setItem(LOCAL_STORAGE_DIRECTORY_EDITS_KEY, JSON.stringify(edits));
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "No fue posible eliminar la aseguradora." };
   }
 }
 

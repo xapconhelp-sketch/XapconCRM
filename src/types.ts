@@ -5,7 +5,8 @@ export enum ViewType {
   PRODUCTION = "production",
   FINANCIALS = "financials",
   INSURANCE_DIRECTORY = "insurance_directory",
-  TEAM = "team"
+  TEAM = "team",
+  SETTINGS = "settings"
 }
 
 export interface InsuranceContact {
@@ -67,6 +68,7 @@ export interface Lead {
   insuranceEmail1?: string;
   insuranceEmail2?: string;
   notes?: string;
+  insuranceNotes?: string;
   adjusterName: string;
   assignedRep: string;
   assignedRepAvatar: string;
@@ -92,6 +94,7 @@ export interface TimelineEvent {
   date?: string;
   duration?: string;
   photos?: string[];
+  mentionedUserIds?: string[];
 }
 
 export interface DocumentItem {
@@ -109,7 +112,12 @@ export interface TaskItem {
   dueDate: string;
   status: "pending" | "completed";
   priority?: "high" | "medium" | "low";
+  kind?: "task" | "inspection" | "adjuster_meeting" | "installation";
+  category?: "general" | "pending_document" | "visit_homeowner" | "call_homeowner" | "call_adjuster";
+  scheduledTime?: string;
   assignedTo?: string;
+  assignedToId?: string;
+  createdAt?: string;
   createdById?: string;
   createdBy?: string;
 }
@@ -161,6 +169,7 @@ export interface Estimate {
   subtotalMaterials: number;
   subtotalLabor: number;
   subtotalFees: number;
+  baseFee?: number;
   subtotalGross: number;
   taxRate: number; // e.g., 0.0825
   taxAmount: number;
@@ -170,22 +179,6 @@ export interface Estimate {
   termsAndCommitment?: string;
   warrantyType?: string;
   warrantyTypes?: string[];
-}
-
-export interface KanbanProject {
-  id: string;
-  title: string;
-  address: string;
-  projectCode: string;
-  category: string;
-  durationEstimate: string;
-  status: "scheduled" | "ordered" | "in_progress" | "qa";
-  statusText?: string;
-  progress?: number;
-  crews?: { name: string; avatar: string }[];
-  isWarning?: boolean;
-  warningText?: string;
-  company?: string;
 }
 
 export interface Invoice {
@@ -202,7 +195,7 @@ export interface TeamMember {
   id: string;
   name: string;
   role: string;
-  roleCategory: "sales" | "pm" | "install" | "admin" | "contractor";
+  roleCategory: "sales" | "pm" | "install" | "admin" | "staff" | "contractor";
   avatar: string;
   status: "Available" | "On Site (Busy)" | "Offline";
   activeLeads?: number;
@@ -214,32 +207,13 @@ export interface TeamMember {
   company?: string;
   companyInviteCode?: string;
   organizationId?: string;
+  organizationIds?: string[];
   email?: string;
   phone?: string;
   companyEmail?: string;
   companyWebsite?: string;
   registrationNumber?: string;
   licenseNumber?: string;
-}
-
-export interface CriticalAlert {
-  id: string;
-  type: "document" | "material" | "safety" | "inspection";
-  title: string;
-  description: string;
-  targetId?: string;
-  buttonText: string;
-}
-
-export interface InspectionAppointment {
-  id: string;
-  dateTime: string;
-  timeRemaining?: string;
-  clientName: string;
-  address: string;
-  type: string;
-  inspectorName: string;
-  inspectorInitials: string;
 }
 
 export interface MaterialItem {

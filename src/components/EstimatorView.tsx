@@ -4,21 +4,19 @@ import { useAuth } from "../contexts/AuthContext";
 import logoXapcon from "../../LogoXapcon.png";
 import MaterialsCatalogModal from "./MaterialsCatalogModal";
 import globalMaterials from "../data/materials.json";
-import { 
-  FileSignature, 
-  Trash2, 
-  Plus, 
-  Calculator, 
-  AlertTriangle, 
-  CheckCircle2, 
-  FileText, 
+import { retailDefaults, calculateRetailPricing } from '../lib/retailPricing.js';
+import {
+  FileSignature,
+  Trash2,
+  Plus,
+  Calculator,
+  CheckCircle2,
+  FileText,
   Users,
   Search,
   Download,
   Mail,
   X,
-  Send,
-  Loader2,
   FileCheck2,
   FileSpreadsheet
 } from "lucide-react";
@@ -40,6 +38,11 @@ export default function EstimatorView({
 }: EstimatorViewProps) {
   const { profile, activeOrganization } = useAuth();
   const userRole = profile?.role === 'super_admin' ? 'admin' : 'contractor';
+  const pdfPrimaryColor = activeOrganization?.brand_primary_color || "#17314A";
+  const pdfAccentColor = activeOrganization?.brand_accent_color || "#B77A4B";
+  const pdfUsesOrganizationBranding = userRole === "contractor" || Boolean(activeOrganization);
+  const pdfCompanyLogo = activeOrganization?.logo_url || (userRole === "contractor" ? profile?.avatar_url : undefined);
+  const pdfCompanyName = activeOrganization?.company_name || activeOrganization?.name || (userRole === "contractor" ? profile?.full_name : "Xapcon Group") || "Roofing Contractor";
 
   // Master-Detail State
   const [selectedLeadId, setSelectedLeadId] = useState<string>("");
@@ -56,16 +59,16 @@ export default function EstimatorView({
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newDesc, setNewDesc] = useState("");
   const [newCategory, setNewCategory] = useState<"material" | "labor" | "fee">("material");
-  const [newQty, setNewQty] = useState(1);
+  const [newQty, setNewQty] = useState("1");
   const [newUnit, setNewUnit] = useState("SQ");
-  const [newPrice, setNewPrice] = useState(100);
+  const [newPrice, setNewPrice] = useState("100");
+  const [itemNumericDrafts, setItemNumericDrafts] = useState<Record<string, string>>({});
 
   // Catalog States
   const [showCatalogModal, setShowCatalogModal] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
 
-  // Simulated email actions
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  // Feedback for estimate actions.
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
@@ -90,34 +93,15 @@ export default function EstimatorView({
     items: [],
     subtotalMaterials: 0,
     subtotalLabor: 0,
-    subtotalFees: 350,
-    subtotalGross: 350,
-    taxRate: 0.0825,
-    taxAmount: 28.88,
-    total: 378.88,
+    ...retailDefaults(activeOrganization),
     profitMargin: 0
   };
 
   // Helper: Recalculate Estimate
   const recalculate = (items: EstimateItem[], currentEst: Estimate): Estimate => {
-    let subMaterials = 0;
-    let subLabor = 0;
-    let subFees = 350; // default permits & fees pass-through
-
-    items.forEach((item) => {
-      item.total = item.qty * item.unitPrice;
-      if (item.category === "material") {
-        subMaterials += item.total;
-      } else if (item.category === "labor") {
-        subLabor += item.total;
-      } else {
-        subFees += item.total;
-      }
-    });
-
-    const subGross = subMaterials + subLabor + subFees;
-    const taxAmount = Math.round(subGross * 0.0825 * 100) / 100;
-    const total = Math.round((subGross + taxAmount) * 100) / 100;
+    items = items.map(item => ({ ...item, total: item.qty * item.unitPrice }));
+    const pricing = calculateRetailPricing(items, currentEst);
+    const subGross = pricing.subtotalGross;
 
     // Calculate realistic cost based on materials and crew labor costs
     let totalCost = 0;
@@ -143,12 +127,7 @@ export default function EstimatorView({
     return {
       ...currentEst,
       items,
-      subtotalMaterials: subMaterials,
-      subtotalLabor: subLabor,
-      subtotalFees: subFees,
-      subtotalGross: subGross,
-      taxAmount,
-      total,
+      ...pricing,
       profitMargin
     };
   };
@@ -160,6 +139,27 @@ export default function EstimatorView({
     );
     const updatedEst = recalculate(updatedItems, activeEstimate);
     onUpdateLeadEstimate(selectedLead.id, updatedEst);
+  };
+
+  const updateItemNumericDraft = (itemId: string, field: "qty" | "unitPrice", rawValue: string) => {
+    if (!/^\d*\.?\d*$/.test(rawValue)) return;
+    const draftKey = `${itemId}:${field}`;
+    setItemNumericDrafts(current => ({ ...current, [draftKey]: rawValue }));
+    if (rawValue === "" || rawValue === ".") return;
+
+    const value = Number(rawValue);
+    const item = activeEstimate.items.find(current => current.id === itemId);
+    if (!item || !Number.isFinite(value)) return;
+    handleUpdateItem(itemId, field === "qty" ? value : item.qty, field === "unitPrice" ? value : item.unitPrice);
+  };
+
+  const clearItemNumericDraft = (itemId: string, field: "qty" | "unitPrice") => {
+    const draftKey = `${itemId}:${field}`;
+    setItemNumericDrafts(current => {
+      const next = { ...current };
+      delete next[draftKey];
+      return next;
+    });
   };
 
   const handleAddItem = (e: React.FormEvent) => {
@@ -250,8 +250,8 @@ export default function EstimatorView({
     } else {
       updatedTypes = [...currentTypes, optId];
     }
-    const updatedEst = { 
-      ...activeEstimate, 
+    const updatedEst = {
+      ...activeEstimate,
       warrantyTypes: updatedTypes,
       warrantyType: undefined
     };
@@ -274,7 +274,7 @@ export default function EstimatorView({
       insuranceProvider: "",
       claimNumber: "",
       adjusterName: "N/A",
-      assignedRep: "Michael Chen",
+      assignedRep: profile?.full_name || "Por asignar",
       assignedRepAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCOMn-jxxsxze-KxE7RjITjibnMpECd9pRZt1yZyyDI5eazYLGRCAFWs9B1gPugfJKxBDA-yro9u2C0jFV-hNcuCsA2C5HKO4x0IDFsMjuyEEdVA779oxdqiVl1wcSGhBwJAFEY6SMnvjhwRmD-MgiRxcXe5-EEND8x0mJLrnlHXmvXrCH8fuMGbKw-yA8vlL8HA10YP-v5XdlZ1J1tU5QaON6ngK6M9bPDxJzwpKF5OBqDCEKUTYULl2f224zGtFpozg6XEPqYAUC"
     });
 
@@ -294,32 +294,17 @@ export default function EstimatorView({
     window.print();
   };
 
-  // Send email to HO
-  const handleSendEmail = () => {
-    if (!activeEstimate.clientEmail) {
-      alert("Por favor, introduce un correo electrónico para el Homeowner.");
-      return;
-    }
-    setIsSendingEmail(true);
-    setTimeout(() => {
-      setIsSendingEmail(false);
-      setToastMessage(`¡Estimado enviado con éxito a ${activeEstimate.clientEmail}!`);
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 4000);
-    }, 2000);
-  };
-
   // Filtering
-  const filteredLeads = leads.filter(l => 
-    l.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredLeads = leads.filter(l =>
+    l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (l.address && l.address.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const isMarginUnderStandard = activeEstimate.profitMargin < 30;
 
   return (
-    <div className="flex-1 flex h-screen overflow-hidden bg-[#f7f9fb]">
-      
+    <div className="flex-1 flex h-screen overflow-hidden bg-[#F5F7F8]">
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 
@@ -331,7 +316,7 @@ export default function EstimatorView({
           #print-area, #print-area * {
             visibility: visible;
           }
-          
+
           /* Reset parent structures to prevent shifts, margins, and cut-off content on print */
           body,
           #root,
@@ -352,7 +337,7 @@ export default function EstimatorView({
             border: none !important;
             background: transparent !important;
           }
-          
+
           #print-area {
             position: relative !important;
             width: 100% !important;
@@ -364,30 +349,30 @@ export default function EstimatorView({
             font-size: 11px !important;
             line-height: 1.6 !important;
           }
-          
+
           /* Page setup - Letters size */
           @page {
             size: letter;
             margin: 1.8cm 1.5cm;
           }
-          
+
           .no-print {
             display: none !important;
           }
-          
+
           /* Clean typography */
           h1, h2, h3, h4 {
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
-            color: #0f172a !important;
+            color: #17314A !important;
           }
-          
+
           /* Homeowner card columns layout (4 columns on print) */
           #print-area .lg\:grid-cols-4 {
             display: grid !important;
             grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
             gap: 16px !important;
           }
-          
+
           #print-area label {
             color: #64748B !important;
             font-weight: 700 !important;
@@ -398,18 +383,18 @@ export default function EstimatorView({
             display: block !important;
             font-family: 'Plus Jakarta Sans', sans-serif !important;
           }
-          
+
           #print-area input {
             background: transparent !important;
             border: none !important;
             padding: 0 !important;
             margin: 0 !important;
-            color: #0f172a !important;
+            color: #17314A !important;
             font-weight: 600 !important;
             font-size: 11px !important;
             width: 100% !important;
           }
-          
+
           /* Table styling - modern, borderless rows with bottom borders */
           #print-area table {
             width: 100% !important;
@@ -418,16 +403,16 @@ export default function EstimatorView({
             margin-bottom: 24px !important;
             font-size: 10px !important;
           }
-          
+
           #print-area th, #print-area td {
             border: none !important;
             border-bottom: 1px solid #E2E8F0 !important;
             padding: 10px 12px !important;
             text-align: left !important;
           }
-          
+
           #print-area th {
-            background-color: #0F172A !important;
+            background-color: #17314A !important;
             color: #FFFFFF !important;
             font-weight: 700 !important;
             text-transform: uppercase !important;
@@ -437,39 +422,39 @@ export default function EstimatorView({
             border-bottom: none !important;
             padding: 10px 12px !important;
           }
-          
+
           #print-area th:first-child {
             border-top-left-radius: 8px !important;
             border-bottom-left-radius: 8px !important;
           }
-          
+
           #print-area th:last-child {
             border-top-right-radius: 8px !important;
             border-bottom-right-radius: 8px !important;
           }
-          
+
           #print-area tr:last-child td {
             border-bottom: none !important;
           }
-          
+
           /* Table row break management */
           #print-area tr {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
-          
+
           #print-area thead {
             display: table-header-group !important;
           }
-          
+
           #print-area .border-t {
             border-color: #E2E8F0 !important;
           }
-          
+
           #print-area .text-right {
             text-align: right !important;
           }
-          
+
           /* Signature blocks (2 columns, avoid breaking) */
           #print-area .print\:grid {
             display: grid !important;
@@ -479,34 +464,123 @@ export default function EstimatorView({
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
-          
+
           #print-area .border-b {
             border-bottom: 1px solid #CBD5E1 !important;
           }
+
+          @page {
+            size: letter;
+            margin: 14mm 15mm 16mm;
+          }
+
+          #print-area > :not(.pdf-document) {
+            display: none !important;
+          }
+
+          #print-area .pdf-document {
+            display: block !important;
+            color: #25364a !important;
+            font-family: Arial, Helvetica, sans-serif !important;
+            font-size: 9pt !important;
+            line-height: 1.45 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          .pdf-document * {
+            box-sizing: border-box;
+          }
+
+          #print-area .pdf-header {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 22px;
+            padding: 19px 20px;
+            background: #ffffff !important;
+            color: #17314a !important;
+            border: 1px solid #e0e7ec;
+            border-top: 3px solid var(--pdf-primary, #17314a);
+            border-bottom: 2px solid var(--pdf-accent, #b77a4b);
+            border-radius: 9px;
+            page-break-inside: avoid;
+          }
+
+          .pdf-brand { display: flex; flex: 1 1 auto; align-items: center; gap: 14px; min-width: 0; }
+          .pdf-logo-frame { display: flex; width: 164px; height: 77px; flex: 0 0 164px; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #e5eaee; border-radius: 9px; background: #ffffff !important; }
+          .pdf-logo { display: block; width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; padding: 0; border: 0; border-radius: 0; background: transparent !important; }
+          #print-area .pdf-logo-placeholder { width: 72px; height: 64px; flex: 0 0 72px; color: var(--pdf-primary, #17314a) !important; background: #f7f9fa !important; font-weight: 700; }
+          #print-area .pdf-brand-name { margin: 0; color: var(--pdf-primary, #17314a) !important; font-size: 17pt; line-height: 1.15; font-weight: 750; letter-spacing: -.02em; }
+          #print-area .pdf-brand-meta { max-width: 330px; margin-top: 6px; color: #657583 !important; font-size: 7.5pt; line-height: 1.5; }
+          #print-area .pdf-doc-label { display: inline-flex; align-items: center; gap: 6px; color: var(--pdf-primary, #17314a) !important; font-size: 6.5pt; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+          #print-area .pdf-doc-label::before { content: ""; display: inline-block; width: 14px; height: 2px; border-radius: 2px; background: var(--pdf-accent, #b77a4b); }
+          #print-area .pdf-doc-title { margin: 5px 0 0; color: var(--pdf-primary, #17314a) !important; font-size: 19pt; line-height: 1.1; font-weight: 750; letter-spacing: -.02em; }
+          .pdf-doc-meta { min-width: 190px; flex-shrink: 0; padding: 10px 13px; border-left: 2px solid var(--pdf-accent, #b77a4b); border-radius: 0 7px 7px 0; background: #f5f7f8 !important; background: color-mix(in srgb, var(--pdf-primary, #17314a) 5%, #ffffff) !important; text-align: left; }
+          .pdf-ref-label { margin-top: 9px; color: #71808c !important; font-size: 6.5pt; text-transform: uppercase; letter-spacing: .12em; }
+          .pdf-ref-value { color: var(--pdf-primary, #17314a) !important; font-family: Consolas, monospace; font-size: 9.5pt; font-weight: 700; }
+          .pdf-status { display: inline-block; margin-top: 7px; border: 1px solid #d6dfe5; border-radius: 999px; padding: 3px 8px; color: var(--pdf-primary, #17314a) !important; background: #fff !important; font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+          .pdf-section { margin-top: 22px; page-break-inside: avoid; }
+          .pdf-section-title { display: flex; align-items: center; gap: 9px; margin: 0 0 10px; color: var(--pdf-primary, #17314a) !important; font-size: 9pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+          .pdf-section-title::before { content: ""; display: inline-block; width: 3px; height: 14px; background: var(--pdf-accent, #b77a4b); }
+          .pdf-client-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(58px, auto); gap: 8px; min-width: 0; border: 0; }
+          .pdf-client-cell { display: flex; min-width: 0; min-height: 58px; flex-direction: column; justify-content: center; padding: 10px 12px; border: 1px solid #e0e7ec; border-left: 2px solid var(--pdf-accent, #b77a4b); border-radius: 7px; background: #f8fafb !important; }
+          .pdf-field-label { display: block; min-width: 0; margin-bottom: 5px; color: #6c7c8a !important; font-size: 6.5pt; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+          .pdf-field-value { display: block; min-width: 0; max-width: 100%; color: #17314a !important; font-size: 9pt; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; word-break: break-word; white-space: normal !important; }
+          #print-area .pdf-table { width: 100% !important; margin: 0 !important; border-collapse: collapse; table-layout: fixed; }
+          #print-area .pdf-table th { padding: 9px 8px !important; background: #e9eef1 !important; color: #405367 !important; border-bottom: 1px solid #cbd5dc !important; font-size: 6.5pt !important; letter-spacing: .08em; text-transform: uppercase; }
+          #print-area .pdf-table td { padding: 9px 8px !important; border-bottom: 1px solid #e3e8eb !important; color: #25364a !important; font-size: 8pt; vertical-align: top; }
+          #print-area .pdf-table tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+          .pdf-table .pdf-col-desc { width: 48%; }
+          .pdf-table .pdf-col-type { width: 14%; }
+          .pdf-table .pdf-col-qty { width: 10%; }
+          .pdf-table .pdf-col-unit { width: 9%; }
+          .pdf-table .pdf-col-price { width: 10%; }
+          .pdf-table .pdf-col-total { width: 9%; }
+          .pdf-table .pdf-right { text-align: right !important; }
+          .pdf-table .pdf-center { text-align: center !important; }
+          .pdf-category { color: #6c7c8a !important; font-size: 7pt !important; text-transform: capitalize; }
+          .pdf-empty { padding: 20px !important; color: #718096 !important; text-align: center !important; font-style: italic; }
+          .pdf-bottom-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 24px; align-items: start; }
+          .pdf-note { padding: 12px 14px; border-left: 2px solid #b77a4b; background: #f5f7f8 !important; color: #526574 !important; font-size: 8pt; }
+          .pdf-totals { border: 1px solid #d7e0e6; }
+          .pdf-total-row { display: flex; justify-content: space-between; gap: 16px; padding: 8px 11px; border-bottom: 1px solid #e3e8eb; color: #526574 !important; font-size: 8pt; }
+          .pdf-total-row strong { color: #17314a !important; font-family: Consolas, monospace; font-size: 8pt; }
+          .pdf-grand-total { padding: 12px 11px; background: var(--pdf-primary, #17314a) !important; color: white !important; }
+          .pdf-grand-total span, .pdf-grand-total strong { color: white !important; }
+          .pdf-grand-total strong { font-size: 14pt; }
+          .pdf-subsection-label { margin: 12px 0 5px; color: #6c7c8a !important; font-size: 6.5pt; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+          .pdf-terms { color: #526574 !important; font-size: 8pt; white-space: pre-wrap; }
+          .pdf-warranties { margin: 6px 0 0; padding-left: 16px; color: #526574 !important; font-size: 8pt; }
+          .pdf-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; margin-top: 36px; page-break-inside: avoid; }
+          .pdf-signature-line { height: 34px; border-bottom: 1px solid #82909b; }
+          .pdf-signature-label { margin-top: 7px; color: #526574 !important; font-size: 7pt; }
+          .pdf-footer { margin-top: 24px; padding-top: 8px; border-top: 1px solid #d7e0e6; color: #82909b !important; font-size: 6.5pt; display: flex; justify-content: space-between; }
         }
       `}</style>
 
       {/* Left Sidebar: Retail Directory */}
-      <div className="no-print w-[290px] border-r border-[#c6c6cd]/30 bg-white flex flex-col shrink-0 select-none">
-        <div className="p-4 border-b border-[#c6c6cd]/30 space-y-3">
+      <div className="no-print w-[290px] border-r border-[#D8E0E6]/30 bg-white flex flex-col shrink-0 select-none">
+        <div className="p-4 border-b border-[#D8E0E6]/30 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold text-[#131b2e] uppercase tracking-wider">Estimados Retail</h2>
-            <button 
+            <h2 className="text-xs font-bold text-[#17314A] uppercase tracking-wider">Estimados Retail</h2>
+            <button
               onClick={() => setIsAddingLead(true)}
-              className="p-1 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold rounded-lg transition-colors flex items-center justify-center btn-gold-3d"
+              className="p-1 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold rounded-lg transition-colors flex items-center justify-center btn-gold-3d"
               title="Nueva Cotización"
             >
               <Plus className="w-4 h-4" />
             </button>
           </div>
-          
+
           <div className="relative">
-            <input 
-              type="text" 
-              placeholder="Buscar cotización..." 
+            <input
+              type="text"
+              placeholder="Buscar cotización..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#f2f4f6] border border-transparent rounded-lg py-1.5 pl-8 pr-3 text-xs outline-none focus:bg-white focus:border-[#eab308] font-medium"
+              className="w-full bg-[#f2f4f6] border border-transparent rounded-lg py-1.5 pl-8 pr-3 text-xs outline-none focus:bg-white focus:border-[#B77A4B] font-medium"
             />
             <Search className="w-3.5 h-3.5 text-[#7c839b] absolute left-2.5 top-2.5" />
           </div>
@@ -519,15 +593,15 @@ export default function EstimatorView({
           ) : (
             filteredLeads.map((l) => {
               const isActive = l.id === selectedLeadId;
-              const est = l.estimate || activeEstimate;
+              const est = l.estimate || { status: 'Draft', total: 0 };
               return (
-                <div 
+                <div
                   key={l.id}
                   onClick={() => setSelectedLeadId(l.id)}
                   className={`p-3 rounded-xl cursor-pointer transition-all duration-150 border text-left ${
-                    isActive 
-                      ? "bg-[#eab308]/10 border-[#eab308] shadow-sm" 
-                      : "bg-white border-[#c6c6cd]/20 hover:bg-[#f7f9fb]"
+                    isActive
+                      ? "bg-[#B77A4B]/10 border-[#B77A4B] shadow-sm"
+                      : "bg-white border-[#D8E0E6]/20 hover:bg-[#F5F7F8]"
                   }`}
                 >
                   <div className="flex justify-between items-start gap-1">
@@ -546,13 +620,13 @@ export default function EstimatorView({
                           <Trash2 className="w-3 h-3" />
                         </button>
                       )}
-                      <span className="text-xs font-bold text-[#131b2e] truncate">{l.name}</span>
+                      <span className="text-xs font-bold text-[#17314A] truncate">{l.name}</span>
                     </div>
                     <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold border shrink-0 ${
-                      est.status === "Approved" 
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
-                        : est.status === "Sent" 
-                        ? "bg-blue-50 text-blue-700 border-blue-200" 
+                      est.status === "Approved"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : est.status === "Sent"
+                        ? "bg-blue-50 text-blue-700 border-blue-200"
                         : "bg-gray-50 text-gray-600 border-gray-200"
                     }`}>
                       {est.status === "Approved" ? "Aprobado" : est.status === "Sent" ? "Enviado" : "Borrador"}
@@ -563,7 +637,7 @@ export default function EstimatorView({
                   )}
                   <div className="flex justify-between items-center mt-2 pt-1.5 border-t border-gray-100">
                     <span className="text-[10px] text-[#7c839b] font-medium">{l.createdAt}</span>
-                    <span className="text-xs font-bold text-[#131b2e] font-mono">
+                    <span className="text-xs font-bold text-[#17314A] font-mono">
                       ${(est.total || 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}
                     </span>
                   </div>
@@ -578,52 +652,47 @@ export default function EstimatorView({
       <div className="flex-1 flex flex-col h-screen overflow-y-auto">
         {!selectedLead ? (
           <div className="no-print flex-1 flex flex-col items-center justify-center p-8 text-center select-none">
-            <div className="w-16 h-16 rounded-full bg-yellow-50 flex items-center justify-center text-[#ca8a04] mb-4">
+            <div className="w-16 h-16 rounded-full bg-yellow-50 flex items-center justify-center text-[#955B32] mb-4">
               <FileSignature className="w-8 h-8" />
             </div>
-            <h2 className="text-lg font-bold text-[#131b2e]">Sin Estimados Retail</h2>
+            <h2 className="text-lg font-bold text-[#17314A]">Sin Estimados Retail</h2>
             <p className="text-xs text-[#7c839b] mt-1 max-w-sm font-medium">Comienza registrando tu primera cotización de venta directa en el sistema.</p>
-            <button 
+            <button
               onClick={() => setIsAddingLead(true)}
-              className="mt-4 px-4 py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-xl shadow-sm transition-transform active:scale-95 btn-gold-3d"
+              className="mt-4 px-4 py-2 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold text-xs rounded-xl shadow-sm transition-transform active:scale-95 btn-gold-3d"
             >
               Crear Cotización Retail
             </button>
           </div>
         ) : (
           <div className="flex-1 p-6 space-y-6">
-            
+
             {/* Header / Actions */}
-            <div className="no-print flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#c6c6cd]/30 pb-4">
+            <div className="no-print flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#D8E0E6]/30 pb-4">
               <div>
-                <h1 className="font-sans text-[26px] font-bold text-[#131b2e] tracking-tight">Estimador Retail</h1>
-                <p className="font-sans text-xs text-[#7c839b] mt-1 font-medium">Borrador de presupuestos de venta directa (Retail) con validación de márgenes de ganancia.</p>
+                <h1 className="font-sans text-[26px] font-bold text-[#17314A] tracking-tight">Estimador Retail</h1>
+                <p className="font-sans text-xs text-[#7c839b] mt-1 font-medium">{userRole === 'admin' ? 'Borrador de presupuestos de venta directa (Retail) con validación de márgenes de ganancia.' : 'Cotizaciones de venta directa con los datos y la identidad de tu empresa.'}</p>
               </div>
               <div className="flex gap-2 shrink-0">
-                <button 
+                <button
                   onClick={handlePrint}
-                  className="px-3 py-1.5 bg-white border border-[#c6c6cd] hover:bg-slate-100 text-[#45464d] text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                  className="px-3 py-1.5 bg-white border border-[#D8E0E6] hover:bg-slate-100 text-[#45464d] text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
                   title="Descargar versión PDF"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Descargar PDF
                 </button>
-                <button 
-                  onClick={handleSendEmail}
-                  disabled={isSendingEmail}
-                  className="px-3 py-1.5 bg-white border border-[#c6c6cd] hover:bg-slate-100 text-[#45464d] text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-                  title="Enviar al correo del Homeowner"
+                <button
+                  disabled
+                  className="px-3 py-1.5 bg-white border border-[#D8E0E6] hover:bg-slate-100 text-[#45464d] text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                  title="El envío automático requiere configurar un proveedor de correo. Descarga el PDF para compartirlo."
                 >
-                  {isSendingEmail ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#ca8a04]" />
-                  ) : (
-                    <Mail className="w-3.5 h-3.5" />
-                  )}
-                  Enviar al HO
+                  <Mail className="w-3.5 h-3.5" />
+                  Correo sin configurar
                 </button>
-                <button 
+                <button
                   onClick={() => handleUpdateStatus("Approved")}
-                  className={`px-3 py-1.5 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg transition-colors flex items-center gap-1 shadow-sm btn-gold-3d`}
+                  className={`px-3 py-1.5 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold text-xs rounded-lg transition-colors flex items-center gap-1 shadow-sm btn-gold-3d`}
                 >
                   Aprobar Estimado
                 </button>
@@ -632,29 +701,125 @@ export default function EstimatorView({
 
             {/* Print Section (Wraps details inside a printable preview) */}
             <div id="print-area" className="space-y-6">
-              
+
+              <article className="pdf-document hidden print:block" style={{ "--pdf-primary": pdfPrimaryColor, "--pdf-accent": pdfAccentColor } as React.CSSProperties}>
+                <header className="pdf-header">
+                  <div className="pdf-brand">
+                    {pdfUsesOrganizationBranding ? (
+                      pdfCompanyLogo ? <div className="pdf-logo-frame"><img src={pdfCompanyLogo} alt={`${pdfCompanyName} logo`} className="pdf-logo" referrerPolicy="no-referrer" /></div> :
+                        <div className="pdf-logo-frame pdf-logo-placeholder flex items-center justify-center">{pdfCompanyName.substring(0, 2).toUpperCase()}</div>
+                    ) : <div className="pdf-logo-frame"><img src={logoXapcon} alt="Xapcon Group" className="pdf-logo" /></div>}
+                    <div>
+                      <p className="pdf-brand-name">{pdfUsesOrganizationBranding ? pdfCompanyName : "Xapcon Group"}</p>
+                      <p className="pdf-brand-meta">
+                        {pdfUsesOrganizationBranding ? (
+                          <>
+                            {activeOrganization?.license_number && <>License #{activeOrganization.license_number}</>}
+                            {activeOrganization?.registration_number && <>{activeOrganization?.license_number ? " · " : ""}Reg. #{activeOrganization.registration_number}</>}
+                            {(activeOrganization?.license_number || activeOrganization?.registration_number) && <br />}
+                            {[activeOrganization?.company_email, activeOrganization?.company_phone, activeOrganization?.company_website].filter(Boolean).join(" · ") || "Residential Roofing Services"}
+                            {activeOrganization?.company_address && <><br />{activeOrganization.company_address}</>}
+                          </>
+                        ) : <>License #98240-TX · Roofing & Restoration</>}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pdf-doc-meta">
+                    <div className="pdf-doc-label">Prepared for your property</div>
+                    <h1 className="pdf-doc-title">Retail Estimate</h1>
+                    <div className="pdf-ref-label">Estimate reference</div>
+                    <div className="pdf-ref-value">{activeEstimate.id}</div>
+                    <span className="pdf-status">{activeEstimate.status}</span>
+                  </div>
+                </header>
+
+                <section className="pdf-section">
+                  <h2 className="pdf-section-title">Project and customer information</h2>
+                  <div className="pdf-client-grid">
+                    <div className="pdf-client-cell"><span className="pdf-field-label">Homeowner</span><span className="pdf-field-value">{activeEstimate.clientName || selectedLead.name || "—"}</span></div>
+                    <div className="pdf-client-cell"><span className="pdf-field-label">Project address</span><span className="pdf-field-value">{activeEstimate.address || "—"}</span></div>
+                    <div className="pdf-client-cell"><span className="pdf-field-label">Phone</span><span className="pdf-field-value">{activeEstimate.clientPhone || "—"}</span></div>
+                    <div className="pdf-client-cell"><span className="pdf-field-label">Estimate date</span><span className="pdf-field-value">{new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span></div>
+                  </div>
+                  {activeEstimate.clientEmail && <div className="pdf-client-grid" style={{ gridTemplateColumns: "1fr", borderTop: 0 }}><div className="pdf-client-cell" style={{ minHeight: 0 }}><span className="pdf-field-label">Email</span><span className="pdf-field-value">{activeEstimate.clientEmail}</span></div></div>}
+                </section>
+
+                <section className="pdf-section">
+                  <h2 className="pdf-section-title">Scope of work and pricing schedule</h2>
+                  <table className="pdf-table">
+                    <thead><tr>
+                      <th className="pdf-col-desc">Description</th><th className="pdf-col-type">Classification</th>
+                      <th className="pdf-col-qty pdf-right">Quantity</th><th className="pdf-col-unit pdf-center">Unit</th>
+                      <th className="pdf-col-price pdf-right">Unit price</th><th className="pdf-col-total pdf-right">Line total</th>
+                    </tr></thead>
+                    <tbody>
+                      {activeEstimate.items.length ? activeEstimate.items.map(item => (
+                        <tr key={item.id}>
+                          <td>{item.description}</td><td className="pdf-category">{item.category === "material" ? "Material" : item.category === "labor" ? "Labor" : "Permit / fee"}</td>
+                          <td className="pdf-right">{item.qty.toLocaleString("en-US", { maximumFractionDigits: 2 })}</td><td className="pdf-center">{item.unit}</td>
+                          <td className="pdf-right">${item.unitPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="pdf-right"><strong>${item.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+                        </tr>
+                      )) : <tr><td colSpan={6} className="pdf-empty">No work items have been added to this estimate.</td></tr>}
+                    </tbody>
+                  </table>
+                </section>
+
+                <section className="pdf-section pdf-bottom-grid">
+                  <div>
+                    <h2 className="pdf-section-title">Work terms and commitment</h2>
+                    <div className="pdf-note"><p className="pdf-terms">{activeEstimate.termsAndCommitment ?? DEFAULT_TERMS_TEXT}</p></div>
+                    <p className="pdf-subsection-label">Applicable warranties</p>
+                    <ul className="pdf-warranties">
+                      {(() => {
+                        const warrantyLabels: Record<string, string> = { labor_5: "5-year labor warranty", labor_10: "10-year labor warranty", material_5: "5-year material warranty", material_8: "8-year material warranty", material_10: "10-year material warranty", material_12: "12-year material warranty", material_15: "15-year material warranty", material_20: "20-year material warranty", material_25: "25-year material warranty" };
+                        const selected = (activeEstimate.warrantyTypes || (activeEstimate.warrantyType ? [activeEstimate.warrantyType] : [])).filter(w => w !== "none");
+                        return selected.length ? selected.map(w => <li key={w}>{warrantyLabels[w] || w}</li>) : <li>Standard warranty addendum excluded.</li>;
+                      })()}
+                    </ul>
+                  </div>
+                  <div>
+                    <h2 className="pdf-section-title">Investment summary <span style={{ marginLeft: "auto", fontSize: "6.5pt", letterSpacing: ".08em", color: "#6c7c8a" }}>USD</span></h2>
+                    <div className="pdf-totals">
+                      <div className="pdf-total-row"><span>Materials</span><strong>${activeEstimate.subtotalMaterials.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+                      <div className="pdf-total-row"><span>Labor</span><strong>${activeEstimate.subtotalLabor.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+                      <div className="pdf-total-row"><span>Permits and fees</span><strong>${activeEstimate.subtotalFees.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+                      <div className="pdf-total-row"><span>Subtotal</span><strong>${activeEstimate.subtotalGross.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+                      <div className="pdf-total-row"><span>Tax ({(activeEstimate.taxRate * 100).toFixed(2)}%)</span><strong>${activeEstimate.taxAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+                      <div className="pdf-total-row pdf-grand-total"><span>Total estimate</span><strong>${activeEstimate.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="pdf-signatures">
+                  <div><div className="pdf-signature-line" /><p className="pdf-signature-label">Homeowner approval · Signature and date</p></div>
+                  <div><div className="pdf-signature-line" /><p className="pdf-signature-label">Authorized representative · Signature and date</p></div>
+                </section>
+                <footer className="pdf-footer"><span>{pdfUsesOrganizationBranding ? pdfCompanyName : "Xapcon Group"} · Retail estimate</span><span>Reference {activeEstimate.id}</span></footer>
+              </article>
+
               {/* PDF Header Branding (Only visible on print/PDF) */}
               <div className="hidden print:flex justify-between items-start border-b border-gray-200/80 pb-6 mb-6">
                 <div className="flex items-start gap-4">
                   {userRole === "contractor" ? (
                     <>
                       {profile?.avatar_url ? (
-                        <img 
-                          src={profile.avatar_url} 
-                          alt="Logo Empresa" 
+                        <img
+                          src={profile.avatar_url}
+                          alt="Logo Empresa"
                           referrerPolicy="no-referrer"
-                          className="h-16 w-auto object-contain shrink-0 rounded-lg border border-slate-100" 
+                          className="h-16 w-auto object-contain shrink-0 rounded-lg border border-slate-100"
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded-xl bg-yellow-50 border border-yellow-200 flex items-center justify-center text-[#ca8a04] font-extrabold text-lg shrink-0 uppercase">
+                        <div className="w-16 h-16 rounded-xl bg-yellow-50 border border-yellow-200 flex items-center justify-center text-[#955B32] font-extrabold text-lg shrink-0 uppercase">
                           {(activeOrganization?.name || "CO").substring(0, 2)}
                         </div>
                       )}
                       <div className="space-y-1 text-left">
-                        <h1 className="text-xl font-extrabold text-[#0F172A] tracking-tight uppercase font-sans">
+                        <h1 className="text-xl font-extrabold text-[#17314A] tracking-tight uppercase font-sans">
                           {activeOrganization?.name || "CONSTRUCTION ESTIMATE"}
                         </h1>
-                        <div className="border-l-2 border-[#eab308] pl-3 text-[10px] text-slate-500 font-mono space-y-0.5">
+                        <div className="border-l-2 border-[#B77A4B] pl-3 text-[10px] text-slate-500 font-mono space-y-0.5">
                           <div className="font-bold text-slate-700">Lic. #{profile?.license_number || "N/A"} · Reg. #{profile?.registration_number || "N/A"}</div>
                           {(profile?.company_email || profile?.company_website) && (
                             <div>
@@ -668,16 +833,16 @@ export default function EstimatorView({
                     </>
                   ) : (
                     <>
-                      <img 
-                        src={logoXapcon} 
-                        alt="Xapcon Group Logo" 
-                        className="h-16 w-auto object-contain shrink-0" 
+                      <img
+                        src={logoXapcon}
+                        alt="Xapcon Group Logo"
+                        className="h-16 w-auto object-contain shrink-0"
                       />
                       <div className="space-y-1 text-left">
-                        <h1 className="text-xl font-extrabold text-[#0F172A] tracking-tight uppercase font-sans">
+                        <h1 className="text-xl font-extrabold text-[#17314A] tracking-tight uppercase font-sans">
                           RETAIL ESTIMATE
                         </h1>
-                        <div className="border-l-2 border-[#eab308] pl-3 text-[10px] text-slate-500 font-mono">
+                        <div className="border-l-2 border-[#B77A4B] pl-3 text-[10px] text-slate-500 font-mono">
                           <span className="font-bold text-slate-700 block">Xapcon Group</span>
                           <span>Lic. #98240-TX</span>
                         </div>
@@ -685,11 +850,11 @@ export default function EstimatorView({
                     </>
                   )}
                 </div>
-                
+
                 {/* Modern metadata box */}
                 <div className="bg-[#f8fafc] border border-slate-200 rounded-xl p-3.5 text-right min-w-[190px] shadow-sm">
                   <div className="text-[9px] font-extrabold uppercase tracking-widest text-[#64748b] font-sans">Estimate Details</div>
-                  <div className="text-sm font-black text-[#0f172a] mt-0.5 tracking-tight font-mono">{activeEstimate.id}</div>
+                  <div className="text-sm font-black text-[#17314A] mt-0.5 tracking-tight font-mono">{activeEstimate.id}</div>
                   <div className="text-[10px] text-slate-500 font-mono mt-1 pt-1 border-t border-slate-200/60">
                     Date: {selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' }) : new Date().toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' })}
                   </div>
@@ -697,14 +862,14 @@ export default function EstimatorView({
               </div>
 
               {/* Homeowner Details Card */}
-              <div className="bg-white print:bg-[#f8fafc] border border-[#c6c6cd]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
+              <div className="bg-white print:bg-[#f8fafc] border border-[#D8E0E6]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-3 gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-yellow-50 flex items-center justify-center text-[#ca8a04] shrink-0 print:hidden">
+                    <div className="w-8 h-8 rounded-full bg-yellow-50 flex items-center justify-center text-[#955B32] shrink-0 print:hidden">
                       <Users className="w-4 h-4" />
                     </div>
                     <div>
-                      <h2 className="font-sans text-xs font-bold text-[#131b2e]">
+                      <h2 className="font-sans text-xs font-bold text-[#17314A]">
                         <span className="print:hidden">Datos del Homeowner (Propietario)</span>
                         <span className="hidden print:inline">Homeowner Information</span>
                       </h2>
@@ -713,10 +878,10 @@ export default function EstimatorView({
                   </div>
                   <div className="flex items-center gap-2 no-print">
                     <span className="font-sans text-xs text-[#7c839b] font-medium">Estado:</span>
-                    <select 
+                    <select
                       value={activeEstimate.status}
                       onChange={(e) => handleUpdateStatus(e.target.value as any)}
-                      className="bg-gray-50 border border-gray-300 rounded-lg py-1 px-2 text-[10px] font-bold text-[#131b2e] outline-none cursor-pointer"
+                      className="bg-gray-50 border border-gray-300 rounded-lg py-1 px-2 text-[10px] font-bold text-[#17314A] outline-none cursor-pointer"
                     >
                       <option value="Draft">Borrador (Draft)</option>
                       <option value="Sent">Enviado (Sent)</option>
@@ -724,7 +889,7 @@ export default function EstimatorView({
                     </select>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Inputs render as editable inside UI, but static text in print mode */}
                   <div>
@@ -732,11 +897,11 @@ export default function EstimatorView({
                       <span className="print:hidden">Nombre</span>
                       <span className="hidden print:inline">Name</span>
                     </label>
-                    <input 
+                    <input
                       type="text"
                       value={activeEstimate.clientName}
                       onChange={(e) => handleUpdateHomeownerDetails("clientName", e.target.value)}
-                      className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
+                      className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
                       placeholder="Nombre del Homeowner"
                     />
                   </div>
@@ -745,11 +910,11 @@ export default function EstimatorView({
                       <span className="print:hidden">Dirección de la Obra</span>
                       <span className="hidden print:inline">Job Address</span>
                     </label>
-                    <input 
+                    <input
                       type="text"
                       value={activeEstimate.address}
                       onChange={(e) => handleUpdateHomeownerDetails("address", e.target.value)}
-                      className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
+                      className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
                       placeholder="Dirección completa"
                     />
                   </div>
@@ -758,11 +923,11 @@ export default function EstimatorView({
                       <span className="print:hidden">Teléfono</span>
                       <span className="hidden print:inline">Phone</span>
                     </label>
-                    <input 
+                    <input
                       type="text"
                       value={activeEstimate.clientPhone || ""}
                       onChange={(e) => handleUpdateHomeownerDetails("clientPhone", e.target.value)}
-                      className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
+                      className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
                       placeholder="Teléfono"
                     />
                   </div>
@@ -771,11 +936,11 @@ export default function EstimatorView({
                       <span className="print:hidden">Correo Electrónico</span>
                       <span className="hidden print:inline">Email</span>
                     </label>
-                    <input 
+                    <input
                       type="email"
                       value={activeEstimate.clientEmail || ""}
                       onChange={(e) => handleUpdateHomeownerDetails("clientEmail", e.target.value)}
-                      className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
+                      className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
                       placeholder="Correo electrónico"
                     />
                   </div>
@@ -783,21 +948,21 @@ export default function EstimatorView({
               </div>
 
               {/* Item List Table Card */}
-              <div className="bg-white print:bg-transparent border border-[#c6c6cd]/30 print:border-none rounded-2xl shadow-sm print:shadow-none overflow-hidden print:overflow-visible">
-                <div className="p-4 border-b border-[#eceef0] flex items-center justify-between no-print">
-                  <h2 className="font-sans text-xs font-bold text-[#131b2e]">Desglose de Conceptos de Construcción</h2>
+              <div className="bg-white print:bg-transparent border border-[#D8E0E6]/30 print:border-none rounded-2xl shadow-sm print:shadow-none overflow-hidden print:overflow-visible">
+                <div className="p-4 border-b border-[#EEF1F3] flex items-center justify-between no-print">
+                  <h2 className="font-sans text-xs font-bold text-[#17314A]">Desglose de Conceptos de Construcción</h2>
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setShowCatalogModal(true)}
-                      className="text-xs text-gray-500 hover:text-[#ca8a04] font-bold flex items-center gap-1 hover:underline transition-colors"
+                      className="text-xs text-gray-500 hover:text-[#955B32] font-bold flex items-center gap-1 hover:underline transition-colors"
                     >
-                      <FileSpreadsheet className="w-3.5 h-3.5 text-[#ca8a04]" />
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-[#955B32]" />
                       Catálogo de Materiales
                     </button>
                     <button
                       onClick={() => setIsAddingItem(!isAddingItem)}
-                      className="text-xs text-[#ca8a04] font-bold flex items-center gap-1 hover:underline"
+                      className="text-xs text-[#955B32] font-bold flex items-center gap-1 hover:underline"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Añadir Concepto
@@ -806,12 +971,12 @@ export default function EstimatorView({
                 </div>
 
                 {isAddingItem && (
-                  <form onSubmit={handleAddItem} className="no-print p-4 bg-[#f7f9fb] border-b border-[#eceef0] grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                  <form onSubmit={handleAddItem} className="no-print p-4 bg-[#F5F7F8] border-b border-[#EEF1F3] grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                     <div className="md:col-span-4 relative">
                       <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Descripción</label>
-                      <input 
-                        type="text" 
-                        value={newDesc} 
+                      <input
+                        type="text"
+                        value={newDesc}
                         onChange={(e) => {
                           setNewDesc(e.target.value);
                           setShowAutocomplete(true);
@@ -820,20 +985,20 @@ export default function EstimatorView({
                         onBlur={() => {
                           setTimeout(() => setShowAutocomplete(false), 200);
                         }}
-                        placeholder="Ej. Tejas de asfalto" 
-                        className="w-full bg-white border border-[#c6c6cd] rounded-lg p-1.5 text-xs text-[#191c1e] outline-none focus:border-[#eab308]"
+                        placeholder="Ej. Tejas de asfalto"
+                        className="w-full bg-white border border-[#D8E0E6] rounded-lg p-1.5 text-xs text-[#191c1e] outline-none focus:border-[#B77A4B]"
                         required
                       />
                       {/* Autocomplete Dropdown */}
                       {(() => {
                         const catalog = globalMaterials as MaterialItem[];
-                        const matchingItems = newDesc.trim() 
+                        const matchingItems = newDesc.trim()
                           ? catalog.filter(m => m.description.toLowerCase().includes(newDesc.toLowerCase()))
                           : [];
                         const showDropdown = showAutocomplete && matchingItems.length > 0;
-                        
+
                         if (!showDropdown) return null;
-                        
+
                         return (
                           <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50 text-xs divide-y divide-gray-100">
                             {matchingItems.slice(0, 15).map((item) => (
@@ -844,7 +1009,7 @@ export default function EstimatorView({
                                   setNewDesc(item.description);
                                   setNewCategory(item.category);
                                   setNewUnit(item.unit);
-                                  setNewPrice(item.unitPrice);
+                                  setNewPrice(String(item.unitPrice));
                                   setShowAutocomplete(false);
                                 }}
                                 className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-2"
@@ -861,10 +1026,10 @@ export default function EstimatorView({
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Categoría</label>
-                      <select 
-                        value={newCategory} 
+                      <select
+                        value={newCategory}
                         onChange={(e) => setNewCategory(e.target.value as any)}
-                        className="w-full bg-white border border-[#c6c6cd] rounded-lg p-1.5 text-xs text-[#191c1e]"
+                        className="w-full bg-white border border-[#D8E0E6] rounded-lg p-1.5 text-xs text-[#191c1e]"
                       >
                         <option value="material">Material</option>
                         <option value="labor">Mano de Obra</option>
@@ -873,42 +1038,44 @@ export default function EstimatorView({
                     </div>
                     <div className="md:col-span-1">
                       <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Cant.</label>
-                      <input 
-                        type="number" 
-                        value={newQty} 
-                        onChange={(e) => setNewQty(Number(e.target.value))}
-                        className="w-full bg-white border border-[#c6c6cd] rounded-lg p-1.5 text-xs text-[#191c1e]"
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={newQty}
+                        onChange={(e) => { if (/^\d*\.?\d*$/.test(e.target.value)) setNewQty(e.target.value); }}
+                        className="w-full bg-white border border-[#D8E0E6] rounded-lg p-1.5 text-xs text-[#191c1e]"
                       />
                     </div>
                     <div className="md:col-span-1">
                       <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Unidad</label>
-                      <input 
-                        type="text" 
-                        value={newUnit} 
+                      <input
+                        type="text"
+                        value={newUnit}
                         onChange={(e) => setNewUnit(e.target.value)}
-                        className="w-full bg-white border border-[#c6c6cd] rounded-lg p-1.5 text-xs text-[#191c1e]"
+                        className="w-full bg-white border border-[#D8E0E6] rounded-lg p-1.5 text-xs text-[#191c1e]"
                       />
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-[10px] font-bold text-[#7c839b] mb-1">P. Unitario</label>
-                      <input 
-                        type="number" 
-                        value={newPrice} 
-                        onChange={(e) => setNewPrice(Number(e.target.value))}
-                        className="w-full bg-white border border-[#c6c6cd] rounded-lg p-1.5 text-xs text-[#191c1e]"
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={newPrice}
+                        onChange={(e) => { if (/^\d*\.?\d*$/.test(e.target.value)) setNewPrice(e.target.value); }}
+                        className="w-full bg-white border border-[#D8E0E6] rounded-lg p-1.5 text-xs text-[#191c1e]"
                       />
                     </div>
                     <div className="md:col-span-2 flex gap-2">
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => setIsAddingItem(false)}
                         className="flex-1 py-1.5 border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         Cancelar
                       </button>
-                      <button 
-                        type="submit" 
-                        className="flex-1 py-1.5 bg-[#eab308] text-slate-900 font-bold text-xs rounded-lg shadow-sm btn-gold-3d"
+                      <button
+                        type="submit"
+                        className="flex-1 py-1.5 bg-[#B77A4B] text-slate-900 font-bold text-xs rounded-lg shadow-sm btn-gold-3d"
                       >
                         Añadir
                       </button>
@@ -919,7 +1086,7 @@ export default function EstimatorView({
                 <div className="overflow-x-auto select-none">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-[#f7f9fb] border-b border-[#eceef0] text-[#7c839b] text-[10px] font-mono uppercase tracking-wider font-semibold">
+                      <tr className="bg-[#F5F7F8] border-b border-[#EEF1F3] text-[#7c839b] text-[10px] font-mono uppercase tracking-wider font-semibold">
                         <th className="py-3 px-4">
                           <span className="print:hidden">Concepto</span>
                           <span className="hidden print:inline">Item Description</span>
@@ -940,22 +1107,24 @@ export default function EstimatorView({
                         <th className="py-3 px-4 text-center no-print">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#eceef0]">
+                    <tbody className="divide-y divide-[#EEF1F3]">
                       {activeEstimate.items.map((item) => (
                         <tr key={item.id} className="text-xs hover:bg-slate-50/50 transition-colors">
                           <td className="py-4 px-4 font-medium">
                             <div className="space-y-0.5">
                               <span className="font-semibold text-[#191c1e] block">{item.description}</span>
-                              <span className="text-[10px] text-[#7c839b] font-mono uppercase bg-[#eceef0] px-1.5 py-0.5 rounded w-max block print:hidden">{item.category}</span>
+                              <span className="text-[10px] text-[#7c839b] font-mono uppercase bg-[#EEF1F3] px-1.5 py-0.5 rounded w-max block print:hidden">{item.category}</span>
                             </div>
                           </td>
                           <td className="py-4 px-4 text-center font-semibold">
                             <span className="hidden print:inline">{item.qty}</span>
-                            <input 
-                              type="number" 
-                              value={item.qty}
-                              onChange={(e) => handleUpdateItem(item.id, Number(e.target.value), item.unitPrice)}
-                              className="no-print w-16 bg-[#f7f9fb] border border-[#c6c6cd]/50 rounded p-1 text-center font-semibold text-xs"
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={itemNumericDrafts[`${item.id}:qty`] ?? String(item.qty)}
+                              onChange={(e) => updateItemNumericDraft(item.id, "qty", e.target.value)}
+                              onBlur={() => clearItemNumericDraft(item.id, "qty")}
+                              className="no-print w-16 bg-[#F5F7F8] border border-[#D8E0E6]/50 rounded p-1 text-center font-semibold text-xs"
                             />
                           </td>
                           <td className="py-4 px-4 text-center text-[#7c839b] font-medium">{item.unit}</td>
@@ -963,17 +1132,19 @@ export default function EstimatorView({
                             <span className="hidden print:inline">${item.unitPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
                             <div className="no-print flex items-center justify-end gap-1">
                               <span className="text-[#7c839b] font-medium">$</span>
-                              <input 
-                                type="number" 
-                                value={item.unitPrice}
-                                onChange={(e) => handleUpdateItem(item.id, item.qty, Number(e.target.value))}
-                                className="w-20 bg-[#f7f9fb] border border-[#c6c6cd]/50 rounded p-1 text-right font-semibold text-xs"
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                value={itemNumericDrafts[`${item.id}:unitPrice`] ?? String(item.unitPrice)}
+                                onChange={(e) => updateItemNumericDraft(item.id, "unitPrice", e.target.value)}
+                                onBlur={() => clearItemNumericDraft(item.id, "unitPrice")}
+                                className="w-20 bg-[#F5F7F8] border border-[#D8E0E6]/50 rounded p-1 text-right font-semibold text-xs"
                               />
                             </div>
                           </td>
-                          <td className="py-4 px-4 text-right font-mono font-bold text-[#131b2e]">${item.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="py-4 px-4 text-right font-mono font-bold text-[#17314A]">${item.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           <td className="py-4 px-4 text-center no-print">
-                            <button 
+                            <button
                               onClick={() => handleDeleteItem(item.id)}
                               className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all"
                             >
@@ -989,37 +1160,37 @@ export default function EstimatorView({
 
               {/* Financial Summary panel + Warranty Card */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                
+
                 {/* Warranty Digital Contract terms */}
-                <div className="bg-white print:bg-[#f8fafc] border border-[#c6c6cd]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
-                  <div className="flex items-center gap-2 border-b pb-2 text-[#131b2e] font-bold text-xs">
-                    <FileText className="w-4 h-4 text-[#ca8a04] print:hidden" />
+                <div className="bg-white print:bg-[#f8fafc] border border-[#D8E0E6]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
+                  <div className="flex items-center gap-2 border-b pb-2 text-[#17314A] font-bold text-xs">
+                    <FileText className="w-4 h-4 text-[#955B32] print:hidden" />
                     <span>
                       <span className="print:hidden">Terminos y compromiso del Servicio</span>
                       <span className="hidden print:inline">Terms and Service Commitment</span>
                     </span>
                   </div>
-                  
+
                   {/* Screen Mode: Editable Textarea */}
                   <div className="print:hidden">
                     <textarea
                       value={activeEstimate.termsAndCommitment ?? DEFAULT_TERMS_TEXT}
                       onChange={(e) => handleUpdateTermsText(e.target.value)}
-                      className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/40 rounded-lg p-2.5 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none transition-all font-medium h-36 resize-y"
+                      className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/40 rounded-lg p-2.5 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none transition-all font-medium h-36 resize-y"
                       placeholder="Escribe los términos y compromiso del servicio aquí..."
                     />
                   </div>
-                  
+
                   {/* Print Mode: Plain Text */}
                   <p className="hidden print:block text-[11px] text-[#7c839b] leading-relaxed whitespace-pre-wrap">
                     {activeEstimate.termsAndCommitment ?? DEFAULT_TERMS_TEXT}
                   </p>
-                  
+
                   <div className="space-y-2 print:border-none print:bg-transparent print:p-0">
                     <label className="block text-[10px] font-bold text-[#7c839b] print:hidden uppercase tracking-wider mb-1">Garantías Aplicables</label>
-                    
+
                     {/* Screen Mode: Scrollable Checkbox Checklist */}
-                    <div className="print:hidden space-y-2 max-h-56 overflow-y-auto pr-1 border border-[#c6c6cd]/25 rounded-lg p-2 bg-[#f7f9fb]">
+                    <div className="print:hidden space-y-2 max-h-56 overflow-y-auto pr-1 border border-[#D8E0E6]/25 rounded-lg p-2 bg-[#F5F7F8]">
                       {[
                         { id: "labor_5", label: "Incluye garantía estándar (5 años mano de obra)" },
                         { id: "labor_10", label: "Incluye garantía estándar (10 años mano de obra)" },
@@ -1033,14 +1204,14 @@ export default function EstimatorView({
                       ].map((opt) => {
                         const wTypes = activeEstimate.warrantyTypes || (activeEstimate.warrantyType ? [activeEstimate.warrantyType] : []);
                         const isChecked = wTypes.includes(opt.id);
-                        
+
                         return (
                           <label key={opt.id} className="flex items-center gap-2.5 cursor-pointer p-1.5 hover:bg-white rounded transition-colors select-none">
-                            <input 
-                              type="checkbox" 
-                              checked={isChecked} 
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
                               onChange={() => handleToggleWarrantyType(opt.id)}
-                              className="rounded text-[#ca8a04] focus:ring-[#eab308]"
+                              className="rounded text-[#955B32] focus:ring-[#B77A4B]"
                             />
                             <span className="text-xs font-semibold text-[#191c1e]">
                               {opt.label}
@@ -1049,7 +1220,7 @@ export default function EstimatorView({
                         );
                       })}
                     </div>
-                    
+
                     {/* Print Mode: List of Selected Warranties in English */}
                     <div className="hidden print:block space-y-1">
                       {(() => {
@@ -1057,7 +1228,7 @@ export default function EstimatorView({
                         if (wTypes.length === 0 || (wTypes.length === 1 && wTypes[0] === "none")) {
                           return <span className="text-xs font-semibold text-[#191c1e]">Standard warranty addendum excluded</span>;
                         }
-                        
+
                         return wTypes.filter(w => w !== "none").map((wType) => {
                           let text = "";
                           switch(wType) {
@@ -1079,9 +1250,9 @@ export default function EstimatorView({
                 </div>
 
                 {/* Totals and Profit Margin widget */}
-                <div className="bg-white print:bg-[#f8fafc] border border-[#c6c6cd]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
+                <div className="bg-white print:bg-[#f8fafc] border border-[#D8E0E6]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
                   <div className="flex items-center justify-between border-b pb-2">
-                    <h3 className="font-sans text-xs font-bold text-[#131b2e]">
+                    <h3 className="font-sans text-xs font-bold text-[#17314A]">
                       <span className="print:hidden">Resumen de Cierre de Cotización</span>
                       <span className="hidden print:inline">Estimate Summary</span>
                     </h3>
@@ -1113,7 +1284,7 @@ export default function EstimatorView({
                       </span>
                       <span className="font-mono font-bold text-[#45464d]">${activeEstimate.subtotalFees.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between border-t pt-2 font-bold text-[#131b2e]">
+                    <div className="flex justify-between border-t pt-2 font-bold text-[#17314A]">
                       <span>
                         <span className="print:hidden">Subtotal Bruto:</span>
                         <span className="hidden print:inline">Gross Subtotal:</span>
@@ -1127,7 +1298,7 @@ export default function EstimatorView({
                       </span>
                       <span className="font-mono">${activeEstimate.taxAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between border-t pt-2 font-bold text-lg text-[#131b2e]">
+                    <div className="flex justify-between border-t pt-2 font-bold text-lg text-[#17314A]">
                       <span>
                         <span className="print:hidden">Total Estimado:</span>
                         <span className="hidden print:inline">Estimated Total:</span>
@@ -1136,20 +1307,20 @@ export default function EstimatorView({
                     </div>
                   </div>
 
-                  {/* Margen de Beneficio indicator (Hidden in print mode for HO privacy!) */}
-                  <div className="bg-[#f7f9fb] border border-[#c6c6cd]/30 rounded-xl p-4 no-print">
+                  {/* Internal financial data is superadmin-only. */}
+                  {userRole === "admin" && <div className="bg-[#F5F7F8] border border-[#D8E0E6]/30 rounded-xl p-4 no-print">
                     <div className="flex justify-between items-center mb-1.5">
                       <span className="text-xs font-bold text-[#45464d] flex items-center gap-1.5">
-                        <Calculator className="w-4 h-4 text-[#ca8a04]" />
+                        <Calculator className="w-4 h-4 text-[#955B32]" />
                         <span>Margen de Beneficio Estimado</span>
                       </span>
                       <span className={`font-mono font-bold text-xs ${isMarginUnderStandard ? "text-amber-600" : "text-yellow-600"}`}>
                         {activeEstimate.profitMargin}%
                       </span>
                     </div>
-                    <div className="w-full bg-[#eceef0] rounded-full h-2 overflow-hidden mb-3">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-300 ${isMarginUnderStandard ? "bg-amber-500" : "bg-[#eab308]"}`} 
+                    <div className="w-full bg-[#EEF1F3] rounded-full h-2 overflow-hidden mb-3">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${isMarginUnderStandard ? "bg-amber-500" : "bg-[#B77A4B]"}`}
                         style={{ width: `${Math.min(100, (activeEstimate.profitMargin / 50) * 100)}%` }}
                       ></div>
                     </div>
@@ -1168,7 +1339,7 @@ export default function EstimatorView({
                         </button>
                       </div>
                     )}
-                  </div>
+                  </div>}
                 </div>
               </div>
 
@@ -1195,13 +1366,13 @@ export default function EstimatorView({
       {/* Modal: New Estimate Lead Registration */}
       {isAddingLead && (
         <div className="no-print fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-6 shadow-2xl max-w-md w-full animate-in fade-in zoom-in duration-150 animate-fade-in select-none">
+          <div className="bg-white border border-[#D8E0E6]/30 rounded-2xl p-6 shadow-2xl max-w-md w-full animate-in fade-in zoom-in duration-150 animate-fade-in select-none">
             <div className="flex items-center justify-between border-b pb-3 mb-4">
               <div className="flex items-center gap-2">
-                <FileCheck2 className="w-5 h-5 text-[#ca8a04]" />
-                <h3 className="font-bold text-sm text-[#131b2e]">Nueva Cotización Retail</h3>
+                <FileCheck2 className="w-5 h-5 text-[#955B32]" />
+                <h3 className="font-bold text-sm text-[#17314A]">Nueva Cotización Retail</h3>
               </div>
-              <button 
+              <button
                 onClick={() => setIsAddingLead(false)}
                 className="text-[#7c839b] hover:text-red-500 p-1 rounded-lg"
               >
@@ -1212,11 +1383,11 @@ export default function EstimatorView({
             <form onSubmit={handleCreateLeadSubmit} className="space-y-4">
               <div>
                 <label className="block text-[10px] font-bold text-[#7c839b] uppercase tracking-wider mb-1">Nombre Completo *</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={newLeadName}
                   onChange={(e) => setNewLeadName(e.target.value)}
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#eab308] font-medium"
+                  className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#B77A4B] font-medium"
                   placeholder="Ej. Juan Pérez"
                   required
                 />
@@ -1224,11 +1395,11 @@ export default function EstimatorView({
 
               <div>
                 <label className="block text-[10px] font-bold text-[#7c839b] uppercase tracking-wider mb-1">Dirección de la Propiedad</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={newLeadAddress}
                   onChange={(e) => setNewLeadAddress(e.target.value)}
-                  className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#eab308] font-medium"
+                  className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#B77A4B] font-medium"
                   placeholder="Calle, Ciudad, Estado, Zip"
                 />
               </div>
@@ -1236,37 +1407,37 @@ export default function EstimatorView({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-[#7c839b] uppercase tracking-wider mb-1">Teléfono</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={newLeadPhone}
                     onChange={(e) => setNewLeadPhone(e.target.value)}
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#eab308] font-medium"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#B77A4B] font-medium"
                     placeholder="(555) 000-0000"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[#7c839b] uppercase tracking-wider mb-1">Correo Electrónico</label>
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     value={newLeadEmail}
                     onChange={(e) => setNewLeadEmail(e.target.value)}
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#eab308] font-medium"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#B77A4B] font-medium"
                     placeholder="correo@ejemplo.com"
                   />
                 </div>
               </div>
 
               <div className="pt-3 border-t flex justify-end gap-2">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsAddingLead(false)}
                   className="px-4 py-2 border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
                 </button>
-                <button 
-                  type="submit" 
-                  className="px-4 py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg transition-colors shadow-sm btn-gold-3d"
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold text-xs rounded-lg transition-colors shadow-sm btn-gold-3d"
                 >
                   Crear Cotización
                 </button>
@@ -1278,7 +1449,7 @@ export default function EstimatorView({
 
       {/* Floating Success Toast */}
       {showToast && (
-        <div className="no-print fixed bottom-6 right-6 bg-[#131b2e] border border-emerald-500 text-white rounded-xl p-4 shadow-2xl flex items-center gap-3 z-50 animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <div className="no-print fixed bottom-6 right-6 bg-[#17314A] border border-emerald-500 text-white rounded-xl p-4 shadow-2xl flex items-center gap-3 z-50 animate-in fade-in slide-in-from-bottom-4 duration-200">
           <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
             <CheckCircle2 className="w-5 h-5" />
           </div>

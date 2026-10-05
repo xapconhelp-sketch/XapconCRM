@@ -3,13 +3,14 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
+import { contractorWeatherMiddleware } from "./server/contractorWeather";
 
 dotenv.config();
 
 const app = express();
 const PORT = 3001;
 
-app.use(express.json());
+app.use("/api/contractor-weather", contractorWeatherMiddleware);
 
 // Configure Vite or serve production bundle
 async function startServer() {
@@ -37,7 +38,7 @@ async function startServer() {
     console.log("Starting server in production mode...");
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

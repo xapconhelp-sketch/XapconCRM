@@ -1,26 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Lead, TimelineEvent, TaskItem, DocumentItem, TeamMember, ViewType } from "../types";
+import { eligibleCaseMembers } from "../lib/teamAccess.js";
+import { Lead, TimelineEvent, DocumentItem, TeamMember, ViewType } from "../types";
 import { 
   Users, 
   MapPin, 
   Phone, 
-  Mail, 
   Building, 
-  Grid, 
   FileCheck2, 
-  ShieldAlert, 
   Plus, 
   CheckCircle2, 
-  Circle,
   Home,
   FileText,
-  FileSignature,
-  FileImage,
   Upload,
-  Clock,
   Send,
-  MessageSquare,
-  Bot,
   Trash2,
   X,
   ArrowLeft,
@@ -30,11 +22,9 @@ import {
   Sparkles,
   BookOpen,
   ShieldCheck,
-  Copy,
-  Check,
-  ExternalLink
 } from "lucide-react";
 import { CashData } from "../types";
+import ContractorClaimFinances from "./ContractorClaimFinances";
 import { getKnownContactsForInsurance, getAllInsuranceCompanyNames } from "../data/insuranceDirectoryData";
 
 const DAMAGE_TYPES = [
@@ -60,14 +50,11 @@ interface LeadsViewProps {
   selectedLeadId: string;
   onSelectLead: (leadId: string) => void;
   onAddTimelineEvent: (leadId: string, event: Omit<TimelineEvent, "id" | "timestamp">) => Promise<void> | void;
-  onToggleTask: (leadId: string, taskId: string) => void;
   onAddLead: (lead: Omit<Lead, "id" | "timeline" | "documents" | "tasks" | "createdAt">) => void;
   onUploadDocuments?: (leadId: string, files: File[], category?: string) => Promise<boolean>;
   onDeleteDocument?: (leadId: string, docId: string, filePath?: string) => Promise<boolean>;
   onUploadImageForTimeline?: (file: File) => Promise<string | null>;
   onDeleteTimelineEvent?: (leadId: string, eventId: string) => Promise<void> | void;
-  onAddTask?: (leadId: string, title: string, assignedTo?: string) => Promise<void> | void;
-  onDeleteTask?: (leadId: string, taskId: string) => Promise<void> | void;
   viewTitle?: string;
   viewSubtitle?: string;
   addButtonLabel?: string;
@@ -81,6 +68,8 @@ interface LeadsViewProps {
   onUpdateLead?: (leadId: string, updatedFields: Partial<Lead>) => Promise<void> | void;
   activeOrganizationId?: string;
   onNavigateToView?: (view: ViewType) => void;
+  openCreateFormOnEnter?: boolean;
+  onCreateFormOpened?: () => void;
   onMoveProject?: (projectId: string, direction: "next" | "prev") => void;
   insuranceCompanies?: string[];
 }
@@ -90,14 +79,11 @@ export default function LeadsView({
   selectedLeadId,
   onSelectLead,
   onAddTimelineEvent,
-  onToggleTask,
   onAddLead,
   onUploadDocuments,
   onDeleteDocument,
   onUploadImageForTimeline,
   onDeleteTimelineEvent,
-  onAddTask,
-  onDeleteTask,
   viewTitle,
   viewSubtitle,
   addButtonLabel,
@@ -111,9 +97,12 @@ export default function LeadsView({
   onUpdateLead,
   activeOrganizationId,
   onNavigateToView,
+  openCreateFormOnEnter = false,
+  onCreateFormOpened,
   onMoveProject,
   insuranceCompanies
 }: LeadsViewProps) {
+  const isAdminInsuranceView = userRole === "admin" && Boolean(isInsuranceView);
   const dynamicInsuranceCompanies = React.useMemo(() => {
     if (insuranceCompanies && insuranceCompanies.length > 0) {
       return insuranceCompanies;
@@ -121,7 +110,7 @@ export default function LeadsView({
     return getAllInsuranceCompanyNames(leads);
   }, [insuranceCompanies, leads]);
 
-  const [activeTab, setActiveTab] = useState<"timeline" | "documents" | "cash" | "tasks">("timeline");
+  const [activeTab, setActiveTab] = useState<"timeline" | "documents" | "cash" | "contractor_finances">("timeline");
   const [newNote, setNewNote] = useState("");
   const [selectedOrgId, setSelectedOrgId] = useState("");
 
@@ -131,13 +120,15 @@ export default function LeadsView({
     }
   }, [organizations]);
   const [isAddingLead, setIsAddingLead] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [newTaskAssignedTo, setNewTaskAssignedTo] = useState("");
-  const [isAddingTask, setIsAddingTask] = useState(false);
+
+  useEffect(() => {
+    if (!openCreateFormOnEnter) return;
+    setIsAddingLead(true);
+    onCreateFormOpened?.();
+  }, [openCreateFormOnEnter, onCreateFormOpened]);
 
   // Cash flow states
   const [cashInputs, setCashInputs] = useState<Record<string, string>>({});
-  const [showProfitsModal, setShowProfitsModal] = useState(false);
   
   // New Lead Form State
   const [leadName, setLeadName] = useState("");
@@ -149,15 +140,11 @@ export default function LeadsView({
   const [leadAssignedRep, setLeadAssignedRep] = useState("");
 
   // Extra fields for Insurance View
-  const [leadPhone2, setLeadPhone2] = useState("");
-  const [leadEmail2, setLeadEmail2] = useState("");
   const [insurancePolicy, setInsurancePolicy] = useState("");
   const [insuranceDamage, setInsuranceDamage] = useState("Hail Damage");
   const [insuranceLossDate, setInsuranceLossDate] = useState("");
   const [insPhone1, setInsPhone1] = useState("");
-  const [insPhone2, setInsPhone2] = useState("");
   const [insEmail1, setInsEmail1] = useState("");
-  const [insEmail2, setInsEmail2] = useState("");
 
   // In-place editing state
   const [isEditingLead, setIsEditingLead] = useState(false);
@@ -181,6 +168,7 @@ export default function LeadsView({
   const [editSqft, setEditSqft] = useState("");
   const [editInsuranceEmail1, setEditInsuranceEmail1] = useState("");
   const [editInsuranceEmail2, setEditInsuranceEmail2] = useState("");
+  const [editInsuranceNotes, setEditInsuranceNotes] = useState("");
   const [showExpressDirectoryModal, setShowExpressDirectoryModal] = useState<string | null>(null);
 
   // Smart Known Contacts for New Claim
@@ -190,9 +178,7 @@ export default function LeadsView({
 
   const handleAutofillNewClaim = () => {
     if (newClaimKnownContacts.phones[0] && !insPhone1) setInsPhone1(newClaimKnownContacts.phones[0]);
-    if (newClaimKnownContacts.phones[1] && !insPhone2) setInsPhone2(newClaimKnownContacts.phones[1]);
     if (newClaimKnownContacts.emails[0] && !insEmail1) setInsEmail1(newClaimKnownContacts.emails[0]);
-    if (newClaimKnownContacts.emails[1] && !insEmail2) setInsEmail2(newClaimKnownContacts.emails[1]);
   };
 
   // Smart Known Contacts for Edit Claim
@@ -229,6 +215,7 @@ export default function LeadsView({
     setEditSqft(selectedLead.sqft ? selectedLead.sqft.toString() : "");
     setEditInsuranceEmail1(selectedLead.insuranceEmail1 || "");
     setEditInsuranceEmail2(selectedLead.insuranceEmail2 || "");
+    setEditInsuranceNotes(selectedLead.insuranceNotes || "");
     setIsEditingLead(true);
   };
 
@@ -246,6 +233,7 @@ export default function LeadsView({
       sqft: editSqft ? parseInt(editSqft) : 2000,
       insuranceEmail1: editInsuranceEmail1,
       insuranceEmail2: editInsuranceEmail2,
+      insuranceNotes: editInsuranceNotes,
       insuranceProvider: editInsuranceProvider,
       claimNumber: editClaimNumber,
       policyNumber: editPolicyNumber,
@@ -263,6 +251,7 @@ export default function LeadsView({
   const [insuranceClaimNumber, setInsuranceClaimNumber] = useState("");
   const [leadAdjusterName, setLeadAdjusterName] = useState("");
   const [homeownerNotes, setHomeownerNotes] = useState("");
+  const [insuranceNotes, setInsuranceNotes] = useState("");
 
   const selectedLead = selectedLeadId ? (leads.find((l) => l.id === selectedLeadId) || leads[0]) : null;
 
@@ -315,17 +304,7 @@ export default function LeadsView({
   };
 
   // Filter allowed team members for assignments and mentions
-  const allowedTeamMembers = selectedLead ? teamMembers.filter(m => {
-    if (userRole === 'admin') {
-      return selectedLead.organizationId 
-        ? m.organizationId === selectedLead.organizationId 
-        : m.company === selectedLead.company;
-    } else {
-      return activeOrganizationId 
-        ? m.organizationId === activeOrganizationId 
-        : true; // fallback
-    }
-  }) : [];
+  const allowedTeamMembers = eligibleCaseMembers(teamMembers, selectedLead?.organizationId || activeOrganizationId);
 
   // Sync cash inputs text values from lead's database object
   useEffect(() => {
@@ -353,7 +332,7 @@ export default function LeadsView({
       setEditInsuranceEmail2(selectedLead.insuranceEmail2 || "");
     }
 
-    if (selectedLead && selectedLead.estimate?.cashData) {
+    if (userRole === "admin" && selectedLead && selectedLead.estimate?.cashData) {
       const data = selectedLead.estimate.cashData;
       const inputs: Record<string, string> = {};
       Object.keys(data).forEach(k => {
@@ -422,55 +401,6 @@ export default function LeadsView({
     await onUpdateLead(selectedLead.id, { estimate: updatedEstimate });
   };
 
-  const getProfitsBreakdown = () => {
-    const parseVal = (k: string) => {
-      const str = cashInputs[k];
-      if (!str) return 0;
-      const val = parseFloat(str);
-      return isNaN(val) ? 0 : val;
-    };
-    
-    const primerCheque = parseVal("primerCheque");
-    const segundoCheque = parseVal("segundoCheque");
-    const tercerCheque = parseVal("tercerCheque");
-    const deducible = parseVal("deducible");
-    const sup1 = parseVal("suplemento1");
-    const sup2 = parseVal("suplemento2");
-    const sup3 = parseVal("suplemento3");
-    
-    const totalRevenue = primerCheque + segundoCheque + tercerCheque + deducible + sup1 + sup2 + sup3;
-    
-    const mat = parseVal("valorMaterial");
-    const lab = parseVal("valorLabor");
-    const tax = parseVal("valorTax");
-    const perm = parseVal("valorPermisos");
-    const loss = parseVal("perdidaRepentina");
-    
-    const totalCosts = mat + lab + tax + perm + loss;
-    
-    const netProfit = totalRevenue - totalCosts;
-    const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
-    
-    return {
-      primerCheque,
-      segundoCheque,
-      tercerCheque,
-      deducible,
-      sup1,
-      sup2,
-      sup3,
-      totalRevenue,
-      mat,
-      lab,
-      tax,
-      perm,
-      loss,
-      totalCosts,
-      netProfit,
-      profitMargin
-    };
-  };
-
   const handleOpenProfits = async () => {
     await saveCashData();
     if (onNavigateToView) {
@@ -536,6 +466,8 @@ export default function LeadsView({
   const [cursorPosition, setCursorPosition] = useState(0);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState("");
+  const [noteError, setNoteError] = useState('');
+  const [mentionedMembers, setMentionedMembers] = useState<TeamMember[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -576,17 +508,17 @@ export default function LeadsView({
     if (leads.length === 0) {
       return (
         <div className="h-[calc(100vh-8rem)] flex items-center justify-center p-6 lg:p-8 overflow-y-auto">
-          <div className="flex flex-col items-center justify-center bg-slate-800/40 rounded-3xl border border-slate-700/50 p-12 text-center max-w-md">
-            <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6">
-              <Users className="w-10 h-10 text-blue-400" />
+          <div className={`flex flex-col items-center justify-center rounded-3xl border p-12 text-center max-w-md shadow-sm ${isInsuranceView ? "bg-white border-[#E3E8ED]" : "bg-slate-800/40 border-slate-700/50"}`}>
+            <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 ${isInsuranceView ? "bg-[#F5EAE1]" : "bg-blue-500/10"}`}>
+              <Users className={`w-10 h-10 ${isInsuranceView ? "text-[#955B32]" : "text-blue-400"}`} />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-3">No hay registros</h2>
-            <p className="text-slate-400 mb-8">
+            <h2 className={`text-2xl font-bold mb-3 ${isInsuranceView ? "text-[#17314A]" : "text-white"}`}>No hay registros</h2>
+            <p className={`mb-8 ${isInsuranceView ? "text-slate-500" : "text-slate-400"}`}>
               No se encontró ningún registro en la base de datos. Haz clic en el botón de abajo para empezar a registrar información real.
             </p>
             <button
               onClick={() => setIsAddingLead(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-900/20"
+              className={`flex items-center gap-2 px-6 py-3 text-white rounded-xl font-semibold transition-all shadow-lg ${isInsuranceView ? "bg-[#17314A] hover:bg-[#25435B]" : "bg-blue-600 hover:bg-blue-500 shadow-blue-900/20"}`}
             >
               <Plus className="w-5 h-5" />
               {addButtonLabel || "Añadir Nuevo"}
@@ -597,42 +529,65 @@ export default function LeadsView({
     }
 
     return (
-      <div className="flex-1 p-6 space-y-6 overflow-y-auto bg-[#f7f9fb]">
+      <div className="flex-1 p-6 space-y-6 overflow-y-auto bg-[#F5F7F8]">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#c6c6cd]/30 pb-4">
-          <div>
-            <h1 className="font-sans text-[26px] font-bold text-[#131b2e] tracking-tight">
+        <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b pb-5 ${isInsuranceView ? "border-[#D8E0E6]" : "border-[#D8E0E6]/30"}`}>
+          <div className="flex items-center gap-4">
+            {isInsuranceView && (
+              <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-gradient-to-br from-[#17314A] to-[#25435B] shadow-md items-center justify-center shrink-0">
+                <ShieldCheck className="w-6 h-6 text-[#E7C3A8]" strokeWidth={1.7} />
+              </div>
+            )}
+            <div>
+            {isInsuranceView && <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#955B32] mb-1">Gestión de expedientes</p>}
+            <h1 className={`font-sans font-bold tracking-tight ${isInsuranceView ? "text-[28px] text-[#17314A]" : "text-[26px] text-[#17314A]"}`}>
               {viewTitle || "Carpeta de Leads & Clientes"}
             </h1>
-            <p className="font-sans text-xs text-[#7c839b] mt-1 font-medium">
+            <p className="font-sans text-xs text-[#68798A] mt-1 font-medium">
               {viewSubtitle || "Cronologías de reclamos de seguros, visitas de peritos y archivos técnicos de propiedad."}
             </p>
+            </div>
           </div>
-          <button
-            onClick={() => setIsAddingLead(true)}
-            className="btn-responsive btn-gold-3d px-4 py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg flex items-center gap-1.5 shadow-sm transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            {addButtonLabel || "Crear Nuevo Lead"}
-          </button>
+          <div className="flex items-center gap-3">
+            {isInsuranceView && <span className="hidden md:inline-flex px-3 py-2 rounded-xl bg-white border border-[#E3E8ED] text-xs font-semibold text-slate-500">{filteredLeadsForSearch.length} expedientes</span>}
+            <button
+              onClick={() => setIsAddingLead(true)}
+              className="btn-responsive btn-gold-3d px-4 py-2.5 bg-[#B77A4B] hover:bg-[#955B32] text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              {addButtonLabel || "Crear Nuevo Lead"}
+            </button>
+          </div>
         </div>
 
         {/* Horizontal Case Cards List */}
-        <div className="space-y-3 max-w-7xl mx-auto">
+        <div className={`space-y-3 mx-auto ${isInsuranceView ? "max-w-[1440px]" : "max-w-7xl"}`}>
           {/* Grid Column Headers for Desktop */}
           {filteredLeadsForSearch.length > 0 && (
-            <div className="hidden lg:grid grid-cols-12 gap-4 px-5 py-2 text-[11px] font-bold text-[#64748B] uppercase tracking-wider border-b border-[#E2E4EA] mb-1 select-none">
-              <div className="col-span-3">Cliente</div>
-              <div className="col-span-3">Dirección</div>
-              <div className="col-span-2">Claim</div>
-              <div className="col-span-2">Empresa</div>
-              <div className="col-span-1 text-center">Etapa</div>
-              <div className="col-span-1 text-right">Días</div>
+            <div className={`hidden lg:grid grid-cols-12 gap-4 px-5 py-3 text-[10px] font-bold text-[#718093] uppercase tracking-[.12em] border-b mb-1 select-none ${isInsuranceView ? "border-[#D8E0E6]" : "border-[#E2E4EA]"}`}>
+              {isInsuranceView ? (
+                <>
+                  <div className="col-span-3">Propietario</div>
+                  <div className={isAdminInsuranceView ? "col-span-3" : "col-span-4"}>Propiedad</div>
+                  <div className={isAdminInsuranceView ? "col-span-3" : "col-span-4"}>Aseguradora / claim</div>
+                  {isAdminInsuranceView && <div className="col-span-2">Contratista</div>}
+                  <div className="col-span-1 text-right">Actividad</div>
+                </>
+              ) : (
+                <>
+                  <div className="col-span-3">Cliente</div>
+                  <div className="col-span-3">Dirección</div>
+                  <div className="col-span-2">Claim</div>
+                  <div className="col-span-2">Empresa</div>
+                  <div className="col-span-1 text-center">Etapa</div>
+                  <div className="col-span-1 text-right">Días</div>
+                </>
+              )}
             </div>
           )}
 
           {filteredLeadsForSearch.length === 0 ? (
-            <div className="text-center py-12 bg-white border border-[#c6c6cd]/30 rounded-2xl text-xs text-slate-500 font-semibold shadow-sm">
+            <div className="text-center py-12 bg-white border border-[#D8E0E6] rounded-2xl text-sm text-slate-500 font-semibold shadow-sm">
               No se encontraron casos para la búsqueda actual
             </div>
           ) : (
@@ -653,15 +608,58 @@ export default function LeadsView({
                 <div
                   key={lead.id}
                   onClick={() => onSelectLead(lead.id)}
-                  className={`p-4 bg-white border border-[#E2E4EA] rounded-xl ambient-shadow-hover cursor-pointer transition-all duration-200 group ${statusBorderClass}`}
+                  className={`${isInsuranceView ? "insurance-claim-card px-5 py-4 bg-white border border-[#E3E8ED] rounded-2xl" : `p-4 bg-white border border-[#E2E4EA] rounded-xl ${statusBorderClass}`} ambient-shadow-hover cursor-pointer transition-all duration-200 group`}
                 >
+                  {isInsuranceView ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+                      <div className="lg:col-span-3 flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-[#F5EAE1] text-[#955B32] flex items-center justify-center shrink-0">
+                          <Home className="w-[18px] h-[18px]" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-[#17314A] truncate group-hover:text-[#955B32] transition-colors">{lead.name}</p>
+                          <p className="text-[11px] text-slate-400 truncate">{lead.phone || "Sin teléfono registrado"}</p>
+                        </div>
+                      </div>
+
+                      <div className={`${isAdminInsuranceView ? "lg:col-span-3" : "lg:col-span-4"} flex items-start gap-2 text-xs text-slate-600 min-w-0`}>
+                        <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-[#A77C5E]" />
+                        <span className="leading-5 line-clamp-2">{lead.address || "Dirección pendiente"}</span>
+                      </div>
+
+                      <div className={`${isAdminInsuranceView ? "lg:col-span-3" : "lg:col-span-4"} flex items-start gap-2 min-w-0`}>
+                        <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-[#A77C5E]" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-[#33475B] truncate">{lead.insuranceProvider || "Aseguradora pendiente"}</p>
+                          <p className="text-[11px] text-slate-400 truncate">Claim · {lead.claimNumber || "Por reclamar"}</p>
+                        </div>
+                      </div>
+
+                      {isAdminInsuranceView && <div className="lg:col-span-2 min-w-0">
+                        <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-[#F3F6F8] px-2.5 py-1.5 text-xs font-semibold text-[#526477] truncate">
+                          <Building className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                          <span className="truncate">{lead.company || "Xapcon Group"}</span>
+                        </span>
+                      </div>}
+
+                      <div className="lg:col-span-1 flex lg:justify-end">
+                        <span
+                          title={`Sin actualización hace ${days} ${days === 1 ? "día" : "días"}`}
+                          className={`inline-flex min-w-[64px] flex-col items-center rounded-xl px-2 py-1.5 ${days >= 7 ? "bg-rose-50 text-rose-700" : days >= 3 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}
+                        >
+                          <span className="text-sm font-bold leading-5">{days === 0 ? "Hoy" : `${days} d`}</span>
+                          <span className="text-[9px] font-semibold uppercase tracking-wide opacity-70">{days >= 7 ? "Atención" : "Actualizado"}</span>
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
                     {/* Col 1: Icon + Client Name */}
                     <div className="lg:col-span-3 flex items-center gap-3 min-w-0">
                       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[#FEF3C7]">
                         <Home className="w-4 h-4 text-[#B8860B]" />
                       </div>
-                      <span className="text-sm font-bold text-[#0F172A] tracking-tight group-hover:text-[#B8860B] transition-colors truncate">
+                      <span className="text-sm font-bold text-[#17314A] tracking-tight group-hover:text-[#B8860B] transition-colors truncate">
                         {lead.name}
                       </span>
                     </div>
@@ -681,12 +679,12 @@ export default function LeadsView({
                     {/* Col 4: Empresa */}
                     <div className="lg:col-span-2 text-xs text-[#64748B] truncate">
                       <span className="text-slate-400 lg:hidden font-semibold">Empresa: </span>
-                      <span className="font-semibold text-[#0F172A]">{lead.company || "Xapcon Group"}</span>
+                      <span className="font-semibold text-[#17314A]">{lead.company || "Xapcon Group"}</span>
                     </div>
 
                     {/* Col 5: Etapa */}
                     <div className="lg:col-span-1 flex items-center lg:justify-center">
-                      <span className="px-2.5 py-1 bg-[#eab308] text-[#0F172A] text-[9px] rounded-md font-extrabold uppercase tracking-wider whitespace-nowrap shadow-sm">
+                      <span className="px-2.5 py-1 bg-[#B77A4B] text-[#17314A] text-[9px] rounded-md font-extrabold uppercase tracking-wider whitespace-nowrap shadow-sm">
                         {lead.status}
                       </span>
                     </div>
@@ -713,6 +711,7 @@ export default function LeadsView({
                       </svg>
                     </div>
                   </div>
+                  )}
                 </div>
               );
             })
@@ -722,22 +721,6 @@ export default function LeadsView({
     );
   }
   
-  const handleAddTaskSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTaskTitle.trim() || !onAddTask || !selectedLead) return;
-
-    setIsAddingTask(true);
-    try {
-      await onAddTask(selectedLead.id, newTaskTitle.trim(), newTaskAssignedTo || undefined);
-      setNewTaskTitle("");
-      setNewTaskAssignedTo("");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsAddingTask(false);
-    }
-  };
-
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -764,6 +747,10 @@ export default function LeadsView({
     const pos = e.target.selectionStart || 0;
     
     setNewNote(value);
+    setMentionedMembers((members) => members.filter((member) => {
+      const firstName = member.name ? member.name.split(" ")[0] : "";
+      return firstName && value.includes(`@${firstName}`);
+    }));
     setCursorPosition(pos);
     const textBeforeCursor = value.substring(0, pos);
     const lastAtSign = textBeforeCursor.lastIndexOf("@");
@@ -805,6 +792,7 @@ export default function LeadsView({
     
     const updatedText = `${textBeforeAt}@${firstName} ${textAfterCursor}`;
     setNewNote(updatedText);
+    setMentionedMembers((members) => members.some((item) => item.id === member.id) ? members : [...members, member]);
     setShowMentions(false);
     
     setTimeout(() => {
@@ -817,25 +805,36 @@ export default function LeadsView({
     if (!newNote.trim() && pastedImages.length === 0) return;
     
     setIsUploadingNote(true);
-    let uploadedUrls: string[] = [];
+    setNoteError('');
+    try {
+      let uploadedUrls: string[] = [];
     
-    if (pastedImages.length > 0 && onUploadImageForTimeline) {
-      for (const file of pastedImages) {
-        const url = await onUploadImageForTimeline(file);
-        if (url) uploadedUrls.push(url);
+      if (pastedImages.length > 0 && onUploadImageForTimeline) {
+        for (const file of pastedImages) {
+          const url = await onUploadImageForTimeline(file);
+          if (url) uploadedUrls.push(url);
+        }
       }
-    }
     
-    await onAddTimelineEvent(selectedLead.id, {
-      type: "note",
-      author: "Michael Chen", // Current user
-      title: "Nueva Nota Registrada",
-      content: newNote.trim(),
-      photos: uploadedUrls.length > 0 ? uploadedUrls : undefined
-    });
-    setNewNote("");
-    setPastedImages([]);
-    setIsUploadingNote(false);
+      await onAddTimelineEvent(selectedLead.id, {
+        type: "note",
+        author: "", // The authenticated author is set by the server.
+        title: "Nueva Nota Registrada",
+        content: newNote.trim(),
+        mentionedUserIds: mentionedMembers
+          .filter((member) => {
+            const firstName = member.name ? member.name.split(" ")[0] : "";
+            return firstName && newNote.includes(`@${firstName}`);
+          })
+          .map((member) => member.id),
+        photos: uploadedUrls.length > 0 ? uploadedUrls : undefined
+      });
+      setNewNote("");
+      setMentionedMembers([]);
+      setPastedImages([]);
+    } catch (error) { setNoteError((error as Error).message || 'No se pudo guardar la nota.'); }
+    finally { setIsUploadingNote(false); }
+
   };
 
   const handleCreateLead = (e: React.FormEvent) => {
@@ -847,9 +846,7 @@ export default function LeadsView({
       status: "Nuevo",
       address: leadAddress || "No registrada",
       phone: leadPhone || "No registrado",
-      phone2: isInsuranceView ? leadPhone2 : undefined,
       email: leadEmail || "No registrado",
-      email2: isInsuranceView ? leadEmail2 : undefined,
       propertyType: "Residential - Single Family",
       sqft: Number(leadSqft) || 1500,
       insuranceProvider: leadInsurance,
@@ -858,10 +855,9 @@ export default function LeadsView({
       damageType: isInsuranceView ? insuranceDamage : undefined,
       lossDate: isInsuranceView ? insuranceLossDate : undefined,
       insurancePhone1: isInsuranceView ? insPhone1 : undefined,
-      insurancePhone2: isInsuranceView ? insPhone2 : undefined,
       insuranceEmail1: isInsuranceView ? insEmail1 : undefined,
-      insuranceEmail2: isInsuranceView ? insEmail2 : undefined,
       notes: isInsuranceView ? homeownerNotes : undefined,
+      insuranceNotes: isInsuranceView ? insuranceNotes : undefined,
       adjusterName: isInsuranceView ? (leadAdjusterName || "Por asignar") : "Por asignar",
       assignedRep: leadAssignedRep.trim() || "Por asignar",
       assignedRepAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCOMn-jxxsxze-KxE7RjITjibnMpECd9pRZt1yZyyDI5eazYLGRCAFWs9B1gPugfJKxBDA3-yro9u2C0jFV-hNcuCsA2C5HKO4x0IDFsMjuyEEdVA779oxdqiVl1wcSGhBwJAFEY6SMnvjhwRmD-MgiRxcXe5-EEND8x0mJLrnlHXmvXrCH8fuMGbKw-yA8vlL8HA10YP-v5XdlZ1J1tU5QaON6ngK6M9bPDxJzwpKF5OBqDCEKUTYULl2f224zGtFpozg6XEPqYAUC",
@@ -873,16 +869,13 @@ export default function LeadsView({
     setLeadAddress("");
     setLeadPhone("");
     setLeadEmail("");
-    setLeadPhone2("");
-    setLeadEmail2("");
     setLeadAssignedRep("");
     setInsurancePolicy("");
     setInsuranceDamage("Hail Damage");
     setInsuranceLossDate("");
     setInsPhone1("");
-    setInsPhone2("");
     setInsEmail1("");
-    setInsEmail2("");
+    setInsuranceNotes("");
     setInsuranceClaimNumber("");
     setLeadAdjusterName("");
     setHomeownerNotes("");
@@ -892,14 +885,14 @@ export default function LeadsView({
   return (
     <div className="flex-1 p-6 space-y-6 overflow-y-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#c6c6cd]/30 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#D8E0E6]/30 pb-4">
         <div>
-          <h1 className="font-sans text-[26px] font-bold text-[#131b2e] tracking-tight">{viewTitle || "Carpeta de Leads & Clientes"}</h1>
+          <h1 className="font-sans text-[26px] font-bold text-[#17314A] tracking-tight">{viewTitle || "Carpeta de Leads & Clientes"}</h1>
           <p className="font-sans text-xs text-[#7c839b] mt-1 font-medium">{viewSubtitle || "Cronologías de reclamos de seguros, visitas de peritos y archivos técnicos de propiedad."}</p>
         </div>
         <button
           onClick={() => setIsAddingLead(!isAddingLead)}
-          className="btn-responsive btn-gold-3d px-4 py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-sm transition-all"
+          className="btn-responsive btn-gold-3d px-4 py-2 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-sm transition-all"
         >
           <Plus className="w-4 h-4" />
           {addButtonLabel || "Crear Nuevo Lead"}
@@ -912,21 +905,21 @@ export default function LeadsView({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
               
               {/* Left Card: Homeowner Details */}
-              <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
+              <div className="bg-white border border-[#D8E0E6]/30 rounded-2xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
                 <div className="space-y-4">
-                  <h3 className="font-sans text-sm font-bold text-[#131b2e] border-b pb-2 flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#ca8a04] font-bold">1</span>
+                  <h3 className="font-sans text-sm font-bold text-[#17314A] border-b pb-2 flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#955B32] font-bold">1</span>
                     <span>Datos del Homeowner (Propietario)</span>
                   </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {userRole === "admin" && organizations && organizations.length > 0 && (
                       <div className="md:col-span-2">
-                        <label className="block text-[11px] font-bold text-[#ca8a04] mb-1">Empresa / Contratista Asignado</label>
+                        <label className="block text-[11px] font-bold text-[#955B32] mb-1">Empresa / Contratista Asignado</label>
                         <select 
                           value={selectedOrgId} 
                           onChange={(e) => setSelectedOrgId(e.target.value)}
-                          className="w-full bg-white border border-[#c6c6cd]/80 rounded-lg p-2 text-xs text-[#191c1e] font-bold focus:border-[#eab308] outline-none cursor-pointer"
+                          className="w-full bg-white border border-[#D8E0E6]/80 rounded-lg p-2 text-xs text-[#191c1e] font-bold focus:border-[#B77A4B] outline-none cursor-pointer"
                           required
                         >
                           {organizations.map((org) => (
@@ -942,7 +935,7 @@ export default function LeadsView({
                         value={leadName} 
                         onChange={(e) => setLeadName(e.target.value)}
                         placeholder="Nombre del propietario" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                         required
                       />
                     </div>
@@ -953,7 +946,7 @@ export default function LeadsView({
                         value={leadAddress} 
                         onChange={(e) => setLeadAddress(e.target.value)}
                         placeholder="Ej. 1244 Maplewood Dr, Austin" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                       />
                     </div>
                     <div>
@@ -963,7 +956,7 @@ export default function LeadsView({
                         value={leadPhone} 
                         onChange={(e) => setLeadPhone(e.target.value)}
                         placeholder="(555) 012-3456" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                       />
                     </div>
                     <div>
@@ -973,27 +966,7 @@ export default function LeadsView({
                         value={leadEmail} 
                         onChange={(e) => setLeadEmail(e.target.value)}
                         placeholder="ejemplo@correo.com" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#45464d] mb-1">Teléfono de Contacto 2</label>
-                      <input 
-                        type="text" 
-                        value={leadPhone2} 
-                        onChange={(e) => setLeadPhone2(e.target.value)}
-                        placeholder="Segundo teléfono" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#45464d] mb-1">Correo Electrónico 2</label>
-                      <input 
-                        type="email" 
-                        value={leadEmail2} 
-                        onChange={(e) => setLeadEmail2(e.target.value)}
-                        placeholder="segundo@correo.com" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                       />
                     </div>
                     <div>
@@ -1003,7 +976,7 @@ export default function LeadsView({
                         value={leadAssignedRep} 
                         onChange={(e) => setLeadAssignedRep(e.target.value)}
                         placeholder="Ej. Michael Chen" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                       />
                     </div>
                     <div className="md:col-span-2">
@@ -1013,7 +986,7 @@ export default function LeadsView({
                         onChange={(e) => setHomeownerNotes(e.target.value)}
                         placeholder="Escribe alguna observación o comentario extra del propietario..." 
                         rows={3}
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none resize-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none resize-none"
                       />
                     </div>
                   </div>
@@ -1021,10 +994,10 @@ export default function LeadsView({
               </div>
               
               {/* Right Card: Insurance Details */}
-              <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
+              <div className="bg-white border border-[#D8E0E6]/30 rounded-2xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
                 <div className="space-y-4">
-                  <h3 className="font-sans text-sm font-bold text-[#131b2e] border-b pb-2 flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#ca8a04] font-bold">2</span>
+                  <h3 className="font-sans text-sm font-bold text-[#17314A] border-b pb-2 flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#955B32] font-bold">2</span>
                     <span>Datos de la Aseguradora</span>
                   </h3>
                   
@@ -1046,7 +1019,7 @@ export default function LeadsView({
                       <select 
                         value={leadInsurance}
                         onChange={(e) => setLeadInsurance(e.target.value)}
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                       >
                         {dynamicInsuranceCompanies.map((company) => (
                           <option key={company} value={company}>{company}</option>
@@ -1082,7 +1055,7 @@ export default function LeadsView({
                         value={insuranceClaimNumber} 
                         onChange={(e) => setInsuranceClaimNumber(e.target.value)}
                         placeholder="Número de reclamación" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                       />
                     </div>
                     <div>
@@ -1092,7 +1065,7 @@ export default function LeadsView({
                         value={leadAdjusterName} 
                         onChange={(e) => setLeadAdjusterName(e.target.value)}
                         placeholder="Ej. John Doe" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                       />
                     </div>
                     <div>
@@ -1102,7 +1075,7 @@ export default function LeadsView({
                         value={insurancePolicy} 
                         onChange={(e) => setInsurancePolicy(e.target.value)}
                         placeholder="Número de póliza" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                       />
                     </div>
                     <div>
@@ -1110,7 +1083,7 @@ export default function LeadsView({
                       <select 
                         value={insuranceDamage} 
                         onChange={(e) => setInsuranceDamage(e.target.value)}
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                       >
                         {DAMAGE_TYPES.map((type) => (
                           <option key={type} value={type}>{type}</option>
@@ -1123,7 +1096,7 @@ export default function LeadsView({
                         type="date" 
                         value={insuranceLossDate} 
                         onChange={(e) => setInsuranceLossDate(e.target.value)}
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                       />
                     </div>
                     <div>
@@ -1133,17 +1106,7 @@ export default function LeadsView({
                         value={insPhone1} 
                         onChange={(e) => setInsPhone1(e.target.value)}
                         placeholder="Teléfono primario" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#45464d] mb-1">Teléfono Seguro 2</label>
-                      <input 
-                        type="text" 
-                        value={insPhone2} 
-                        onChange={(e) => setInsPhone2(e.target.value)}
-                        placeholder="Teléfono secundario" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                       />
                     </div>
                     <div>
@@ -1153,17 +1116,17 @@ export default function LeadsView({
                         value={insEmail1} 
                         onChange={(e) => setInsEmail1(e.target.value)}
                         placeholder="correo1@seguro.com" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-[11px] font-bold text-[#45464d] mb-1">Correo Seguro 2</label>
-                      <input 
-                        type="email" 
-                        value={insEmail2} 
-                        onChange={(e) => setInsEmail2(e.target.value)}
-                        placeholder="correo2@seguro.com" 
-                        className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                      <label className="block text-[11px] font-bold text-[#45464d] mb-1">Nota (Observación Extra)</label>
+                      <textarea
+                        value={insuranceNotes}
+                        onChange={(e) => setInsuranceNotes(e.target.value)}
+                        placeholder="Escribe una observación o comentario sobre la aseguradora..."
+                        rows={3}
+                        className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none resize-none"
                       />
                     </div>
                   </div>
@@ -1173,16 +1136,16 @@ export default function LeadsView({
             </div>
           ) : (
             // Leads view - Single card
-            <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-6 shadow-sm space-y-4 max-w-2xl">
-              <h3 className="font-sans text-sm font-bold text-[#131b2e] border-b pb-2">{formTitle || "Ficha de Nuevo Prospecto de Cliente"}</h3>
+            <div className="bg-white border border-[#D8E0E6]/30 rounded-2xl p-6 shadow-sm space-y-4 max-w-2xl">
+              <h3 className="font-sans text-sm font-bold text-[#17314A] border-b pb-2">{formTitle || "Ficha de Nuevo Prospecto de Cliente"}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {userRole === "admin" && organizations && organizations.length > 0 && (
                   <div className="md:col-span-2">
-                    <label className="block text-[11px] font-bold text-[#ca8a04] mb-1">Empresa / Contratista Asignado</label>
+                    <label className="block text-[11px] font-bold text-[#955B32] mb-1">Empresa / Contratista Asignado</label>
                     <select 
                       value={selectedOrgId} 
                       onChange={(e) => setSelectedOrgId(e.target.value)}
-                      className="w-full bg-white border border-[#c6c6cd]/80 rounded-lg p-2 text-xs text-[#191c1e] font-bold focus:border-[#eab308] outline-none cursor-pointer"
+                      className="w-full bg-white border border-[#D8E0E6]/80 rounded-lg p-2 text-xs text-[#191c1e] font-bold focus:border-[#B77A4B] outline-none cursor-pointer"
                       required
                     >
                       {organizations.map((org) => (
@@ -1198,7 +1161,7 @@ export default function LeadsView({
                     value={leadName} 
                     onChange={(e) => setLeadName(e.target.value)}
                     placeholder="Nombre del propietario" 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                     required
                   />
                 </div>
@@ -1209,7 +1172,7 @@ export default function LeadsView({
                     value={leadAddress} 
                     onChange={(e) => setLeadAddress(e.target.value)}
                     placeholder="Ej. 1244 Maplewood Dr, Austin" 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
@@ -1219,7 +1182,7 @@ export default function LeadsView({
                     value={leadPhone} 
                     onChange={(e) => setLeadPhone(e.target.value)}
                     placeholder="(555) 012-3456" 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
@@ -1229,7 +1192,7 @@ export default function LeadsView({
                     value={leadEmail} 
                     onChange={(e) => setLeadEmail(e.target.value)}
                     placeholder="ejemplo@correo.com" 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
@@ -1239,7 +1202,7 @@ export default function LeadsView({
                     value={leadSqft} 
                     onChange={(e) => setLeadSqft(Number(e.target.value))}
                     placeholder="2000" 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
@@ -1247,7 +1210,7 @@ export default function LeadsView({
                   <select 
                     value={leadInsurance}
                     onChange={(e) => setLeadInsurance(e.target.value)}
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   >
                     {dynamicInsuranceCompanies.map((company) => (
                       <option key={company} value={company}>{company}</option>
@@ -1261,7 +1224,7 @@ export default function LeadsView({
                     value={leadAssignedRep} 
                     onChange={(e) => setLeadAssignedRep(e.target.value)}
                     placeholder="Ej. Michael Chen" 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
               </div>
@@ -1269,7 +1232,7 @@ export default function LeadsView({
           )}
           
           {/* Action buttons (fixed/styled row) */}
-          <div className={`flex justify-end gap-2 p-4 bg-white border border-[#c6c6cd]/30 rounded-2xl shadow-sm w-full ${isInsuranceView ? "" : "max-w-2xl"}`}>
+          <div className={`flex justify-end gap-2 p-4 bg-white border border-[#D8E0E6]/30 rounded-2xl shadow-sm w-full ${isInsuranceView ? "" : "max-w-2xl"}`}>
             <button 
               type="button" 
               onClick={() => setIsAddingLead(false)}
@@ -1279,7 +1242,7 @@ export default function LeadsView({
             </button>
             <button 
               type="submit" 
-              className="btn-responsive btn-gold-3d px-4 py-2 bg-[#eab308] text-slate-900 text-xs font-bold rounded-lg shadow-sm hover:bg-[#ca8a04] transition-colors"
+              className="btn-responsive btn-gold-3d px-4 py-2 bg-[#B77A4B] text-slate-900 text-xs font-bold rounded-lg shadow-sm hover:bg-[#955B32] transition-colors"
             >
               {formSubmitLabel || "Registrar Prospecto"}
             </button>
@@ -1290,23 +1253,23 @@ export default function LeadsView({
 
       {/* Main Content Pane */}
       {selectedLead && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="claim-case-layout grid grid-cols-1 xl:grid-cols-[310px_minmax(0,1fr)] gap-5 items-start">
         
         {/* Columna 2: Ficha Técnica (Dividida en 2 Cuadros: Homeowner e Información del Seguro) */}
-        <div className="lg:col-span-3 flex flex-col space-y-4">
+        <div className="claim-case-sidebar flex flex-col gap-4">
           
           {/* CUADRO 1: Información del Homeowner */}
-          <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-4 shadow-sm flex flex-col space-y-3">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-2 w-full">
+          <div className={`claim-profile-card bg-white border border-[#D8E0E6]/30 rounded-2xl p-4 shadow-sm flex flex-col space-y-3 ${userRole === "contractor" ? "contractor-profile-card contractor-homeowner-card" : ""}`}>
+            <div className="claim-profile-card-header flex items-center justify-between border-b border-gray-100 pb-2 w-full">
               <div className="flex items-center gap-2">
                 <Home className="w-4 h-4 text-[#B8860B]" />
-                <h2 className="font-sans text-xs font-bold text-[#131b2e]">Información del Homeowner</h2>
+                <h2 className="font-sans text-xs font-bold text-[#17314A]">Información del Homeowner</h2>
               </div>
               {!isEditingLead && onUpdateLead && (
                 <button 
                   type="button"
                   onClick={handleStartEdit} 
-                  className="text-[#ca8a04] hover:text-[#eab308] text-[10px] font-bold transition-colors cursor-pointer"
+                  className="text-[#955B32] hover:text-[#B77A4B] text-[10px] font-bold transition-colors cursor-pointer"
                 >
                   Editar
                 </button>
@@ -1321,7 +1284,7 @@ export default function LeadsView({
                     type="text" 
                     value={editName} 
                     onChange={(e) => setEditName(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                     required
                   />
                 </div>
@@ -1331,7 +1294,7 @@ export default function LeadsView({
                     type="text" 
                     value={editAddress} 
                     onChange={(e) => setEditAddress(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
@@ -1340,16 +1303,7 @@ export default function LeadsView({
                     type="text" 
                     value={editPhone} 
                     onChange={(e) => setEditPhone(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Teléfono Secundario</label>
-                  <input 
-                    type="text" 
-                    value={editPhone2} 
-                    onChange={(e) => setEditPhone2(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
@@ -1358,37 +1312,7 @@ export default function LeadsView({
                     type="email" 
                     value={editEmail} 
                     onChange={(e) => setEditEmail(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Secundario</label>
-                  <input 
-                    type="email" 
-                    value={editEmail2} 
-                    onChange={(e) => setEditEmail2(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipo de Propiedad</label>
-                  <select 
-                    value={editPropertyType} 
-                    onChange={(e) => setEditPropertyType(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                  >
-                    <option value="Residential - Single Family">Residencial - Single Family</option>
-                    <option value="Residential - Multi Family">Residencial - Multi Family</option>
-                    <option value="Commercial">Comercial</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Pies Cuadrados (Sqft)</label>
-                  <input 
-                    type="number" 
-                    value={editSqft} 
-                    onChange={(e) => setEditSqft(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
@@ -1397,56 +1321,37 @@ export default function LeadsView({
                     type="text" 
                     value={editAssignedRep} 
                     onChange={(e) => setEditAssignedRep(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
               </div>
             ) : (
-              <div className="space-y-3 text-xs text-center">
-                <div>
+              <div className="claim-profile-data space-y-3 text-xs text-center">
+                <div className={userRole === "contractor" ? "contractor-profile-identity" : undefined}>
+                  {userRole === "contractor" && <span className="contractor-profile-mark"><Home aria-hidden="true" /></span>}
                   <span className="text-[#7c839b] font-medium block">Propietario</span>
-                  <span className="text-[#131b2e] font-bold block">{selectedLead.name}</span>
+                  <span className="text-[#17314A] font-bold block">{selectedLead.name}</span>
                 </div>
                 <div>
                   <span className="text-[#7c839b] font-medium block">Dirección</span>
-                  <span className="text-[#131b2e] font-bold block">{selectedLead.address || "Sin dirección"}</span>
+                  <span className="text-[#17314A] font-bold block">{selectedLead.address || "Sin dirección"}</span>
                 </div>
                 <div>
                   <span className="text-[#7c839b] font-medium block">Teléfono Principal</span>
-                  <span className="text-[#131b2e] font-bold block">{selectedLead.phone || "No registrado"}</span>
+                  <span className="text-[#17314A] font-bold block">{selectedLead.phone || "No registrado"}</span>
                 </div>
-                {selectedLead.phone2 && (
-                  <div>
-                    <span className="text-[#7c839b] font-medium block">Teléfono Secundario</span>
-                    <span className="text-[#131b2e] font-bold block">{selectedLead.phone2}</span>
-                  </div>
-                )}
                 <div>
                   <span className="text-[#7c839b] font-medium block">Correo Electrónico</span>
-                  <span className="text-[#131b2e] font-bold block truncate">{selectedLead.email || "No registrado"}</span>
-                </div>
-                {selectedLead.email2 && (
-                  <div>
-                    <span className="text-[#7c839b] font-medium block">Correo Secundario</span>
-                    <span className="text-[#131b2e] font-bold block truncate">{selectedLead.email2}</span>
-                  </div>
-                )}
-                <div>
-                  <span className="text-[#7c839b] font-medium block">Tipo de Propiedad</span>
-                  <span className="text-[#131b2e] font-bold block">{selectedLead.propertyType || "Residencial"}</span>
-                </div>
-                <div>
-                  <span className="text-[#7c839b] font-medium block">Superficie</span>
-                  <span className="text-[#131b2e] font-bold block">{selectedLead.sqft} SQFT (~{(selectedLead.sqft / 100).toFixed(1)} SQ)</span>
+                  <span className="text-[#17314A] font-bold block truncate">{selectedLead.email || "No registrado"}</span>
                 </div>
                 {selectedLead.assignedRep && (
                   <div>
                     <span className="text-[#7c839b] font-medium block">Rep. Asignado</span>
-                    <span className="text-[#131b2e] font-bold block">{selectedLead.assignedRep}</span>
+                    <span className="text-[#17314A] font-bold block">{selectedLead.assignedRep}</span>
                   </div>
                 )}
                 {selectedLead.notes && (
-                  <div className="bg-[#f2f4f6]/60 border border-[#c6c6cd]/30 rounded-xl p-3 mt-1">
+                  <div className="claim-profile-note bg-[#f2f4f6]/60 border border-[#D8E0E6]/30 rounded-xl p-3 mt-1">
                     <span className="text-[#7c839b] font-bold block text-[10px] uppercase mb-1">Notas</span>
                     <p className="text-[#191c1e] text-xs leading-relaxed font-medium italic text-center">"{selectedLead.notes}"</p>
                   </div>
@@ -1456,11 +1361,11 @@ export default function LeadsView({
           </div>
 
           {/* CUADRO 2: Información del Seguro */}
-          <div className="bg-white border border-[#c6c6cd]/30 rounded-2xl p-4 shadow-sm flex flex-col space-y-3">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-2 w-full">
+          <div className={`claim-profile-card bg-white border border-[#D8E0E6]/30 rounded-2xl p-4 shadow-sm flex flex-col space-y-3 ${userRole === "contractor" ? "contractor-profile-card contractor-insurance-card" : ""}`}>
+            <div className="claim-profile-card-header flex items-center justify-between border-b border-gray-100 pb-2 w-full">
               <div className="flex items-center gap-2">
                 <FileCheck2 className="w-4 h-4 text-blue-600" />
-                <h2 className="font-sans text-xs font-bold text-[#131b2e]">Información del Seguro</h2>
+                <h2 className="font-sans text-xs font-bold text-[#17314A]">Información del Seguro</h2>
               </div>
             </div>
 
@@ -1483,7 +1388,7 @@ export default function LeadsView({
                   <select 
                     value={editInsuranceProvider} 
                     onChange={(e) => setEditInsuranceProvider(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   >
                     {dynamicInsuranceCompanies.map(company => (
                       <option key={company} value={company}>{company}</option>
@@ -1518,7 +1423,7 @@ export default function LeadsView({
                     type="text" 
                     value={editClaimNumber} 
                     onChange={(e) => setEditClaimNumber(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
@@ -1527,7 +1432,7 @@ export default function LeadsView({
                     type="text" 
                     value={editPolicyNumber} 
                     onChange={(e) => setEditPolicyNumber(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
@@ -1535,7 +1440,7 @@ export default function LeadsView({
                   <select 
                     value={editDamageType} 
                     onChange={(e) => setEditDamageType(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   >
                     {DAMAGE_TYPES.map(type => (
                       <option key={type} value={type}>{type}</option>
@@ -1548,7 +1453,7 @@ export default function LeadsView({
                     type="date" 
                     value={editLossDate} 
                     onChange={(e) => setEditLossDate(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
@@ -1557,7 +1462,7 @@ export default function LeadsView({
                     type="text" 
                     value={editAdjusterName} 
                     onChange={(e) => setEditAdjusterName(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
@@ -1566,16 +1471,7 @@ export default function LeadsView({
                     type="text" 
                     value={editInsurancePhone1} 
                     onChange={(e) => setEditInsurancePhone1(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Teléfono Seguro 2</label>
-                  <input 
-                    type="text" 
-                    value={editInsurancePhone2} 
-                    onChange={(e) => setEditInsurancePhone2(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
@@ -1584,24 +1480,24 @@ export default function LeadsView({
                     type="email" 
                     value={editInsuranceEmail1} 
                     onChange={(e) => setEditInsuranceEmail1(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Seguro 2</label>
-                  <input 
-                    type="email" 
-                    value={editInsuranceEmail2} 
-                    onChange={(e) => setEditInsuranceEmail2(e.target.value)} 
-                    className="w-full bg-[#f7f9fb] border border-[#c6c6cd]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#eab308] outline-none"
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nota de la Aseguradora</label>
+                  <textarea
+                    value={editInsuranceNotes}
+                    onChange={(e) => setEditInsuranceNotes(e.target.value)}
+                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none resize-none"
+                    rows={3}
                   />
                 </div>
 
-                <div className="pt-3 border-t border-[#c6c6cd]/30 flex flex-col gap-2">
+                <div className="pt-3 border-t border-[#D8E0E6]/30 flex flex-col gap-2">
                   <button 
                     type="button"
                     onClick={handleSaveEdit} 
-                    className="btn-gold-3d w-full text-center py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                    className="btn-gold-3d w-full text-center py-2 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold text-xs rounded-lg transition-colors cursor-pointer"
                   >
                     Guardar Cambios
                   </button>
@@ -1615,69 +1511,64 @@ export default function LeadsView({
                 </div>
               </div>
             ) : (
-              <div className="space-y-3 text-xs text-center">
-                <div>
+              <div className="claim-profile-data space-y-3 text-xs text-center">
+                <div className={userRole === "contractor" ? "contractor-profile-identity" : undefined}>
+                  {userRole === "contractor" && <span className="contractor-profile-mark"><ShieldCheck aria-hidden="true" /></span>}
                   <span className="text-[#7c839b] font-medium block">Aseguradora</span>
-                  <span className="text-[#131b2e] font-bold block">{selectedLead.insuranceProvider || "No especificada"}</span>
+                  <span className="text-[#17314A] font-bold block">{selectedLead.insuranceProvider || "No especificada"}</span>
                 </div>
                 <div>
                   <span className="text-[#7c839b] font-medium block">Número de Claim</span>
-                  <span className="text-[#131b2e] font-bold block">{selectedLead.claimNumber || "Sin claim"}</span>
+                  <span className="text-[#17314A] font-bold block">{selectedLead.claimNumber || "Sin claim"}</span>
                 </div>
                 {selectedLead.policyNumber && (
                   <div>
                     <span className="text-[#7c839b] font-medium block">Número de Póliza</span>
-                    <span className="text-[#131b2e] font-bold block">{selectedLead.policyNumber}</span>
+                    <span className="text-[#17314A] font-bold block">{selectedLead.policyNumber}</span>
                   </div>
                 )}
                 {selectedLead.damageType && (
                   <div>
                     <span className="text-[#7c839b] font-medium block">Tipo de Daño</span>
-                    <span className="text-[#131b2e] font-bold block">{selectedLead.damageType}</span>
+                    <span className="text-[#17314A] font-bold block">{selectedLead.damageType}</span>
                   </div>
                 )}
                 {selectedLead.lossDate && (
                   <div>
                     <span className="text-[#7c839b] font-medium block">Fecha de Pérdida</span>
-                    <span className="text-[#131b2e] font-bold block">{selectedLead.lossDate}</span>
+                    <span className="text-[#17314A] font-bold block">{selectedLead.lossDate}</span>
                   </div>
                 )}
                 {selectedLead.adjusterName && (
                   <div>
                     <span className="text-[#7c839b] font-medium block">Perito / Ajustador</span>
-                    <span className="text-[#131b2e] font-bold block">{selectedLead.adjusterName}</span>
+                    <span className="text-[#17314A] font-bold block">{selectedLead.adjusterName}</span>
                   </div>
                 )}
                 {selectedLead.insurancePhone1 && (
                   <div>
                     <span className="text-[#7c839b] font-medium block">Teléfono Seguro 1</span>
-                    <span className="text-[#131b2e] font-bold block">{selectedLead.insurancePhone1}</span>
-                  </div>
-                )}
-                {selectedLead.insurancePhone2 && (
-                  <div>
-                    <span className="text-[#7c839b] font-medium block">Teléfono Seguro 2</span>
-                    <span className="text-[#131b2e] font-bold block">{selectedLead.insurancePhone2}</span>
+                    <span className="text-[#17314A] font-bold block">{selectedLead.insurancePhone1}</span>
                   </div>
                 )}
                 {selectedLead.insuranceEmail1 && (
                   <div>
                     <span className="text-[#7c839b] font-medium block">Correo Seguro 1</span>
-                    <span className="text-[#131b2e] font-bold block truncate">{selectedLead.insuranceEmail1}</span>
+                    <span className="text-[#17314A] font-bold block truncate">{selectedLead.insuranceEmail1}</span>
                   </div>
                 )}
-                {selectedLead.insuranceEmail2 && (
-                  <div>
-                    <span className="text-[#7c839b] font-medium block">Correo Seguro 2</span>
-                    <span className="text-[#131b2e] font-bold block truncate">{selectedLead.insuranceEmail2}</span>
+                {selectedLead.insuranceNotes && (
+                  <div className="claim-profile-note">
+                    <span className="text-[#7c839b] font-bold block text-[10px] uppercase mb-1">Nota de la Aseguradora</span>
+                    <p className="text-[#191c1e] text-xs leading-relaxed font-medium italic">"{selectedLead.insuranceNotes}"</p>
                   </div>
                 )}
 
-                <div className="pt-3 border-t border-[#c6c6cd]/30 flex flex-col gap-2">
-                  <button className="btn-gold-3d w-full text-center py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg transition-colors cursor-pointer">
+                <div className="pt-3 border-t border-[#D8E0E6]/30 flex flex-col gap-2">
+                  <button className="btn-gold-3d w-full text-center py-2 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold text-xs rounded-lg transition-colors cursor-pointer">
                     Escribir Correo a Ajustador
                   </button>
-                  <button className="btn-gold-3d w-full text-center py-2 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-lg transition-colors cursor-pointer">
+                  <button className="btn-gold-3d w-full text-center py-2 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold text-xs rounded-lg transition-colors cursor-pointer">
                     Escribir Correo al HO
                   </button>
                 </div>
@@ -1688,34 +1579,34 @@ export default function LeadsView({
         </div>
 
         {/* Columna 3: Expediente Completo */}
-        <div className="lg:col-span-9 bg-white border border-[#c6c6cd]/30 rounded-2xl p-6 shadow-sm flex flex-col space-y-6">
+        <div className="claim-workspace bg-white border border-[#D8E0E6]/30 rounded-2xl p-6 shadow-sm flex flex-col space-y-6">
           
           {/* Header Metadata of Selected Lead */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#eceef0] pb-4">
+          <div className="claim-case-header flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#EEF1F3] pb-4">
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => onSelectLead("")}
-                className="mr-2 p-2 border border-[#c6c6cd]/30 rounded-xl hover:bg-slate-50 text-gray-500 hover:text-gray-700 transition-all flex items-center gap-1.5 text-xs font-bold shadow-sm"
+                className="claim-case-back mr-2 p-2 border border-[#D8E0E6]/30 rounded-xl hover:bg-slate-50 text-gray-500 hover:text-gray-700 transition-all flex items-center gap-1.5 text-xs font-bold shadow-sm"
                 title="Volver al listado"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Volver</span>
               </button>
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#eab308] to-[#ca8a04] shadow-lg shadow-[#eab308]/30 border border-white/20 flex items-center justify-center shrink-0">
+              <div className="claim-case-icon w-12 h-12 rounded-2xl bg-gradient-to-br from-[#B77A4B] to-[#955B32] shadow-lg shadow-[#B77A4B]/30 border border-white/20 flex items-center justify-center shrink-0">
                 <Home className="w-6 h-6 text-white drop-shadow-md" strokeWidth={1.5} />
               </div>
               <div>
-                <h2 className="font-sans text-xl font-bold text-[#131b2e] leading-tight flex items-center flex-wrap gap-2">
+                <h2 className="font-sans text-xl font-bold text-[#17314A] leading-tight flex items-center flex-wrap gap-2">
                   <span>{selectedLead.name}</span>
                   {selectedLead.claimNumber && selectedLead.claimNumber !== "Por reclamar" && selectedLead.claimNumber !== "Pending" && (
-                    <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-xs rounded font-bold border border-blue-200 shadow-sm">
+                    <span className="claim-number-badge px-2.5 py-0.5 bg-blue-50 text-blue-700 text-xs rounded font-bold border border-blue-200 shadow-sm">
                       Claim: {selectedLead.claimNumber}
                     </span>
                   )}
                 </h2>
                 <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-[#7c839b] font-medium">
-                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-[#ca8a04]" /> {selectedLead.address}</span>
+                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-[#955B32]" /> {selectedLead.address}</span>
                   <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {selectedLead.phone}</span>
                 </div>
               </div>
@@ -1748,12 +1639,12 @@ export default function LeadsView({
               </div>
 
               {/* Botones de Retroceder y Avanzar para cambiar el estado automáticamente */}
-              <div className="flex items-center gap-2 mt-1">
+              <div className="claim-stage-controls flex items-center gap-2 mt-1">
                 <button
                   type="button"
                   onClick={() => handleStageMove("prev")}
                   disabled={selectedLead.status === "Negados"}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border border-slate-200 shadow-sm active:scale-95 cursor-pointer"
+                  className="claim-stage-back px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border border-slate-200 shadow-sm active:scale-95 cursor-pointer"
                   title="Retroceder a la etapa anterior en el Kanban"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
@@ -1764,7 +1655,7 @@ export default function LeadsView({
                   type="button"
                   onClick={() => handleStageMove("next")}
                   disabled={selectedLead.status === "Cancelado"}
-                  className="px-3 py-1.5 bg-[#eab308] hover:bg-[#ca8a04] disabled:opacity-40 disabled:cursor-not-allowed text-slate-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer"
+                  className="claim-stage-next px-3 py-1.5 bg-[#B77A4B] hover:bg-[#955B32] disabled:opacity-40 disabled:cursor-not-allowed text-slate-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer"
                   title="Avanzar a la siguiente etapa en el Kanban"
                 >
                   <span>Avanzar</span>
@@ -1775,32 +1666,34 @@ export default function LeadsView({
           </div>
 
           {/* Tab Control */}
-          <div className="flex border-b border-[#eceef0] pb-1.5 gap-4">
-            {["timeline", "documents", "cash", "tasks"].map((tab) => (
+          <div className="claim-tabs flex border-b border-[#EEF1F3] pb-1.5 gap-4">
+            {["timeline", "documents", userRole === "contractor" ? "contractor_finances" : "cash"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
+                aria-selected={activeTab === tab}
                 className={`font-sans text-xs font-semibold pb-1 border-b-2 transition-all ${
                   activeTab === tab
-                    ? "border-[#eab308] text-[#131b2e] font-bold"
-                    : "border-transparent text-[#7c839b] hover:text-[#131b2e]"
+                    ? "border-[#B77A4B] text-[#17314A] font-bold"
+                    : "border-transparent text-[#7c839b] hover:text-[#17314A]"
                 }`}
               >
-                {tab === "timeline" ? "Línea de Tiempo" : tab === "documents" ? "Documentos" : tab === "cash" ? "Cash" : "Tareas"}
+                {tab === "timeline" ? "Línea de Tiempo" : tab === "documents" ? "Documentos" : tab === "cash" ? "Cash" : "Finanzas"}
               </button>
             ))}
           </div>
 
           {/* Tab content panel */}
-          <div className="w-full space-y-4">
+          <div className="claim-tab-content w-full space-y-4">
               
               {activeTab === "timeline" && (
                 <div className="space-y-4">
                   
                   {/* Enter note editor form */}
-                  <form onSubmit={handlePostNote} className="bg-[#f7f9fb] border border-[#c6c6cd]/30 rounded-xl p-3 flex flex-col gap-2 relative">
+                  <form onSubmit={handlePostNote} className="claim-note-composer bg-[#F5F7F8] border border-[#D8E0E6]/30 rounded-xl p-3 flex flex-col gap-2 relative">
                     
                     {/* Mentions Dropdown */}
+                    {noteError && <p role="alert" className="text-xs text-red-600">{noteError}</p>}
                     {showMentions && allowedTeamMembers && allowedTeamMembers.filter(m => {
                       const searchStr = mentionFilter.toLowerCase();
                       return m.name.toLowerCase().includes(searchStr) || 
@@ -1838,21 +1731,21 @@ export default function LeadsView({
                         onPaste={handlePaste}
                         onKeyDown={handleKeyDown}
                         placeholder="Escribir nota o bitácora... (Ctrl+V para imágenes, Shift+Enter para nueva línea)" 
-                        className="flex-1 bg-white border border-[#c6c6cd]/50 rounded-lg py-2 px-3 text-xs text-[#191c1e] outline-none focus:ring-1 focus:ring-[#eab308] resize-none h-16 scrollbar-thin"
+                        className="flex-1 bg-white border border-[#D8E0E6]/50 rounded-lg py-2 px-3 text-xs text-[#191c1e] outline-none focus:ring-1 focus:ring-[#B77A4B] resize-none h-16 scrollbar-thin"
                         disabled={isUploadingNote}
                       />
                       <button 
                         type="submit" 
                         disabled={(!newNote.trim() && pastedImages.length === 0) || isUploadingNote}
-                        className="btn-gold-3d p-2 bg-[#eab308] text-white rounded-lg hover:bg-[#ca8a04] transition-colors disabled:opacity-50 shrink-0"
+                        className="btn-gold-3d p-2 bg-[#B77A4B] text-white rounded-lg hover:bg-[#955B32] transition-colors disabled:opacity-50 shrink-0"
                       >
                         <Send className={`w-3.5 h-3.5 ${isUploadingNote ? 'animate-pulse' : ''}`} />
                       </button>
                     </div>
                     {pastedImages.length > 0 && (
-                      <div className="flex flex-wrap gap-2 pt-2 border-t border-[#c6c6cd]/20">
+                      <div className="flex flex-wrap gap-2 pt-2 border-t border-[#D8E0E6]/20">
                         {pastedImages.map((file, idx) => (
-                          <div key={idx} className="relative group w-14 h-14 rounded-lg border border-[#c6c6cd]/50 bg-white overflow-hidden">
+                          <div key={idx} className="relative group w-14 h-14 rounded-lg border border-[#D8E0E6]/50 bg-white overflow-hidden">
                             <img 
                               src={URL.createObjectURL(file)} 
                               alt={`Pasted ${idx}`} 
@@ -1877,13 +1770,13 @@ export default function LeadsView({
                       <p className="text-xs text-[#7c839b] text-center py-6 font-medium">No hay eventos ni notas registradas.</p>
                     ) : (
                       selectedLead.timeline.map((ev) => (
-                        <div key={ev.id} className="p-3.5 bg-[#f7f9fb] border border-[#c6c6cd]/20 rounded-xl flex items-start gap-3">
-                          <div className="w-6 h-6 rounded-full bg-slate-200 text-[#131b2e] font-bold text-[9px] flex items-center justify-center shrink-0 border mt-0.5">
+                        <div key={ev.id} className="claim-timeline-entry p-3.5 bg-[#F5F7F8] border border-[#D8E0E6]/20 rounded-xl flex items-start gap-3">
+                          <div className="w-6 h-6 rounded-full bg-slate-200 text-[#17314A] font-bold text-[9px] flex items-center justify-center shrink-0 border mt-0.5">
                             {(ev.author || ev.title || "?").charAt(0).toUpperCase()}
                           </div>
                           <div className="space-y-1.5 flex-1">
                             <div className="flex items-center justify-between">
-                              <span className="font-sans text-xs font-bold text-[#131b2e]">{ev.title}</span>
+                              <span className="font-sans text-xs font-bold text-[#17314A]">{ev.title}</span>
                               <div className="flex items-center gap-2">
                                 <span className="text-[9px] text-[#7c839b]">{ev.timestamp}</span>
                                 {onDeleteTimelineEvent && (ev.type === "note" || ev.id.startsWith("timeline-")) && (
@@ -1904,13 +1797,13 @@ export default function LeadsView({
                             <p className="font-sans text-xs text-[#45464d] leading-relaxed whitespace-pre-wrap">{ev.content}</p>
                             
                             {ev.duration && (
-                              <span className="inline-block px-1.5 py-0.5 bg-white text-[#7c839b] text-[9px] rounded font-medium border border-[#c6c6cd]/20">Duración: {ev.duration}</span>
+                              <span className="inline-block px-1.5 py-0.5 bg-white text-[#7c839b] text-[9px] rounded font-medium border border-[#D8E0E6]/20">Duración: {ev.duration}</span>
                             )}
 
                             {ev.photos && ev.photos.length > 0 && (
                               <div className="flex gap-2 mt-2">
                                 {ev.photos.map((ph, idx) => (
-                                  <div key={idx} className="relative group overflow-hidden rounded-lg w-16 h-16 border border-[#c6c6cd]/30 bg-slate-100">
+                                  <div key={idx} className="relative group overflow-hidden rounded-lg w-16 h-16 border border-[#D8E0E6]/30 bg-slate-100">
                                     <img 
                                       src={ph} 
                                       alt={`Inspection ${idx}`} 
@@ -1919,7 +1812,7 @@ export default function LeadsView({
                                     />
                                   </div>
                                 ))}
-                                <div className="w-16 h-16 rounded-lg bg-[#eceef0] border border-dashed border-[#c6c6cd] flex items-center justify-center text-[#7c839b] text-xs font-bold shrink-0 cursor-pointer hover:bg-slate-100 transition-colors">
+                                <div className="w-16 h-16 rounded-lg bg-[#EEF1F3] border border-dashed border-[#D8E0E6] flex items-center justify-center text-[#7c839b] text-xs font-bold shrink-0 cursor-pointer hover:bg-slate-100 transition-colors">
                                   +1
                                 </div>
                               </div>
@@ -1936,10 +1829,10 @@ export default function LeadsView({
 
 
               {activeTab === "documents" && (
-                <div className="space-y-3">
+                <div className="claim-document-panel space-y-4">
                   <div 
                     onClick={() => fileInputRef.current?.click()}
-                    className={`flex items-center justify-between p-3.5 bg-[#eceef0]/50 border border-[#c6c6cd]/30 border-dashed rounded-xl cursor-pointer transition-all text-center ${isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100'}`}
+                    className={`claim-document-upload flex items-center justify-between p-3.5 bg-[#EEF1F3]/50 border border-[#D8E0E6]/30 border-dashed rounded-xl cursor-pointer transition-all text-center ${isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100'}`}
                   >
                     <input 
                       type="file" 
@@ -1949,8 +1842,8 @@ export default function LeadsView({
                       onChange={handleFileChange}
                       disabled={isUploading}
                     />
-                    <div className="mx-auto flex flex-col items-center">
-                      <Upload className={`w-6 h-6 text-[#ca8a04] mb-1 ${isUploading ? 'animate-bounce' : ''}`} />
+                    <div className="claim-document-upload-copy mx-auto flex flex-col items-center">
+                      <span className="claim-document-upload-icon"><Upload className={`w-5 h-5 text-[#955B32] ${isUploading ? 'animate-bounce' : ''}`} /></span>
                       <span className="text-xs text-[#191c1e] font-semibold">
                         {isUploading ? "Subiendo archivo(s)..." : "Subir Archivo o Reporte Aéreo (EagleView)"}
                       </span>
@@ -1958,23 +1851,23 @@ export default function LeadsView({
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="claim-document-list space-y-2">
                     {selectedLead.documents.length === 0 ? (
-                      <p className="text-xs text-[#7c839b] text-center py-4 font-medium">No hay documentos cargados en el expediente.</p>
+                      <div className="claim-document-empty"><FileText className="w-5 h-5" /><p>No hay documentos cargados en el expediente.</p></div>
                     ) : (
                       selectedLead.documents.map((doc) => (
-                        <div key={doc.id} onClick={() => window.open(doc.url, "_blank")} className="p-3 bg-white border border-[#c6c6cd]/30 rounded-xl flex items-center justify-between hover:bg-[#f7f9fb] transition-all cursor-pointer">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded bg-[#f2f4f6] text-[#ca8a04] flex items-center justify-center font-bold text-xs shrink-0 border">
+                        <div key={doc.id} onClick={() => window.open(doc.url, "_blank")} className="claim-document-item p-3 bg-white border border-[#D8E0E6]/30 rounded-xl flex items-center justify-between hover:bg-[#F5F7F8] transition-all cursor-pointer">
+                          <div className="claim-document-details flex items-center gap-2.5">
+                            <div className="claim-document-icon w-8 h-8 rounded bg-[#f2f4f6] text-[#955B32] flex items-center justify-center font-bold text-xs shrink-0 border">
                               <FileText className="w-4 h-4" />
                             </div>
-                            <div className="space-y-0.5">
-                              <span className="text-xs font-bold text-[#191c1e] block truncate max-w-[200px] hover:text-[#ca8a04] transition-colors">{doc.name}</span>
+                            <div className="claim-document-name space-y-0.5">
+                              <span className="text-xs font-bold text-[#191c1e] block truncate max-w-[200px] hover:text-[#955B32] transition-colors">{doc.name}</span>
                               <span className="text-[10px] text-[#7c839b] font-medium block">{doc.size} • {doc.category}</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <button onClick={(e) => handleDownloadFile(e, doc)} className="text-xs text-[#ca8a04] font-bold hover:underline">Descargar</button>
+                          <div className="claim-document-actions flex items-center gap-3">
+                            <button onClick={(e) => handleDownloadFile(e, doc)} className="claim-document-download text-xs text-[#955B32] font-bold hover:underline">Descargar</button>
                             {onDeleteDocument && (
                               <button 
                                 onClick={(e) => {
@@ -1997,14 +1890,18 @@ export default function LeadsView({
                 </div>
               )}
 
-              {activeTab === "cash" && selectedLead && (
-                <div className="p-5 bg-white border border-[#c6c6cd]/30 rounded-2xl shadow-sm space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#eceef0] pb-3">
+              {activeTab === "contractor_finances" && userRole === "contractor" && selectedLead && (
+                <ContractorClaimFinances claimId={selectedLead.id} organizationId={selectedLead.organizationId || activeOrganizationId} />
+              )}
+
+              {activeTab === "cash" && userRole === "admin" && selectedLead && (
+                <div className="p-5 bg-white border border-[#D8E0E6]/30 rounded-2xl shadow-sm space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#EEF1F3] pb-3">
                     <div>
-                      <h3 className="font-sans text-sm font-bold text-[#131b2e]">Llenar Datos del Reclamo</h3>
+                      <h3 className="font-sans text-sm font-bold text-[#17314A]">Llenar Datos del Reclamo</h3>
                       <p className="font-sans text-[10px] text-[#7c839b] font-medium font-sans">Ingrese los valores financieros del reclamo para calcular y revisar los profits.</p>
                     </div>
-                    <span className="px-2.5 py-1 bg-yellow-50 text-[#ca8a04] text-[10px] rounded-lg font-bold border border-yellow-200 font-sans">
+                    <span className="px-2.5 py-1 bg-yellow-50 text-[#955B32] text-[10px] rounded-lg font-bold border border-yellow-200 font-sans">
                       FLUJO DE CAJA ACTIVO
                     </span>
                   </div>
@@ -2038,7 +1935,7 @@ export default function LeadsView({
                               value={cashInputs[field.key] !== undefined ? cashInputs[field.key] : ""}
                               onChange={(e) => handleLocalCashChange(field.key, e.target.value)}
                               onBlur={saveCashData}
-                              className="block w-full pl-6 pr-3 py-1.5 bg-white border border-[#c6c6cd]/50 rounded-lg text-xs text-[#191c1e] outline-none focus:ring-1 focus:ring-[#eab308] text-right font-mono"
+                              className="block w-full pl-6 pr-3 py-1.5 bg-white border border-[#D8E0E6]/50 rounded-lg text-xs text-[#191c1e] outline-none focus:ring-1 focus:ring-[#B77A4B] text-right font-mono"
                             />
                           </div>
                         </div>
@@ -2067,7 +1964,7 @@ export default function LeadsView({
                               value={cashInputs[field.key] !== undefined ? cashInputs[field.key] : ""}
                               onChange={(e) => handleLocalCashChange(field.key, e.target.value)}
                               onBlur={saveCashData}
-                              className="block w-full pl-6 pr-3 py-1.5 bg-white border border-[#c6c6cd]/50 rounded-lg text-xs text-[#191c1e] outline-none focus:ring-1 focus:ring-[#eab308] text-right font-mono"
+                              className="block w-full pl-6 pr-3 py-1.5 bg-white border border-[#D8E0E6]/50 rounded-lg text-xs text-[#191c1e] outline-none focus:ring-1 focus:ring-[#B77A4B] text-right font-mono"
                             />
                           </div>
                         </div>
@@ -2076,10 +1973,10 @@ export default function LeadsView({
                   </div>
 
                   {/* Action Trigger Button */}
-                  <div className="pt-4 border-t border-[#eceef0] flex justify-end">
+                  <div className="pt-4 border-t border-[#EEF1F3] flex justify-end">
                     <button
                       onClick={handleOpenProfits}
-                      className="btn-gold-3d px-6 py-2.5 bg-[#eab308] hover:bg-[#ca8a04] text-slate-900 font-bold text-xs rounded-xl shadow-md transition-colors flex items-center gap-1.5 font-sans"
+                      className="btn-gold-3d px-6 py-2.5 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold text-xs rounded-xl shadow-md transition-colors flex items-center gap-1.5 font-sans"
                     >
                       <TrendingUp className="w-4 h-4" />
                       <span>Revisar Profits</span>
@@ -2088,95 +1985,6 @@ export default function LeadsView({
                 </div>
               )}
 
-              {activeTab === "tasks" && (
-                <div className="space-y-4">
-                  {/* Enter new task input form */}
-                  <form onSubmit={handleAddTaskSubmit} className="bg-[#f7f9fb] border border-[#c6c6cd]/30 rounded-xl p-3 flex flex-col sm:flex-row gap-2 items-center">
-                    <input 
-                      type="text" 
-                      value={newTaskTitle} 
-                      onChange={(e) => setNewTaskTitle(e.target.value)}
-                      placeholder="Escribir nueva tarea..." 
-                      className="flex-1 bg-white border border-[#c6c6cd]/50 rounded-lg py-2 px-3 text-xs text-[#191c1e] outline-none focus:ring-1 focus:ring-[#eab308] w-full"
-                      disabled={isAddingTask}
-                    />
-                    <select
-                      value={newTaskAssignedTo}
-                      onChange={(e) => setNewTaskAssignedTo(e.target.value)}
-                      className="bg-white border border-[#c6c6cd]/50 rounded-lg py-2 px-2 text-xs text-[#191c1e] outline-none focus:ring-1 focus:ring-[#eab308] w-full sm:w-auto min-w-[140px]"
-                      disabled={isAddingTask}
-                    >
-                      <option value="">Sin asignar</option>
-                      {allowedTeamMembers.map((m) => (
-                        <option key={m.id} value={m.name}>{m.name}</option>
-                      ))}
-                    </select>
-                    <button 
-                      type="submit" 
-                      disabled={!newTaskTitle.trim() || isAddingTask}
-                      className="btn-gold-3d p-2 bg-[#eab308] text-slate-900 font-bold rounded-lg hover:bg-[#ca8a04] transition-colors disabled:opacity-50 shrink-0 w-full sm:w-auto flex items-center justify-center"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                    </button>
-                  </form>
-
-                  {/* Tasks List Feed */}
-                  <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
-                    {selectedLead.tasks.length === 0 ? (
-                      <p className="text-xs text-[#7c839b] text-center py-6 font-medium">No hay tareas asignadas en este reclamo.</p>
-                    ) : (
-                      selectedLead.tasks
-                        .filter((task, idx, self) => self.findIndex(t => t.title?.trim().toLowerCase() === task.title?.trim().toLowerCase()) === idx)
-                        .map((task) => {
-                          const isComp = task.status === "completed";
-                        return (
-                          <div key={task.id} className="p-3.5 bg-[#f7f9fb] border border-[#c6c6cd]/20 rounded-xl flex items-center justify-between gap-3">
-                            <div 
-                              onClick={() => onToggleTask(selectedLead.id, task.id)}
-                              className="flex items-center gap-3 cursor-pointer select-none flex-1"
-                            >
-                              {isComp ? (
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                              ) : (
-                                <Circle className="w-4 h-4 text-[#7c839b] shrink-0" />
-                              )}
-                              <div className="space-y-0.5 text-left">
-                                <span className={`text-xs font-semibold leading-tight block ${isComp ? "line-through text-[#7c839b]" : "text-[#191c1e]"}`}>
-                                  {task.title}
-                                </span>
-                                <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                                  {task.dueDate && (
-                                    <span className="text-[10px] text-[#7c839b]">Creado: {task.dueDate}</span>
-                                  )}
-                                  {task.assignedTo && (
-                                    <span className="px-1.5 py-0.5 bg-[#ca8a04]/10 text-[#ca8a04] text-[8px] font-bold rounded font-sans">
-                                      Asignado a: {task.assignedTo}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {onDeleteTask && (
-                              <button
-                                onClick={() => {
-                                  if (confirm("¿Seguro que deseas eliminar esta tarea?")) {
-                                    onDeleteTask(selectedLead.id, task.id);
-                                  }
-                                }}
-                                className="text-red-500 hover:text-red-700 transition-colors p-1.5 rounded-lg hover:bg-red-50"
-                                title="Eliminar tarea"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -2188,11 +1996,11 @@ export default function LeadsView({
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#0F172A] text-[#eab308] flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-lg bg-[#17314A] text-[#B77A4B] flex items-center justify-center font-bold text-xs">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-[#0F172A]">{showExpressDirectoryModal}</h3>
+                  <h3 className="text-sm font-black text-[#17314A]">{showExpressDirectoryModal}</h3>
                   <p className="text-[10px] text-slate-400">Directorio rápido de contactos conocidos</p>
                 </div>
               </div>
@@ -2232,17 +2040,18 @@ export default function LeadsView({
                               >
                                 Usar como Correo 1
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (isEditingLead) setEditInsuranceEmail2(email);
-                                  else setInsEmail2(email);
-                                  setShowExpressDirectoryModal(null);
-                                }}
-                                className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
-                              >
-                                Correo 2
-                              </button>
+                              {isEditingLead && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditInsuranceEmail2(email);
+                                    setShowExpressDirectoryModal(null);
+                                  }}
+                                  className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
+                                >
+                                  Correo 2
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -2273,17 +2082,18 @@ export default function LeadsView({
                               >
                                 Usar Teléfono 1
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (isEditingLead) setEditInsurancePhone2(phone);
-                                  else setInsPhone2(phone);
-                                  setShowExpressDirectoryModal(null);
-                                }}
-                                className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
-                              >
-                                Teléfono 2
-                              </button>
+                              {isEditingLead && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditInsurancePhone2(phone);
+                                    setShowExpressDirectoryModal(null);
+                                  }}
+                                  className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold rounded-lg transition-colors"
+                                >
+                                  Teléfono 2
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}

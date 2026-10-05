@@ -1,0 +1,196 @@
+{
+  "testedAt": "2026-10-05T02:35:15.930Z",
+  "account": "Usuario QA Xapcon",
+  "results": [
+    {
+      "name": "employee-cannot-invite-actual-policy",
+      "result": "passed"
+    },
+    {
+      "name": "unread-notifications",
+      "result": "passed"
+    },
+    {
+      "name": "create-test-case",
+      "result": "passed"
+    },
+    {
+      "name": "create-owner-assigned-task",
+      "result": "passed"
+    },
+    {
+      "name": "create-self-agenda",
+      "result": "passed"
+    },
+    {
+      "name": "mention-owner",
+      "result": "passed"
+    },
+    {
+      "name": "private-owner-notifications-hidden-from-employee",
+      "result": "passed"
+    },
+    {
+      "name": "save-test-financials",
+      "result": "passed"
+    },
+    {
+      "name": "save-test-payment",
+      "result": "passed"
+    },
+    {
+      "name": "reject-negative-payment",
+      "result": "passed"
+    },
+    {
+      "name": "prevent-direct-task-write",
+      "result": "passed"
+    },
+    {
+      "name": "prevent-direct-notification-insert",
+      "result": "passed"
+    },
+    {
+      "name": "upload-pdf-receipt",
+      "result": "passed"
+    },
+    {
+      "name": "attach-receipt-to-payment",
+      "result": "passed"
+    },
+    {
+      "name": "download-pdf-receipt",
+      "result": "passed"
+    },
+    {
+      "name": "signed-private-receipt-url",
+      "result": "passed"
+    },
+    {
+      "name": "upload-jpeg-receipt",
+      "result": "passed"
+    },
+    {
+      "name": "download-jpeg-receipt",
+      "result": "passed"
+    },
+    {
+      "name": "reject-unsupported-receipt-type",
+      "result": "passed"
+    },
+    {
+      "name": "anonymous-receipt-access-denied",
+      "result": "passed"
+    },
+    {
+      "name": "owner-to-employee-task-notification",
+      "result": "passed"
+    },
+    {
+      "name": "owner-completion-notifies-employee-creator",
+      "result": "passed"
+    },
+    {
+      "name": "employee-completes-owner-created-task",
+      "result": "passed"
+    },
+    {
+      "name": "personal-notification-read",
+      "result": "passed"
+    },
+    {
+      "name": "password-recovery-request",
+      "result": "passed"
+    },
+    {
+      "name": "email-confirmed-and-password-login",
+      "result": "passed"
+    },
+    {
+      "name": "bootstrap",
+      "result": "passed"
+    },
+    {
+      "name": "employee-role-and-company",
+      "result": "passed"
+    },
+    {
+      "name": "company-membership",
+      "result": "passed"
+    },
+    {
+      "name": "owner-available-for-mentions",
+      "result": "passed"
+    },
+    {
+      "name": "no-other-organization-access",
+      "result": "passed"
+    },
+    {
+      "name": "self-promotion-denied",
+      "result": "passed"
+    },
+    {
+      "name": "owner-ui-mention-notifies-exact-employee",
+      "result": "passed"
+    },
+    {
+      "name": "recovery-email-received-confirmed-by-user",
+      "result": "passed"
+    },
+    {
+      "name": "retail-pricing-columns-active",
+      "result": "passed"
+    },
+    {
+      "name": "employee-cannot-change-company-pricing",
+      "result": "passed"
+    },
+    {
+      "name": "retail-ui-create-and-save-estimate",
+      "result": "passed"
+    },
+    {
+      "name": "retail-saved-tax-and-fee-calculation",
+      "result": "passed"
+    },
+    {
+      "name": "print-document-company-colors-and-correct-total",
+      "result": "passed"
+    },
+    {
+      "name": "superadmin-company-settings-save",
+      "result": "passed"
+    },
+    {
+      "name": "internal-invitation-claimed-by-verified-account",
+      "result": "passed"
+    },
+    {
+      "name": "limited-staff-role-not-superadmin",
+      "result": "passed"
+    },
+    {
+      "name": "internal-primary-company-membership",
+      "result": "passed"
+    },
+    {
+      "name": "existing-company-membership-preserved",
+      "result": "passed"
+    },
+    {
+      "name": "internal-invitation-email-delivery",
+      "result": "blocked",
+      "error": "Supabase email rate limit exceeded; pending invitation preserved"
+    },
+    {
+      "name": "staff-cannot-read-unassigned-real-company-or-cases",
+      "result": "passed"
+    },
+    {
+      "name": "staff-cannot-authorize-own-company-access",
+      "result": "passed"
+    }
+  ],
+  "updatedAt": "2026-10-05T02:58:28.908Z"
+}

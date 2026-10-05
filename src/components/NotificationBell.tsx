@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Check, Trash2, X } from 'lucide-react';
+import { Bell, Check } from 'lucide-react';
 import { notificationService } from '../services/notificationService';
+import { supabase } from '../lib/supabase';
 import { Notification } from '../types/notifications';
 
 interface NotificationBellProps {
@@ -13,21 +14,35 @@ export function NotificationBell({ userId, organizationId, onNotificationClick }
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [errorMessage, setErrorMessage] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const fetchNotifications = async () => {
-    if (!userId) return;
-    const data = await notificationService.getUnread(userId, organizationId);
-    setNotifications(data || []);
-    setUnreadCount(data?.length || 0);
-  };
-
   useEffect(() => {
-    fetchNotifications();
-    // In a real app, you would set up a Supabase Realtime subscription here
-    const intervalId = setInterval(fetchNotifications, 30000); // Poll every 30s as fallback
-    return () => clearInterval(intervalId);
-  }, [userId, organizationId]);
+    let cancelled = false;
+    const fetchNotifications = async () => {
+      if (!userId) return;
+      try {
+        const data = await notificationService.getUnread(userId, organizationId);
+        if (!cancelled) { setNotifications(data || []); setUnreadCount(data?.length || 0); setErrorMessage(''); }
+      } catch {
+        if (!cancelled) setErrorMessage('No se pudieron cargar las notificaciones. Se intentará nuevamente.');
+      }
+    };
+    setNotifications([]); setUnreadCount(0);
+    void fetchNotifications();
+    const interval = setInterval(fetchNotifications, isOpen ? 5000 : 30000);
+    window.addEventListener('focus', fetchNotifications);
+    window.addEventListener('xapcon-notifications-changed', fetchNotifications);
+    const channel = supabase.channel(`notifications-${userId}-${organizationId || 'personal'}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, fetchNotifications)
+      .subscribe();
+    return () => {
+      cancelled = true; clearInterval(interval);
+      window.removeEventListener('focus', fetchNotifications);
+      window.removeEventListener('xapcon-notifications-changed', fetchNotifications);
+      void supabase.removeChannel(channel);
+    };
+  }, [userId, organizationId, isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -39,21 +54,21 @@ export function NotificationBell({ userId, organizationId, onNotificationClick }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleMarkAsRead = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const success = await notificationService.markAsRead(id);
-    if (success) {
+  const handleMarkAsRead = async (id: string, event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    try {
+      await notificationService.markAsRead(id);
       setNotifications(prev => prev.filter(n => n.id !== id));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    }
+      setErrorMessage('');
+    } catch { setErrorMessage('No se pudo marcar la notificación como leída.'); }
   };
 
   const handleMarkAllAsRead = async () => {
-    const success = await notificationService.markAllAsRead(userId);
-    if (success) {
-      setNotifications([]);
-      setUnreadCount(0);
-    }
+    try {
+      await notificationService.markAllAsRead(userId, organizationId);
+      setNotifications([]); setUnreadCount(0); setErrorMessage('');
+    } catch { setErrorMessage('No se pudieron marcar las notificaciones como leídas.'); }
   };
 
   return (
@@ -82,6 +97,7 @@ export function NotificationBell({ userId, organizationId, onNotificationClick }
             )}
           </div>
           
+          {errorMessage && <p role="alert" className="px-4 py-2 text-xs text-red-600">{errorMessage}</p>}
           <div className="max-h-[350px] overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="px-4 py-8 text-center text-gray-500">
@@ -96,7 +112,7 @@ export function NotificationBell({ userId, organizationId, onNotificationClick }
                     className="p-4 hover:bg-gray-50 transition-colors cursor-pointer group"
                     onClick={() => {
                       if (onNotificationClick) onNotificationClick(notification);
-                      handleMarkAsRead(notification.id, {} as any);
+                      void handleMarkAsRead(notification.id);
                       setIsOpen(false);
                     }}
                   >

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 
@@ -7,6 +7,7 @@ export interface UserProfile {
   email: string;
   full_name: string;
   role: string;
+  job_title?: string | null;
   avatar_url?: string;
   organization_id?: string | null;
   company_email?: string | null;
@@ -19,22 +20,41 @@ export interface Organization {
   id: string;
   name: string;
   invite_code: string;
+  is_internal?: boolean;
+  membership_role?: string;
+  company_name?: string | null;
+  company_email?: string | null;
+  company_phone?: string | null;
+  company_address?: string | null;
+  company_website?: string | null;
+  registration_number?: string | null;
+  license_number?: string | null;
+  logo_url?: string | null;
+  brand_primary_color?: string | null;
+  brand_accent_color?: string | null;
+  retail_tax_rate?: number;
+  retail_default_fee?: number;
 }
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: UserProfile | null;
+  setProfile: React.Dispatch<React.SetStateAction<UserProfile | null>>;
   organizations: Organization[];
+  setOrganizations: React.Dispatch<React.SetStateAction<Organization[]>>;
   activeOrganization: Organization | null;
   setActiveOrganization: (org: Organization | null) => void;
   signOut: () => Promise<void>;
   loading: boolean;
+  accountError: string | null;
+  retryAccount: () => Promise<void>;
+  passwordRecovery: boolean;
+  finishPasswordRecovery: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const runningFetches = new Map<string, Promise<any>>();
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -50,6 +70,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
   const [loading, setLoading] = useState(true);
+  const [accountError, setAccountError] = useState<string | null>(null);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
+  const accountRun = useRef(0);
+  const currentUserId = useRef<string | null>(null);
+  const accountReady = useRef(false);
 
   useEffect(() => {
     try {
@@ -65,181 +90,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
-
-    async function loadSession() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (mounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          if (session?.user) {
-            await fetchProfileData(session.user.id);
-          }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const receiveSession = (nextSession: Session | null, refresh = false) => {
+      if (!mounted) return;
+      const nextId = nextSession?.user.id || null;
+      setSession(nextSession);
+      setUser(nextSession?.user || null);
+      if (nextId === currentUserId.current) {
+        if (refresh && nextId) {
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(() => { if (mounted) void fetchProfileData(nextId, true); }, 0);
         }
-      } catch (error) {
-        console.error("Error loading session:", error);
-      } finally {
-        if (mounted) setLoading(false);
+        return;
       }
-    }
-
-    loadSession();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (mounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          
-          if (event === 'SIGNED_IN' && session?.user) {
-            await fetchProfileData(session.user.id);
-          } else if (event === 'SIGNED_OUT') {
-            setProfile(null);
-            setOrganizations([]);
-            setActiveOrganization(null);
-          }
-        }
-      }
-    );
-
+      currentUserId.current = nextId;
+      accountReady.current = false;
+      accountRun.current++;
+      setProfile(null);
+      setOrganizations([]);
+      setActiveOrganization(null);
+      setAccountError(null);
+      if (timer) clearTimeout(timer);
+      if (nextId) {
+        setLoading(true);
+        // Supabase auth callbacks must return before starting another auth/API call.
+        timer = setTimeout(() => { if (mounted) void fetchProfileData(nextId); }, 0);
+      } else setLoading(false);
+    };
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
+      if (event === 'SIGNED_OUT') setPasswordRecovery(false);
+      receiveSession(nextSession, event === 'SIGNED_IN');
+    });
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!mounted) return;
+      if (error) { setAccountError(error.message); setLoading(false); }
+      else receiveSession(data.session);
+      if (!data.session) setLoading(false);
+    });
     return () => {
       mounted = false;
-      authListener.subscription.unsubscribe();
+      accountRun.current++;
+      currentUserId.current = null;
+      if (timer) clearTimeout(timer);
+      listener.subscription.unsubscribe();
     };
   }, []);
 
-  function generateUniqueInviteCode(): string {
-    const randomSegment = Math.random()
-      .toString(36)
-      .substring(2, 8) // Extrae exactamente 6 caracteres
-      .toUpperCase();  // Lo convierte a mayúsculas
-    const secureCode = randomSegment.padEnd(6, '0');
-    return `XAP-${secureCode}`;
-  }
-
-  async function fetchProfileData(userId: string) {
-    if (runningFetches.has(userId)) {
-      return runningFetches.get(userId);
-    }
-
-    const fetchPromise = (async () => {
-      // Obtener sesión para metadatos de auto-healing
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const userMetadata = currentSession?.user?.user_metadata || {};
-
-      // 1. Obtener Perfil
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-        return;
-      }
-
-      let activeProfile = { ...profileData } as UserProfile;
-      let currentOrgId = profileData.organization_id;
-
-      // CASO A: El usuario es Dueño y aún no tiene creada su organización
-      if (activeProfile.role === 'Dueño' && !currentOrgId) {
-        const companyName = userMetadata.companyName || "Mi Empresa";
-        const inviteCode = generateUniqueInviteCode();
-
-        // A1. Crear la nueva organización
-        const { data: newOrg, error: orgCreateError } = await supabase
-          .from('organizations')
-          .insert({
-            name: companyName,
-            company_name: companyName,
-            invite_code: inviteCode
-          })
-          .select()
-          .single();
-
-        if (newOrg && !orgCreateError) {
-          // A2. Vincular usuario a la nueva organización en perfiles
-          const { error: profUpdateError } = await supabase
-            .from('profiles')
-            .update({ organization_id: newOrg.id })
-            .eq('id', userId);
-
-          if (!profUpdateError) {
-            activeProfile.organization_id = newOrg.id;
-            currentOrgId = newOrg.id;
-          }
-
-          // A3. Registrar la relación en la tabla puente multi-empresa
-          await supabase.from('user_organizations').insert({
-            user_id: userId,
-            organization_id: newOrg.id
-          });
-        } else {
-          console.error("Error al crear organización en Auto-Healing:", orgCreateError);
-        }
-      }
-
-      // CASO B: El usuario es Colaborador y tiene un código de invitación pendiente
-      if (activeProfile.role !== 'Dueño' && activeProfile.role !== 'super_admin' && !currentOrgId && userMetadata.companyCode) {
-        const cleanCode = userMetadata.companyCode.trim().toUpperCase();
-        
-        const { data: org, error: orgFetchError } = await supabase
-          .from('organizations')
-          .select('id')
-          .eq('invite_code', cleanCode)
-          .single();
-
-        if (org && !orgFetchError) {
-          // B1. Vincular al usuario con el ID de la organización encontrada
-          const { error: profUpdateError } = await supabase
-            .from('profiles')
-            .update({ organization_id: org.id })
-            .eq('id', userId);
-
-          if (!profUpdateError) {
-            activeProfile.organization_id = org.id;
-            currentOrgId = org.id;
-          }
-
-          // B2. Registrar en la tabla puente
-          await supabase.from('user_organizations').insert({
-            user_id: userId,
-            organization_id: org.id
-          });
-        } else {
-          console.error("Error al buscar organización para código en Auto-Healing:", orgFetchError);
-        }
-      }
-
+  async function fetchProfileData(userId: string, silent = false) {
+    silent = silent && accountReady.current;
+    const run = ++accountRun.current;
+    if (!silent) setLoading(true);
+    setAccountError(null);
+    try {
+      const { error: bootstrapError } = await supabase.rpc('bootstrap_xapcon_account');
+      if (bootstrapError) throw new Error(
+        bootstrapError.code === 'PGRST202'
+          ? 'Falta actualizar la base de datos de autenticación. Contacta al administrador.'
+          : bootstrapError.message
+      );
+      const { data: profileData, error: profileError } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      if (profileError || !profileData) throw new Error(profileError?.message || 'No se encontró tu perfil.');
+      const activeProfile = profileData as UserProfile;
+      const currentOrgId = activeProfile.organization_id;
       // 2. Obtener Organizaciones Asociadas
       // For super_admin: fetch ALL organizations (not just user's own)
       let orgData: any[] = [];
       if (activeProfile.role === 'super_admin') {
         const { data, error } = await supabase
           .from('organizations')
-          .select('id, name, invite_code');
-        if (!error && data) orgData = data.map(o => ({ organizations: o }));
+          .select('*');
+        if (error) throw error;
+        if (data) orgData = data.map(o => ({ organizations: o }));
       } else {
         const { data, error } = await supabase
           .from('user_organizations')
           .select(`
             organization_id,
+            membership_role,
             organizations (
-              id,
-              name,
-              invite_code
+              *
             )
           `)
           .eq('user_id', userId);
-        if (!error && data) orgData = data;
+        if (error) throw error;
+        if (data) orgData = data;
       }
 
+      if (run !== accountRun.current || currentUserId.current !== userId) return;
+      if (activeProfile.role !== 'super_admin' && !orgData.length) throw new Error('Tu cuenta todavía no tiene una empresa vinculada. Solicita una invitación.');
       setProfile(activeProfile);
+      accountReady.current = true;
 
       if (orgData && orgData.length > 0) {
         // Mapear la respuesta de Supabase
-        const orgs = orgData.map((item: any) => item.organizations) as Organization[];
+        const orgs = orgData.filter(item => item.organizations).map((item: any) => ({ ...item.organizations, membership_role: item.membership_role })) as Organization[];
         setOrganizations(orgs);
         
         // Intentar usar la organización activa guardada en localStorage, la del perfil, o la primera
@@ -278,15 +223,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setOrganizations([]);
         setActiveOrganization(null);
       }
-    })();
-
-    runningFetches.set(userId, fetchPromise);
-    try {
-      await fetchPromise;
+    } catch (error) {
+      if (run === accountRun.current && !silent) {
+        setProfile(null);
+        setOrganizations([]);
+        setActiveOrganization(null);
+        setAccountError(error instanceof Error ? error.message : (error as { message?: string })?.message || 'No se pudo preparar tu cuenta.');
+      }
     } finally {
-      runningFetches.delete(userId);
+      if (run === accountRun.current) setLoading(false);
     }
   }
+
+  const retryAccount = async () => {
+    if (currentUserId.current) await fetchProfileData(currentUserId.current);
+  };
+
+  useEffect(() => {
+    if (!session?.user.id) return;
+    const userId = session.user.id;
+    const refresh = () => void fetchProfileData(userId, true);
+    const interval = setInterval(refresh, 60000);
+    const channel = supabase.channel(`my-memberships-${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_organizations', filter: `user_id=eq.${userId}` }, refresh)
+      .subscribe();
+    return () => { clearInterval(interval); void supabase.removeChannel(channel); };
+  }, [session?.user.id]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -296,11 +258,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     user,
     profile,
+    setProfile,
     organizations,
+    setOrganizations,
     activeOrganization,
     setActiveOrganization,
     signOut,
-    loading
+    loading,
+    accountError,
+    retryAccount,
+    passwordRecovery,
+    finishPasswordRecovery: () => setPasswordRecovery(false)
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
