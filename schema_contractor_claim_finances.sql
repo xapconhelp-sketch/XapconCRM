@@ -1,5 +1,5 @@
--- Contractor-only claim financials. This data is deliberately separate from
--- leads.estimate.cashData, which remains the superadmin's existing workflow.
+-- Per-claim finances shared by contractor and superadmin claim views.
+-- Contractor access stays organization-scoped; superadmins can manage any claim.
 
 CREATE OR REPLACE FUNCTION public.can_manage_contractor_claim_finances(
   target_claim UUID,
@@ -15,14 +15,22 @@ AS $$
     AND EXISTS (
       SELECT 1
       FROM public.profiles AS profile
-      JOIN public.user_organizations AS membership
-        ON membership.user_id = profile.id
       JOIN public.leads AS claim
         ON claim.id = target_claim
        AND claim.organization_id = target_org
       WHERE profile.id = auth.uid()
-        AND profile.role <> 'super_admin'
-        AND membership.organization_id = target_org
+        AND (
+          profile.role = 'super_admin'
+          OR (
+            profile.role <> 'super_admin'
+            AND EXISTS (
+              SELECT 1
+              FROM public.user_organizations AS membership
+              WHERE membership.user_id = profile.id
+                AND membership.organization_id = target_org
+            )
+          )
+        )
     );
 $$;
 

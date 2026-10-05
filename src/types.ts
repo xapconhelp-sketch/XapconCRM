@@ -3,7 +3,6 @@ export enum ViewType {
   INSURANCE_CLAIM = "insurance_claim",
   CLAIMS = "claims",
   PRODUCTION = "production",
-  FINANCIALS = "financials",
   INSURANCE_DIRECTORY = "insurance_directory",
   TEAM = "team",
   SETTINGS = "settings"
@@ -135,28 +134,6 @@ export interface EstimateItem {
   warning?: string;
 }
 
-export interface CashData {
-  rcv?: number;
-  acv?: number;
-  deducible?: number;
-  depreciacion?: number;
-  depreNoRecuperable?: number;
-  primerCheque?: number;
-  segundoCheque?: number;
-  tercerCheque?: number;
-  suplemento1?: number;
-  suplemento2?: number;
-  suplemento3?: number;
-  suplemento1Col2?: number;
-  suplemento2Col2?: number;
-  suplemento3Col2?: number;
-  valorMaterial?: number;
-  valorLabor?: number;
-  valorTax?: number;
-  valorPermisos?: number;
-  perdidaRepentina?: number;
-}
-
 export interface Estimate {
   id: string;
   leadId: string;
@@ -175,20 +152,9 @@ export interface Estimate {
   taxAmount: number;
   total: number;
   profitMargin: number; // e.g., 24.5
-  cashData?: CashData;
   termsAndCommitment?: string;
   warrantyType?: string;
   warrantyTypes?: string[];
-}
-
-export interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  clientName: string;
-  projectCategory: string;
-  amount: number;
-  status: "Paid" | "Overdue" | "Pending";
-  company?: string;
 }
 
 export interface TeamMember {

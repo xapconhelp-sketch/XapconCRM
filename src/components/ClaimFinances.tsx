@@ -64,7 +64,7 @@ const paymentTypeLabels: Record<PaymentType, string> = {
 };
 const payerLabels: Record<PayerType, string> = { insurance: "Aseguradora", homeowner: "Propietario", other: "Otro" };
 const money = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number.isFinite(value) ? value : 0);
-export default function ContractorClaimFinances({ claimId, organizationId }: { claimId: string; organizationId?: string }) {
+export default function ClaimFinances({ claimId, organizationId }: { claimId: string; organizationId?: string }) {
   const [amounts, setAmounts] = React.useState<ClaimAmounts>(emptyAmounts);
   const [payments, setPayments] = React.useState<PaymentRow[]>([]);
   const [financeExists, setFinanceExists] = React.useState(false);
@@ -304,7 +304,7 @@ export default function ContractorClaimFinances({ claimId, organizationId }: { c
         </div>
         <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#526574]">Notas financieras</span><textarea value={amounts.notes} onChange={event => setAmounts(prev => ({ ...prev, notes: event.target.value }))} rows={2} maxLength={1500} placeholder="Notas sobre el alcance aprobado, pagos o documentación financiera…" className="w-full resize-y rounded-xl border border-[#DCE2E3] px-3 py-2.5 text-sm text-[#17314A] outline-none placeholder:text-slate-400 focus:border-[#A6653E] focus:ring-2 focus:ring-[#A6653E]/15" /></label>
         <div className="flex flex-col gap-2 border-t border-[#EDF0F0] pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <div aria-live="polite" className="text-xs">{errorMessage && !paymentFormOpen ? <span className="inline-flex items-center gap-1.5 font-medium text-[#B5493B]"><CircleAlert className="h-3.5 w-3.5" /> {errorMessage}</span> : statusMessage && !paymentFormOpen ? <span className="font-semibold text-[#36705E]">{statusMessage}</span> : <span className="text-slate-500">Los valores aprobados se guardan por separado del flujo administrativo.</span>}</div>
+          <div aria-live="polite" className="text-xs">{errorMessage && !paymentFormOpen ? <span className="inline-flex items-center gap-1.5 font-medium text-[#B5493B]"><CircleAlert className="h-3.5 w-3.5" /> {errorMessage}</span> : statusMessage && !paymentFormOpen ? <span className="font-semibold text-[#36705E]">{statusMessage}</span> : <span className="text-slate-500">Actualiza estos valores cuando recibas una aprobación revisada.</span>}</div>
           <button type="submit" disabled={savingAmounts} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#17314A] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#25435B] disabled:opacity-50">{savingAmounts ? <><LoaderCircle className="h-4 w-4 animate-spin" /> Guardando…</> : <><Check className="h-4 w-4" /> Guardar montos</>}</button>
         </div>
       </form>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { eligibleCaseMembers } from "../lib/teamAccess.js";
-import { Lead, TimelineEvent, DocumentItem, TeamMember, ViewType } from "../types";
+import { Lead, TimelineEvent, DocumentItem, TeamMember } from "../types";
 import { 
   Users, 
   MapPin, 
@@ -16,15 +16,13 @@ import {
   Trash2,
   X,
   ArrowLeft,
-  TrendingUp,
   ChevronLeft,
   ChevronRight,
   Sparkles,
   BookOpen,
   ShieldCheck,
 } from "lucide-react";
-import { CashData } from "../types";
-import ContractorClaimFinances from "./ContractorClaimFinances";
+import ClaimFinances from "./ClaimFinances";
 import { getKnownContactsForInsurance, getAllInsuranceCompanyNames } from "../data/insuranceDirectoryData";
 
 const DAMAGE_TYPES = [
@@ -67,7 +65,6 @@ interface LeadsViewProps {
   searchTerm?: string;
   onUpdateLead?: (leadId: string, updatedFields: Partial<Lead>) => Promise<void> | void;
   activeOrganizationId?: string;
-  onNavigateToView?: (view: ViewType) => void;
   openCreateFormOnEnter?: boolean;
   onCreateFormOpened?: () => void;
   onMoveProject?: (projectId: string, direction: "next" | "prev") => void;
@@ -96,13 +93,13 @@ export default function LeadsView({
   searchTerm = "",
   onUpdateLead,
   activeOrganizationId,
-  onNavigateToView,
   openCreateFormOnEnter = false,
   onCreateFormOpened,
   onMoveProject,
   insuranceCompanies
 }: LeadsViewProps) {
   const isAdminInsuranceView = userRole === "admin" && Boolean(isInsuranceView);
+  const useContractorProfileStyle = userRole === "contractor" || isAdminInsuranceView;
   const dynamicInsuranceCompanies = React.useMemo(() => {
     if (insuranceCompanies && insuranceCompanies.length > 0) {
       return insuranceCompanies;
@@ -110,7 +107,7 @@ export default function LeadsView({
     return getAllInsuranceCompanyNames(leads);
   }, [insuranceCompanies, leads]);
 
-  const [activeTab, setActiveTab] = useState<"timeline" | "documents" | "cash" | "contractor_finances">("timeline");
+  const [activeTab, setActiveTab] = useState<"timeline" | "documents" | "finances">("timeline");
   const [newNote, setNewNote] = useState("");
   const [selectedOrgId, setSelectedOrgId] = useState("");
 
@@ -127,9 +124,6 @@ export default function LeadsView({
     onCreateFormOpened?.();
   }, [openCreateFormOnEnter, onCreateFormOpened]);
 
-  // Cash flow states
-  const [cashInputs, setCashInputs] = useState<Record<string, string>>({});
-  
   // New Lead Form State
   const [leadName, setLeadName] = useState("");
   const [leadAddress, setLeadAddress] = useState("");
@@ -332,81 +326,8 @@ export default function LeadsView({
       setEditInsuranceEmail2(selectedLead.insuranceEmail2 || "");
     }
 
-    if (userRole === "admin" && selectedLead && selectedLead.estimate?.cashData) {
-      const data = selectedLead.estimate.cashData;
-      const inputs: Record<string, string> = {};
-      Object.keys(data).forEach(k => {
-        const val = (data as any)[k];
-        inputs[k] = val !== undefined && val !== null ? val.toString() : "";
-      });
-      setCashInputs(inputs);
-    } else {
-      setCashInputs({});
-    }
+    setActiveTab("timeline");
   }, [selectedLead?.id]);
-
-  const handleLocalCashChange = (key: string, valStr: string) => {
-    let cleanStr = valStr.replace(/[^0-9.]/g, "");
-    const parts = cleanStr.split(".");
-    if (parts.length > 2) {
-      cleanStr = `${parts[0]}.${parts.slice(1).join("")}`;
-    }
-    setCashInputs(prev => ({
-      ...prev,
-      [key]: cleanStr
-    }));
-  };
-
-  const saveCashData = async () => {
-    if (!selectedLead || !onUpdateLead) return;
-    
-    const dataToSave: CashData = {};
-    const keys = [
-      "rcv", "acv", "deducible", "depreciacion", "depreNoRecuperable",
-      "primerCheque", "segundoCheque", "tercerCheque",
-      "suplemento1", "suplemento2", "suplemento3",
-      "valorMaterial", "valorLabor", "valorTax", "valorPermisos", "perdidaRepentina"
-    ];
-
-    keys.forEach(k => {
-      const strVal = cashInputs[k];
-      if (strVal !== undefined && strVal !== "") {
-        const parsed = parseFloat(strVal);
-        if (!isNaN(parsed)) {
-          (dataToSave as any)[k] = parsed;
-        }
-      }
-    });
-
-    const updatedEstimate = {
-      ...(selectedLead.estimate || {
-        id: `est-${Date.now()}`,
-        leadId: selectedLead.id,
-        clientName: selectedLead.name,
-        address: selectedLead.address || "",
-        status: "Draft" as const,
-        items: [],
-        subtotalMaterials: 0,
-        subtotalLabor: 0,
-        subtotalFees: 0,
-        subtotalGross: 0,
-        taxRate: 0,
-        taxAmount: 0,
-        total: 0,
-        profitMargin: 0
-      }),
-      cashData: dataToSave
-    };
-    
-    await onUpdateLead(selectedLead.id, { estimate: updatedEstimate });
-  };
-
-  const handleOpenProfits = async () => {
-    await saveCashData();
-    if (onNavigateToView) {
-      onNavigateToView(ViewType.FINANCIALS);
-    }
-  };
 
   const filteredLeadsForSearch = leads.filter(lead => {
     const term = (searchTerm || "").trim().toLowerCase();
@@ -1259,7 +1180,7 @@ export default function LeadsView({
         <div className="claim-case-sidebar flex flex-col gap-4">
           
           {/* CUADRO 1: Información del Homeowner */}
-          <div className={`claim-profile-card bg-white border border-[#D8E0E6]/30 rounded-2xl p-4 shadow-sm flex flex-col space-y-3 ${userRole === "contractor" ? "contractor-profile-card contractor-homeowner-card" : ""}`}>
+          <div className={`claim-profile-card bg-white border border-[#D8E0E6]/30 rounded-2xl p-4 shadow-sm flex flex-col space-y-3 ${useContractorProfileStyle ? "contractor-profile-card contractor-homeowner-card" : ""}`}>
             <div className="claim-profile-card-header flex items-center justify-between border-b border-gray-100 pb-2 w-full">
               <div className="flex items-center gap-2">
                 <Home className="w-4 h-4 text-[#B8860B]" />
@@ -1327,8 +1248,8 @@ export default function LeadsView({
               </div>
             ) : (
               <div className="claim-profile-data space-y-3 text-xs text-center">
-                <div className={userRole === "contractor" ? "contractor-profile-identity" : undefined}>
-                  {userRole === "contractor" && <span className="contractor-profile-mark"><Home aria-hidden="true" /></span>}
+                <div className={useContractorProfileStyle ? "contractor-profile-identity" : undefined}>
+                  {useContractorProfileStyle && <span className="contractor-profile-mark"><Home aria-hidden="true" /></span>}
                   <span className="text-[#7c839b] font-medium block">Propietario</span>
                   <span className="text-[#17314A] font-bold block">{selectedLead.name}</span>
                 </div>
@@ -1361,7 +1282,7 @@ export default function LeadsView({
           </div>
 
           {/* CUADRO 2: Información del Seguro */}
-          <div className={`claim-profile-card bg-white border border-[#D8E0E6]/30 rounded-2xl p-4 shadow-sm flex flex-col space-y-3 ${userRole === "contractor" ? "contractor-profile-card contractor-insurance-card" : ""}`}>
+          <div className={`claim-profile-card bg-white border border-[#D8E0E6]/30 rounded-2xl p-4 shadow-sm flex flex-col space-y-3 ${useContractorProfileStyle ? "contractor-profile-card contractor-insurance-card" : ""}`}>
             <div className="claim-profile-card-header flex items-center justify-between border-b border-gray-100 pb-2 w-full">
               <div className="flex items-center gap-2">
                 <FileCheck2 className="w-4 h-4 text-blue-600" />
@@ -1512,8 +1433,8 @@ export default function LeadsView({
               </div>
             ) : (
               <div className="claim-profile-data space-y-3 text-xs text-center">
-                <div className={userRole === "contractor" ? "contractor-profile-identity" : undefined}>
-                  {userRole === "contractor" && <span className="contractor-profile-mark"><ShieldCheck aria-hidden="true" /></span>}
+                <div className={useContractorProfileStyle ? "contractor-profile-identity" : undefined}>
+                  {useContractorProfileStyle && <span className="contractor-profile-mark"><ShieldCheck aria-hidden="true" /></span>}
                   <span className="text-[#7c839b] font-medium block">Aseguradora</span>
                   <span className="text-[#17314A] font-bold block">{selectedLead.insuranceProvider || "No especificada"}</span>
                 </div>
@@ -1667,7 +1588,7 @@ export default function LeadsView({
 
           {/* Tab Control */}
           <div className="claim-tabs flex border-b border-[#EEF1F3] pb-1.5 gap-4">
-            {["timeline", "documents", userRole === "contractor" ? "contractor_finances" : "cash"].map((tab) => (
+            {["timeline", "documents", "finances"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
@@ -1678,7 +1599,7 @@ export default function LeadsView({
                     : "border-transparent text-[#7c839b] hover:text-[#17314A]"
                 }`}
               >
-                {tab === "timeline" ? "Línea de Tiempo" : tab === "documents" ? "Documentos" : tab === "cash" ? "Cash" : "Finanzas"}
+                {tab === "timeline" ? "Línea de Tiempo" : tab === "documents" ? "Documentos" : "Finanzas"}
               </button>
             ))}
           </div>
@@ -1890,101 +1811,9 @@ export default function LeadsView({
                 </div>
               )}
 
-              {activeTab === "contractor_finances" && userRole === "contractor" && selectedLead && (
-                <ContractorClaimFinances claimId={selectedLead.id} organizationId={selectedLead.organizationId || activeOrganizationId} />
+              {activeTab === "finances" && selectedLead && (
+                <ClaimFinances claimId={selectedLead.id} organizationId={selectedLead.organizationId || activeOrganizationId} />
               )}
-
-              {activeTab === "cash" && userRole === "admin" && selectedLead && (
-                <div className="p-5 bg-white border border-[#D8E0E6]/30 rounded-2xl shadow-sm space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#EEF1F3] pb-3">
-                    <div>
-                      <h3 className="font-sans text-sm font-bold text-[#17314A]">Llenar Datos del Reclamo</h3>
-                      <p className="font-sans text-[10px] text-[#7c839b] font-medium font-sans">Ingrese los valores financieros del reclamo para calcular y revisar los profits.</p>
-                    </div>
-                    <span className="px-2.5 py-1 bg-yellow-50 text-[#955B32] text-[10px] rounded-lg font-bold border border-yellow-200 font-sans">
-                      FLUJO DE CAJA ACTIVO
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Column 1 */}
-                    <div className="space-y-3.5">
-                      <h4 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider border-b pb-1 font-sans">Ingresos y Estimado de Seguro</h4>
-                      {[
-                        { key: "rcv", label: "RCV" },
-                        { key: "acv", label: "ACV" },
-                        { key: "deducible", label: "Deducible" },
-                        { key: "depreciacion", label: "Depreciación" },
-                        { key: "depreNoRecuperable", label: "Depre. no Recuperable" },
-                        { key: "primerCheque", label: "Primer Cheque" },
-                        { key: "segundoCheque", label: "Segundo Cheque" },
-                        { key: "tercerCheque", label: "Tercer Cheque" },
-                        { key: "suplemento1", label: "Suplemento 1" },
-                        { key: "suplemento2", label: "Suplemento 2" },
-                        { key: "suplemento3", label: "Suplemento 3" },
-                      ].map((field) => (
-                        <div key={field.key} className="flex items-center justify-between gap-4">
-                          <label className="text-xs font-semibold text-slate-600 font-sans">{field.label}</label>
-                          <div className="relative rounded-lg shadow-sm max-w-[180px] w-full">
-                            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                              <span className="text-slate-400 text-xs">$</span>
-                            </div>
-                            <input
-                              type="text"
-                              placeholder="0.00"
-                              value={cashInputs[field.key] !== undefined ? cashInputs[field.key] : ""}
-                              onChange={(e) => handleLocalCashChange(field.key, e.target.value)}
-                              onBlur={saveCashData}
-                              className="block w-full pl-6 pr-3 py-1.5 bg-white border border-[#D8E0E6]/50 rounded-lg text-xs text-[#191c1e] outline-none focus:ring-1 focus:ring-[#B77A4B] text-right font-mono"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Column 2 */}
-                    <div className="space-y-3.5">
-                      <h4 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider border-b pb-1 font-sans">Costos y Egresos de Obra</h4>
-                      {[
-                        { key: "valorMaterial", label: "Valor Material" },
-                        { key: "valorLabor", label: "Valor Labor" },
-                        { key: "valorTax", label: "Valor Tax" },
-                        { key: "valorPermisos", label: "Valor Permisos" },
-                        { key: "perdidaRepentina", label: "Pérdida Repentina" },
-                      ].map((field) => (
-                        <div key={field.key} className="flex items-center justify-between gap-4">
-                          <label className="text-xs font-semibold text-slate-600 font-sans">{field.label}</label>
-                          <div className="relative rounded-lg shadow-sm max-w-[180px] w-full">
-                            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                              <span className="text-slate-400 text-xs">$</span>
-                            </div>
-                            <input
-                              type="text"
-                              placeholder="0.00"
-                              value={cashInputs[field.key] !== undefined ? cashInputs[field.key] : ""}
-                              onChange={(e) => handleLocalCashChange(field.key, e.target.value)}
-                              onBlur={saveCashData}
-                              className="block w-full pl-6 pr-3 py-1.5 bg-white border border-[#D8E0E6]/50 rounded-lg text-xs text-[#191c1e] outline-none focus:ring-1 focus:ring-[#B77A4B] text-right font-mono"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Action Trigger Button */}
-                  <div className="pt-4 border-t border-[#EEF1F3] flex justify-end">
-                    <button
-                      onClick={handleOpenProfits}
-                      className="btn-gold-3d px-6 py-2.5 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold text-xs rounded-xl shadow-md transition-colors flex items-center gap-1.5 font-sans"
-                    >
-                      <TrendingUp className="w-4 h-4" />
-                      <span>Revisar Profits</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
             </div>
           </div>
         </div>

@@ -1,9 +1,6 @@
 import React, { lazy, Suspense, useState, useEffect, useMemo, useRef } from "react";
 import logo from "../LogoNegativo-copia.png";
-import { ViewType, Lead, Estimate, Invoice, TeamMember, TimelineEvent, TaskItem } from "./types";
-import {
-  initialInvoices,
-} from "./data";
+import { ViewType, Lead, Estimate, TeamMember, TimelineEvent, TaskItem } from "./types";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
 
@@ -13,7 +10,6 @@ const ContractorDashboard = lazy(() => import("./components/ContractorDashboard"
 const LeadsView = lazy(() => import("./components/LeadsView"));
 const EstimatorView = lazy(() => import("./components/EstimatorView"));
 const ProductionView = lazy(() => import("./components/ProductionView"));
-const FinancialsView = lazy(() => import("./components/FinancialsView"));
 const InsuranceDirectoryView = lazy(() => import("./components/InsuranceDirectoryView"));
 import { fetchDbInsuranceCompanies, getAllInsuranceCompanyNames } from "./data/insuranceDirectoryData";
 const TeamView = lazy(() => import("./components/TeamView"));
@@ -124,7 +120,9 @@ export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>(ViewType.DASHBOARD);
   const [openClaimFormOnEnter, setOpenClaimFormOnEnter] = useState(false);
   useEffect(() => {
-    if (userRole === "contractor" && (currentView === ViewType.FINANCIALS || currentView === ViewType.INSURANCE_DIRECTORY)) {
+    if (userRole === "contractor" && currentView === ViewType.INSURANCE_DIRECTORY) {
+      setCurrentView(ViewType.DASHBOARD);
+    } else if (userRole === "admin" && currentView === ViewType.CLAIMS) {
       setCurrentView(ViewType.DASHBOARD);
     }
   }, [currentView, userRole]);
@@ -156,7 +154,6 @@ export default function App() {
     localStorage.setItem("crm_selected_claim_id", selectedInsuranceClaimId);
   }, [selectedInsuranceClaimId]);
 
-  const invoices: Invoice[] = initialInvoices;
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   useEffect(() => {
     setLeads([]); setInsuranceClaims([]); setTeamMembers([]);
@@ -377,10 +374,6 @@ export default function App() {
 
   // Filtered lists (fallback logic for local rendering)
   const filteredInsuranceClaims = insuranceClaims;
-  const filteredInvoices = invoices.filter((inv) =>
-    selectedCompanyFilter === "Todas" || inv.company === selectedCompanyFilter
-  );
-
   const activeInsuranceClaimId = selectedInsuranceClaimId === ""
     ? ""
     : (filteredInsuranceClaims.some(c => c.id === selectedInsuranceClaimId) ? selectedInsuranceClaimId : "");
@@ -686,7 +679,8 @@ export default function App() {
       if (org) setActiveOrganization(org);
     }
     if (data.is_insurance_claim) handleNavigateToInsuranceClaim(data.id);
-    else setCurrentView(ViewType.CLAIMS);
+    else if (userRole === "contractor") setCurrentView(ViewType.CLAIMS);
+    else setCurrentView(ViewType.DASHBOARD);
   };
 
   const handleAddInsuranceClaim = async (newClaimData: Omit<Lead, "id" | "timeline" | "documents" | "tasks" | "createdAt">) => {
@@ -1054,10 +1048,9 @@ export default function App() {
           {[
             { id: ViewType.DASHBOARD, label: "Dashboard" },
             { id: ViewType.INSURANCE_CLAIM, label: "Insurance Claim" },
-            { id: ViewType.CLAIMS, label: "Retail Estimator" },
+            ...(userRole === "contractor" ? [{ id: ViewType.CLAIMS, label: "Retail Estimator" }] : []),
             { id: ViewType.PRODUCTION, label: "Production Pipeline" },
             ...(userRole === "admin" ? [
-              { id: ViewType.FINANCIALS, label: "Financials Overview" },
               { id: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras" },
             ] : []),
             { id: ViewType.TEAM, label: "Personal & Crews" },
@@ -1373,7 +1366,6 @@ export default function App() {
                 searchTerm={searchTerm}
                 onUpdateLead={handleUpdateLead}
                 activeOrganizationId={activeOrganization?.id}
-                onNavigateToView={setCurrentView}
                 openCreateFormOnEnter={userRole === "contractor" && openClaimFormOnEnter}
                 onCreateFormOpened={() => setOpenClaimFormOnEnter(false)}
                 onMoveProject={handleMoveProject}
@@ -1382,7 +1374,7 @@ export default function App() {
             </ErrorBoundary>
           )}
 
-          {currentView === ViewType.CLAIMS && (
+          {currentView === ViewType.CLAIMS && userRole === "contractor" && (
             <EstimatorView
               leads={leads}
               onUpdateLeadEstimate={handleUpdateLeadEstimate}
@@ -1395,14 +1387,6 @@ export default function App() {
             <ProductionView
               claims={filteredInsuranceClaims}
               onMoveProject={handleMoveProject}
-            />
-          )}
-
-          {currentView === ViewType.FINANCIALS && userRole === "admin" && (
-            <FinancialsView
-              invoices={filteredInvoices}
-              leads={[...leads, ...insuranceClaims]}
-              onNavigateToLead={handleNavigateToInsuranceClaim}
             />
           )}
 

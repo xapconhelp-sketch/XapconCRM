@@ -181,8 +181,8 @@ export default function ContractorDashboard({
   const dateLabel = new Intl.DateTimeFormat("es-US", { weekday: "long", month: "long", day: "numeric" }).format(new Date());
 
   return (
-    <div className={composerOnly ? "" : "crm-workspace flex-1 min-h-0 overflow-y-auto bg-[#F3F5F4]"} aria-label={composerOnly ? "Crear tareas y actividades" : "Dashboard de contratistas"}>
-      {composerOnly && <div className="flex justify-end gap-2 p-4"><button onClick={() => openComposer("task", "task")} className="rounded-xl bg-[#17314A] px-4 py-2 text-xs font-bold text-white">Nueva tarea</button><button onClick={() => openComposer("activity", "inspection")} className="rounded-xl border bg-white px-4 py-2 text-xs font-bold text-[#17314A]">Agendar actividad</button></div>}
+    <div className={composerOnly ? "contents" : "crm-workspace flex-1 min-h-0 overflow-y-auto bg-[#F3F5F4]"} aria-label={composerOnly ? "Crear tareas y actividades" : "Dashboard de contratistas"}>
+      {composerOnly && <div className="flex shrink-0 flex-wrap justify-end gap-2 p-0"><button onClick={() => openComposer("task", "task")} className="whitespace-nowrap rounded-lg bg-[#17314A] px-3 py-2 text-[11px] font-bold text-white">Nueva tarea</button><button onClick={() => openComposer("activity", "inspection")} className="whitespace-nowrap rounded-lg border border-[#D5DDE1] bg-white px-3 py-2 text-[11px] font-bold text-[#17314A]">Agendar actividad</button></div>}
       {!composerOnly && <>
       <div className="mx-auto w-full max-w-[1500px] space-y-5 p-4 sm:p-6 xl:p-8">
         <section className="relative isolate overflow-hidden rounded-[24px] bg-[#17314A] px-5 py-6 text-white shadow-[0_18px_48px_rgba(23,49,74,0.16)] sm:px-8 sm:py-8">

@@ -6,7 +6,6 @@ import {
   FileCheck2,
   FileSignature, 
   HardHat, 
-  DollarSign, 
   Users2, 
   Settings, 
   ChevronLeft,
@@ -32,7 +31,6 @@ const SECTION_MANAGEMENT = [
 ];
 
 const SECTION_ADMIN = [
-  { type: ViewType.FINANCIALS,          label: "Financials Overview",      icon: DollarSign },
   { type: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras",  icon: ShieldCheck },
 ];
 
@@ -101,7 +99,9 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto py-3 space-y-0.5 px-2">
         <SectionLabel label="Gestión" />
-        {SECTION_MANAGEMENT.map(renderItem)}
+        {SECTION_MANAGEMENT
+          .filter(item => userRole === "contractor" || item.type !== ViewType.CLAIMS)
+          .map(renderItem)}
 
         {userRole === "admin" && (
           <>
