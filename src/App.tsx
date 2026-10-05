@@ -915,7 +915,10 @@ export default function App() {
 
     if (error) {
       console.error("Error al actualizar lead:", error.message);
-      alert("Error al guardar cambios: " + error.message);
+      const missingInsuranceNotes = error.message.includes("insurance_notes") && error.message.toLowerCase().includes("schema cache");
+      alert(missingInsuranceNotes
+        ? "Supabase aún no reconoce la columna insurance_notes. Ejecuta schema_insurance_claim_notes.sql en tu proyecto de Supabase y vuelve a guardar."
+        : "Error al guardar cambios: " + error.message);
     } else {
       // Optimistic local update instead of full refetch (avoids race conditions)
       setLeads(prev => prev.map(l => l.id === leadId ? { ...l, ...updatedFields } : l));
