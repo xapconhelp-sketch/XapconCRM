@@ -7,31 +7,31 @@
   --font-mono: "Inter", ui-monospace, monospace;
 
   /* Brand palette */
-  --color-gold:            #B77A4B;
-  --color-gold-dark:       #955B32;
-  --color-gold-light:      #F5EAE1;
+  --color-gold:            #8C6A22;
+  --color-gold-dark:       #664A14;
+  --color-gold-light:      #F4EEDB;
 
   /* App surfaces */
-  --color-bg-app:          #F3F5F7;
+  --color-bg-app:          #F1F4F7;
   --color-bg-card:         #FFFFFF;
-  --color-bg-sidebar:      #122238;
+  --color-bg-sidebar:      #0C2036;
 
   /* Text */
-  --color-text-primary:    #18283A;
-  --color-text-secondary:  #68798A;
-  --color-text-muted:      #94A3B8;
+  --color-text-primary:    #172B40;
+  --color-text-secondary:  #53677B;
+  --color-text-muted:      #607286;
 
   /* Borders */
-  --color-border:          #E3E8ED;
-  --color-border-subtle:   rgba(219,226,233,0.72);
+  --color-border:          #DCE4EB;
+  --color-border-subtle:   rgba(207,218,228,0.82);
 
   /* Legacy tokens kept for compatibility */
-  --color-primary-container:          #0F172A;
-  --color-on-primary-container:       #64748B;
-  --color-secondary-container:        #FEF3C7;
-  --color-on-secondary-container:     #854d0e;
-  --color-secondary-fixed:            #FEF3C7;
-  --color-on-secondary-fixed-variant: #B8860B;
+  --color-primary-container:          #0C2036;
+  --color-on-primary-container:       #607286;
+  --color-secondary-container:        #F4EEDB;
+  --color-on-secondary-container:     #664A14;
+  --color-secondary-fixed:            #F4EEDB;
+  --color-on-secondary-fixed-variant: #664A14;
 /* ─── Premium Craft Tokens (Emil Kowalski) ────────────────────────── */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
@@ -54,20 +54,61 @@
 }
 
 /* Shared CRM surface language */
-::selection { background: #F0DFD1; color: #18283A; }
+::selection { background: #E9DDBB; color: #172B40; }
 
 input:not([type="checkbox"]):not([type="radio"]), select, textarea {
-  accent-color: #B77A4B;
+  accent-color: #8C6A22;
 }
 
 input:focus-visible, select:focus-visible, textarea:focus-visible,
 button:focus-visible, a:focus-visible {
-  outline: 2px solid rgba(183, 122, 75, .55);
+  outline: 2px solid rgba(140, 106, 34, .72);
   outline-offset: 2px;
 }
 
+/* Xapcon dimensional icon language: metallic gold faces with a raised edge. */
+.lucide {
+  box-sizing: border-box;
+  min-width: 16px;
+  min-height: 16px;
+  padding: 2px;
+  border: 1px solid rgba(232, 211, 153, .62);
+  border-radius: 7px;
+  background: linear-gradient(145deg, #A9873A 0%, var(--color-gold) 48%, var(--color-gold-dark) 100%);
+  color: #FFFFFF;
+  stroke-width: 2.3;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, .35)) drop-shadow(0 3px 2px rgba(12, 32, 54, .28));
+  transform: none;
+}
+
+/* Double size only in dedicated icon wells; action and inline icons stay compact. */
+:is(span, div):has(> .lucide):is([class*="bg-"]):is([class~="h-8"], [class~="h-9"], [class~="h-10"], [class~="w-8"], [class~="w-9"], [class~="w-10"]) > .lucide {
+  transform: scale(2);
+}
+
+/* Navigation icons get a modest size lift, without crowding their labels. */
+.crm-sidebar button .lucide {
+  transform: scale(1.3);
+}
+
+/* On blue surfaces the raised white tile carries a gold symbol. */
+.crm-sidebar .lucide,
+.claim-case-header .lucide,
+.contractor-profile-card .claim-profile-card-header .lucide,
+[class*="bg-[#102A46]"] .lucide,
+[class*="bg-[#0C2036]"] .lucide,
+[class*="bg-[#102945]"] .lucide,
+[class*="bg-[#193856]"] .lucide,
+[class*="bg-[linear-gradient"][class*="#102945"] .lucide,
+[class*="bg-[linear-gradient"][class*="#102A46"] .lucide {
+  border-color: #B99B4C;
+  background: linear-gradient(145deg, #FFFFFF 0%, #F2EEE2 55%, #E6DFC9 100%);
+  color: #755613;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, .9)) drop-shadow(0 3px 2px rgba(4, 20, 35, .35));
+}
+
 /* Login: quiet editorial panel, deep blue image treatment, warm action color. */
-.login-shell { background: #122238; }
+.login-shell { background: #0C2036; }
 .login-panel {
   background: #FCFCFB;
   border-right-color: #E7E9EA;
@@ -78,29 +119,29 @@ button:focus-visible, a:focus-visible {
 .login-panel input:not([type="checkbox"]) {
   min-height: 42px;
   padding-inline: 12px;
-  border: 1px solid #DCE2E7;
+  border: 1px solid #DCE4EB;
   border-radius: 10px;
   background: #fff;
   transition: border-color .18s ease, box-shadow .18s ease;
 }
 .login-panel input:not([type="checkbox"]):focus {
-  border-color: #B77A4B;
-  box-shadow: 0 0 0 3px rgba(183, 122, 75, .13);
+  border-color: #8C6A22;
+  box-shadow: 0 0 0 3px rgba(140, 106, 34, .18);
 }
 .login-panel form > div.space-y-5 > div { border: 0; }
 .login-panel input[type="checkbox"]:checked + div {
-  background-color: #B77A4B;
-  border-color: #B77A4B;
+  background-color: #8C6A22;
+  border-color: #8C6A22;
 }
-.login-panel a { color: #955B32; }
-.login-panel a:hover { color: #744326; }
+.login-panel a { color: #664A14; }
+.login-panel a:hover { color: #5E4515; }
 .login-panel button[type="submit"] {
-  background: #17314A !important;
+  background: #102A46 !important;
   border-radius: 10px !important;
   box-shadow: 0 7px 16px rgba(23, 49, 74, .17) !important;
   letter-spacing: .04em;
 }
-.login-panel button[type="submit"]:hover { background: #24435F !important; }
+.login-panel button[type="submit"]:hover { background: #193856 !important; }
 .login-visual img { filter: saturate(.78); }
 .login-visual::after {
   content: "";
@@ -110,12 +151,12 @@ button:focus-visible, a:focus-visible {
   pointer-events: none;
 }
 
-.crm-workspace { background-color: #F3F5F7 !important; }
+.crm-workspace { background-color: #F1F4F7 !important; }
 .crm-topbar {
   min-height: 76px;
-  background: rgba(255, 255, 255, .96);
-  border-bottom-color: #E3E8ED;
-  box-shadow: 0 1px 3px rgba(20, 40, 60, .035);
+  background: rgba(255, 255, 255, .97);
+  border-bottom-color: #DCE4EB;
+  box-shadow: 0 2px 8px rgba(16, 36, 58, .055);
 }
 .crm-topbar input:not([type="checkbox"]), .crm-topbar select {
   min-height: 38px;
@@ -129,16 +170,16 @@ button:focus-visible, a:focus-visible {
   box-shadow: 0 2px 8px rgba(24, 40, 58, .035);
 }
 .insurance-claim-card:hover {
-  border-left-color: #B77A4B;
+  border-left-color: #8C6A22;
   box-shadow: 0 10px 24px rgba(24, 40, 58, .08);
   transform: translateY(-1px);
 }
 
 /* Preserve module content while giving shared surfaces consistent depth. */
 .kpi-card, [class*="rounded-2xl shadow-sm border"], [class*="rounded-xl shadow-sm border"] {
-  border-color: #E3E8ED;
+  border-color: #DCE4EB;
 }
-.kpi-card { border-bottom-color: #B77A4B; border-radius: 16px; }
+.kpi-card { border-bottom-color: #8C6A22; border-radius: 16px; }
 
 @media (max-width: 767px) {
   .login-panel { min-height: 100vh; padding: 28px 24px; }
@@ -172,8 +213,8 @@ button:focus-visible, a:focus-visible {
 
 /* ─── Sidebar nav item — active state ─────────────────────────── */
 .nav-item-active {
-  background: rgba(219, 165, 126, 0.16);
-  border-left: 2px solid #D6A27E;
+  background: linear-gradient(90deg, rgba(185, 145, 61, .22), rgba(185, 145, 61, .08));
+  border-left: 2px solid #B99B4C;
   color: #FFFFFF;
   font-weight: 600;
 }
@@ -206,6 +247,25 @@ button:focus-visible, a:focus-visible {
     0 4px 6px -1px rgba(0, 0, 0, 0.03),
     0 10px 15px -3px rgba(0, 0, 0, 0.05),
     0 20px 25px -5px rgba(0, 0, 0, 0.02);
+}
+
+/* Contrast pass: secondary copy remains readable at compact dashboard sizes. */
+.crm-workspace :is(.text-gray-400, .text-gray-500, .text-slate-400, .text-slate-500) {
+  color: #586C80;
+}
+.crm-workspace :is([class*="text-[9px]"], [class*="text-[10px]"]) {
+  font-size: max(10px, .72em);
+  line-height: 1.45;
+}
+.crm-workspace label {
+  color: #52677B;
+}
+.crm-workspace :is(input, select, textarea) {
+  color: #172B40;
+}
+.crm-workspace :is(input, select, textarea)::placeholder {
+  color: #687B8E;
+  opacity: 1;
 }
 
 /* ─── Panel header (section titles inside cards) ───────────────── */
@@ -291,7 +351,7 @@ button:focus-visible, a:focus-visible {
   text-transform: uppercase;
 }
 .claim-profile-data > div > span:nth-child(2) {
-  color: #17314A;
+  color: #102A46;
   font-size: 10px;
   font-weight: 650;
   line-height: 1.45;
@@ -305,9 +365,9 @@ button:focus-visible, a:focus-visible {
   display: block;
   min-height: 72px;
   padding: 13px 15px 13px 64px;
-  border-color: #E7DDD5;
-  border-left: 3px solid #B77A4B;
-  background: linear-gradient(110deg, #F8F2ED, #FBFAF8 72%);
+  border-color: #E4D9B8;
+  border-left: 3px solid #8C6A22;
+  background: linear-gradient(110deg, #F8F5E9, #FBFCFD 72%);
 }
 .claim-case-sidebar > .claim-profile-card:first-child .claim-profile-data > div:first-child::before,
 .claim-case-sidebar > .claim-profile-card:nth-child(2) .claim-profile-data > div:first-child::before {
@@ -319,10 +379,10 @@ button:focus-visible, a:focus-visible {
   height: 38px;
   flex: 0 0 38px;
   place-items: center;
-  border: 1px solid #E8D7C9;
+  border: 1px solid #D6C17A;
   border-radius: 12px;
   background: #fff;
-  color: #A6653E;
+  color: #755613;
   content: "";
   transform: translateY(-50%);
 }
@@ -341,7 +401,7 @@ button:focus-visible, a:focus-visible {
   margin-top: 0;
   padding: 11px;
   border-color: #E5E9EB;
-  background: #F5F7F8;
+  background: #F4F6F8;
   text-align: left;
 }
 .claim-profile-note p { text-align: left; }
@@ -376,7 +436,7 @@ button:focus-visible, a:focus-visible {
   padding: 14px 20px;
   border: 0;
   border-radius: 16px 16px 0 0;
-  background: #17314A;
+  background: #102A46;
 }
 .contractor-profile-card .claim-profile-card-header h2 {
   color: #FFFFFF;
@@ -388,11 +448,11 @@ button:focus-visible, a:focus-visible {
 .contractor-profile-card .claim-profile-card-header svg {
   width: 17px;
   height: 17px;
-  color: #E0AD7F;
+  color: #D3B566;
   stroke-width: 1.8;
 }
 .contractor-profile-card .claim-profile-card-header button {
-  color: #F0C29D;
+  color: #D5BF7A;
 }
 .contractor-profile-card .claim-profile-card-header button:hover {
   color: #FFFFFF;
@@ -412,7 +472,7 @@ button:focus-visible, a:focus-visible {
   background: #F8FAFB;
 }
 .contractor-profile-card .claim-profile-data > div > span:first-child {
-  color: #718091;
+  color: #596D80;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: .065em;
@@ -422,7 +482,7 @@ button:focus-visible, a:focus-visible {
   box-sizing: border-box;
   min-width: 0;
   max-width: 100%;
-  color: #1C354C;
+  color: #142F4B;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.5;
@@ -446,10 +506,10 @@ button:focus-visible, a:focus-visible {
   column-gap: 12px;
   min-height: 76px !important;
   padding: 13px 15px !important;
-  border: 1px solid #E7DED5 !important;
-  border-left: 3px solid #B77A4B !important;
+  border: 1px solid #E4D9B8 !important;
+  border-left: 3px solid #8C6A22 !important;
   border-radius: 12px !important;
-  background: linear-gradient(110deg, #FBF7F3 0%, #FFFFFF 75%) !important;
+  background: linear-gradient(110deg, #FBF9F2 0%, #FFFFFF 75%) !important;
 }
 .claim-case-sidebar > .contractor-profile-card .claim-profile-data > .contractor-profile-identity::before {
   display: none !important;
@@ -462,10 +522,10 @@ button:focus-visible, a:focus-visible {
   width: 40px;
   height: 40px;
   place-items: center;
-  border: 1px solid #E9D8C9;
+  border: 1px solid #D6C17A;
   border-radius: 11px;
   background: #FFFFFF;
-  color: #A96E43;
+  color: #755613;
 }
 .contractor-profile-mark svg { width: 18px; height: 18px; stroke-width: 1.8; }
 .contractor-profile-card .claim-profile-data > .contractor-profile-identity > span:nth-child(2) {
@@ -473,7 +533,7 @@ button:focus-visible, a:focus-visible {
   grid-row: 1;
   align-self: end;
   margin: 0;
-  color: #718091 !important;
+  color: #596D80 !important;
   font-size: 9px !important;
   font-weight: 700 !important;
   letter-spacing: .065em !important;
@@ -534,7 +594,7 @@ button:focus-visible, a:focus-visible {
 .contractor-topbar-intro { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
 .contractor-topbar-greeting {
   overflow: hidden;
-  color: #17314A;
+  color: #102A46;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: -.01em;
@@ -542,7 +602,7 @@ button:focus-visible, a:focus-visible {
   white-space: nowrap;
 }
 .contractor-topbar-intro > span:last-child {
-  color: #738392;
+  color: #596D80;
   font-size: 10px;
   font-weight: 500;
   letter-spacing: .01em;
@@ -566,22 +626,22 @@ button:focus-visible, a:focus-visible {
   height: 34px;
   flex: 0 0 34px;
   place-items: center;
-  border: 1px solid #E9D9CA;
+  border: 1px solid #D6C17A;
   border-radius: 10px;
-  background: #FBF5EF;
-  color: #A96E43;
+  background: #FBF9F2;
+  color: #755613;
 }
 .contractor-weather-copy { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
-.contractor-weather-copy strong { color: #17314A; font-size: 13px; line-height: 1.1; }
+.contractor-weather-copy strong { color: #102A46; font-size: 13px; line-height: 1.1; }
 .contractor-weather-copy > span {
   overflow: hidden;
-  color: #718091;
+  color: #596D80;
   font-size: 9px;
   line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.contractor-weather.is-unavailable .contractor-weather-icon { color: #7A8996; border-color: #E2E8EC; background: #F5F7F8; }
+.contractor-weather.is-unavailable .contractor-weather-icon { color: #7A8996; border-color: #E2E8EC; background: #F4F6F8; }
 .contractor-topbar > .flex-1 {
   flex: 0 1 294px;
   max-width: 294px;
@@ -620,11 +680,11 @@ button:focus-visible, a:focus-visible {
   border: 0;
   border-bottom: 1px solid rgba(255,255,255,.14);
   border-radius: 20px 20px 0 0;
-  background: #17314A;
-  box-shadow: inset 0 3px 0 #B77A4B;
+  background: #102A46;
+  box-shadow: inset 0 3px 0 #8C6A22;
 }
 .claim-case-header h2 { color: #F8FAFC; }
-.claim-case-header .text-\[\#7c839b\] { color: #C1CED8; }
+.claim-case-header .text-\[\#566A7E\] { color: #C1CED8; }
 .claim-case-header .claim-case-back {
   color: #E5EDF2;
   border-color: rgba(226, 235, 241, .22);
@@ -633,9 +693,9 @@ button:focus-visible, a:focus-visible {
 }
 .claim-case-header .claim-case-back:hover { background: rgba(255,255,255,.13); color: #fff; }
 .claim-case-header .claim-number-badge {
-  color: #F4D6BF;
+  color: #D5BF7A;
   border-color: rgba(214, 162, 126, .4);
-  background: rgba(183, 122, 75, .16);
+  background: rgba(185, 145, 61, .16);
   box-shadow: none;
   letter-spacing: .025em;
 }
@@ -653,8 +713,8 @@ button:focus-visible, a:focus-visible {
 .claim-case-header .claim-stage-back:hover { background: rgba(255,255,255,.15); }
 .claim-case-header .claim-stage-next {
   color: #172B3D;
-  border-color: #D6A27E;
-  background: #D6A27E;
+  border-color: #B99B4C;
+  background: #B99B4C;
 }
 .claim-case-header .claim-stage-next:hover { background: #E2B28F; }
 .claim-tabs {
@@ -666,7 +726,7 @@ button:focus-visible, a:focus-visible {
   border: 1px solid #E7ECEF;
   border-bottom: 1px solid #E7ECEF;
   border-radius: 12px;
-  background: #F5F7F8;
+  background: #F4F6F8;
 }
 .claim-tabs button {
   padding: 8px 12px;
@@ -675,7 +735,7 @@ button:focus-visible, a:focus-visible {
   white-space: nowrap;
 }
 .claim-tabs button[aria-selected="true"] {
-  color: #17314A;
+  color: #102A46;
   background: #fff;
   box-shadow: 0 1px 4px rgba(23,49,74,.12);
 }
@@ -714,7 +774,7 @@ button:focus-visible, a:focus-visible {
   background: #FBFAF8;
 }
 .claim-document-upload:hover {
-  border-color: #B77A4B;
+  border-color: #8C6A22;
   background: #F8F3EF;
   box-shadow: inset 0 0 0 1px rgba(183,122,75,.12);
 }
@@ -725,9 +785,9 @@ button:focus-visible, a:focus-visible {
   height: 36px;
   margin-bottom: 3px;
   place-items: center;
-  border: 1px solid #E6D7CB;
+  border: 1px solid #E8E1CA;
   border-radius: 11px;
-  background: #F3E8DF;
+  background: #F4EEDB;
 }
 .claim-document-list { display: grid; gap: 8px; }
 .claim-document-item {
@@ -747,21 +807,21 @@ button:focus-visible, a:focus-visible {
 .claim-document-icon {
   width: 38px;
   height: 42px;
-  border-color: #E6D7CB;
+  border-color: #E8E1CA;
   border-radius: 9px;
-  background: #F8F2ED;
+  background: #F8F5E9;
 }
 .claim-document-name { min-width: 0; }
 .claim-document-name > span:first-child { max-width: min(440px, 48vw); }
 .claim-document-actions { flex: 0 0 auto; }
 .claim-document-download {
   padding: 7px 10px;
-  border: 1px solid #E6D7CB;
+  border: 1px solid #E8E1CA;
   border-radius: 8px;
   background: #FBF8F5;
   text-decoration: none;
 }
-.claim-document-download:hover { background: #F3E8DF; text-decoration: none; }
+.claim-document-download:hover { background: #F4EEDB; text-decoration: none; }
 .claim-document-empty {
   display: flex;
   min-height: 112px;
@@ -798,7 +858,7 @@ button:focus-visible, a:focus-visible {
   .claim-case-sidebar > .claim-profile-card:first-child .claim-profile-data > div:nth-child(2),
   .claim-case-sidebar > .claim-profile-card:nth-child(2) .claim-profile-data > div:last-child { grid-column: 1; }
   .claim-document-item { align-items: flex-start; flex-direction: column; }
-  .claim-document-actions { width: 100%; justify-content: flex-end; border-top: 1px solid #EEF1F3; padding-top: 8px; }
+  .claim-document-actions { width: 100%; justify-content: flex-end; border-top: 1px solid #E6ECF1; padding-top: 8px; }
   .claim-document-name > span:first-child { max-width: 66vw; }
 }
 

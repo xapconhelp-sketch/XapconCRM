@@ -201,14 +201,14 @@ export default function LoginView() {
         {/* Center area */}
         {!isRegistering ? (
           <form onSubmit={handleSubmit} className="my-auto py-6 space-y-6">
-            <div className="flex bg-gray-200/60 border border-gray-200/40 rounded-lg p-1 w-full text-xs font-bold text-[#7c839b] mb-4">
+            <div className="flex bg-gray-200/60 border border-gray-200/40 rounded-lg p-1 w-full text-xs font-bold text-[#566A7E] mb-4">
               <button
                 type="button"
                 onClick={() => handleTabChange("admin")}
                 className={`flex-1 text-center py-1.5 rounded-md transition-all ${
                   activeTab === "admin"
-                    ? "bg-white text-[#17314A] shadow-sm font-bold"
-                    : "hover:text-[#17314A]"
+                    ? "bg-white text-[#102A46] shadow-sm font-bold"
+                    : "hover:text-[#102A46]"
                 }`}
               >
                 Equipo Xapcon
@@ -218,8 +218,8 @@ export default function LoginView() {
                 onClick={() => handleTabChange("contractor")}
                 className={`flex-1 text-center py-1.5 rounded-md transition-all ${
                   activeTab === "contractor"
-                    ? "bg-white text-[#17314A] shadow-sm font-bold"
-                    : "hover:text-[#17314A]"
+                    ? "bg-white text-[#102A46] shadow-sm font-bold"
+                    : "hover:text-[#102A46]"
                 }`}
               >
                 Contratistas
@@ -227,8 +227,8 @@ export default function LoginView() {
             </div>
 
             <div className="space-y-1">
-              <h2 className="font-bold text-[#17314A] tracking-tight">Inicia sesión</h2>
-              <p className="text-xs text-[#7c839b] font-medium">
+              <h2 className="font-bold text-[#102A46] tracking-tight">Inicia sesión</h2>
+              <p className="text-xs text-[#566A7E] font-medium">
                 {activeTab === "admin"
                   ? "Acceso por invitación para el equipo interno de Xapcon."
                   : "Acceso seguro para contratistas vinculados."}
@@ -243,7 +243,7 @@ export default function LoginView() {
 
             <div className="space-y-5">
               <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1.5">
-                <label className="block text-[10px] uppercase tracking-wider font-bold text-[#7c839b] mb-1">
+                <label className="block text-[10px] uppercase tracking-wider font-bold text-[#566A7E] mb-1">
                   Email
                 </label>
                 <input
@@ -257,7 +257,7 @@ export default function LoginView() {
               </div>
 
               <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1.5">
-                <label className="block text-[10px] uppercase tracking-wider font-bold text-[#7c839b] mb-1">
+                <label className="block text-[10px] uppercase tracking-wider font-bold text-[#566A7E] mb-1">
                   Password
                 </label>
                 <input
@@ -321,11 +321,11 @@ export default function LoginView() {
         ) : (
           <form onSubmit={handleRegisterSubmit} className="my-auto py-4 space-y-4 animate-fade-in">
             <div className="space-y-1">
-              <h2 className="text-[22px] font-bold text-[#17314A] tracking-tight">Registro de Contratista</h2>
-              <p className="text-xs text-[#7c839b] font-medium">Configura tu nueva empresa o únete a una existente.</p>
+              <h2 className="text-[22px] font-bold text-[#102A46] tracking-tight">Registro de Contratista</h2>
+              <p className="text-xs text-[#566A7E] font-medium">Configura tu nueva empresa o únete a una existente.</p>
             </div>
 
-            <div className="flex bg-gray-200/60 border border-gray-200/40 rounded-lg p-1 w-full text-xs font-bold text-[#7c839b] mb-2">
+            <div className="flex bg-gray-200/60 border border-gray-200/40 rounded-lg p-1 w-full text-xs font-bold text-[#566A7E] mb-2">
               <button
                 type="button"
                 onClick={() => {
@@ -334,8 +334,8 @@ export default function LoginView() {
                 }}
                 className={`flex-1 text-center py-1.5 rounded-md transition-all ${
                   regType === "owner"
-                    ? "bg-white text-[#17314A] shadow-sm font-bold"
-                    : "hover:text-[#17314A]"
+                    ? "bg-white text-[#102A46] shadow-sm font-bold"
+                    : "hover:text-[#102A46]"
                 }`}
               >
                 Dueño (Crear Empresa)
@@ -348,8 +348,8 @@ export default function LoginView() {
                 }}
                 className={`flex-1 text-center py-1.5 rounded-md transition-all ${
                   regType === "employee"
-                    ? "bg-white text-[#17314A] shadow-sm font-bold"
-                    : "hover:text-[#17314A]"
+                    ? "bg-white text-[#102A46] shadow-sm font-bold"
+                    : "hover:text-[#102A46]"
                 }`}
               >
                 Colaborador
@@ -363,14 +363,14 @@ export default function LoginView() {
             )}
 
             {regSuccessText && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs font-bold text-[#955B32]">
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs font-bold text-[#664A14]">
                 ✓ {regSuccessText}
               </div>
             )}
 
             <div className="space-y-3.5">
               <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1">
-                <label className="block text-[9px] uppercase tracking-wider font-bold text-[#7c839b] mb-0.5">
+                <label className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
                   Nombre Completo
                 </label>
                 <input
@@ -384,7 +384,7 @@ export default function LoginView() {
               </div>
 
               <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1">
-                <label className="block text-[9px] uppercase tracking-wider font-bold text-[#7c839b] mb-0.5">
+                <label className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
                   Correo Electrónico
                 </label>
                 <input
@@ -398,7 +398,7 @@ export default function LoginView() {
               </div>
 
               <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1">
-                <label className="block text-[9px] uppercase tracking-wider font-bold text-[#7c839b] mb-0.5">
+                <label className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
                   Contraseña
                 </label>
                 <input
@@ -415,7 +415,7 @@ export default function LoginView() {
 
               {regType === "owner" ? (
                 <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1">
-                  <label className="block text-[9px] uppercase tracking-wider font-bold text-[#7c839b] mb-0.5">
+                  <label className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
                     Nombre de la Empresa
                   </label>
                   <input
@@ -430,7 +430,7 @@ export default function LoginView() {
               ) : (
                 <>
                   <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1">
-                    <label className="block text-[9px] uppercase tracking-wider font-bold text-[#7c839b] mb-0.5">
+                    <label className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
                       Rol / Cargo
                     </label>
                     <select
@@ -446,7 +446,7 @@ export default function LoginView() {
                   </div>
 
                   <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1">
-                    <label className="block text-[9px] uppercase tracking-wider font-bold text-[#7c839b] mb-0.5">
+                    <label className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
                       Código de Invitación de la Empresa (XAP-…)
                     </label>
                     <input
@@ -494,11 +494,11 @@ export default function LoginView() {
         )}
 
         <div className="text-[11px]">
-          <p className="text-[#7c839b] leading-relaxed">
+          <p className="text-[#566A7E] leading-relaxed">
             Al iniciar sesión, aceptas el{" "}
-            <a href="#" className="text-[#B77A4B] hover:underline">Acuerdo de licencia</a>
+            <a href="#" className="text-[#664A14] hover:underline">Acuerdo de licencia</a>
             {" "}y la{" "}
-            <a href="#" className="text-[#B77A4B] hover:underline">Política de privacidad</a>.
+            <a href="#" className="text-[#664A14] hover:underline">Política de privacidad</a>.
           </p>
         </div>
 
@@ -510,10 +510,10 @@ export default function LoginView() {
           alt="Roofing Damage Background"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#17314A]/60 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-[#102A46]/60 via-transparent to-transparent"></div>
         <div className="absolute z-10 left-12 xl:left-20 bottom-16 max-w-xl text-white">
           <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[.2em] text-white/75">
-            <span className="h-px w-8 bg-[#d6a27e]" /> Xapcon Group
+            <span className="h-px w-8 bg-[#B99B4C]" /> Xapcon Group
           </span>
           <h1 className="mt-5 text-4xl xl:text-5xl font-semibold leading-[1.12] tracking-tight">
             Cada proyecto,<br />bajo control.

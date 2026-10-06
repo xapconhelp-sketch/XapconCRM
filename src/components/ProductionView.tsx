@@ -23,9 +23,9 @@ const PIPELINE_COLUMNS = [
   { id: "Esperando Scope", title: "Esperando Scope", accent: "#786A9F", tint: "#F0EEF6" },
   { id: "Aprobado y Suplementado", title: "Aprobado y Suplementado", accent: "#57846C", tint: "#EDF4EF" },
   { id: "Construcción", title: "Construcción", accent: "#4F7390", tint: "#EBF1F5" },
-  { id: "Esperando Depreciación", title: "Esperando Depreciación", accent: "#AD8059", tint: "#F6F0EA" },
+  { id: "Esperando Depreciación", title: "Esperando Depreciación", accent: "#AD8059", tint: "#F7F4E9" },
   { id: "Finalizado", title: "Finalizado", accent: "#4E8C75", tint: "#EAF4F0" },
-  { id: "Cancelado", title: "Cancelado", accent: "#7B8793", tint: "#EEF1F3" },
+  { id: "Cancelado", title: "Cancelado", accent: "#7B8793", tint: "#E6ECF1" },
 ];
 
 export default function ProductionView({ claims, onMoveProject }: ProductionViewProps) {
@@ -33,15 +33,15 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
   const finishedCount = claims.filter((claim) => claim.status === "Finalizado").length;
 
   return (
-    <div className="crm-workspace flex-1 min-h-0 overflow-y-auto p-5 md:p-7 space-y-6">
+    <div className="production-page crm-workspace flex-1 min-h-0 overflow-y-auto p-5 md:p-7 space-y-6">
       <header className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-5 border-b border-[#DCE3E8] pb-6">
         <div className="flex items-start gap-4">
-          <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#17314A] shadow-md shadow-[#17314A]/15">
-            <Layers3 className="h-5 w-5 text-[#E7C3A8]" strokeWidth={1.8} />
+          <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#102A46] shadow-md shadow-[#102A46]/15">
+            <Layers3 className="h-5 w-5 text-[#D5BF7A]" strokeWidth={1.8} />
           </div>
           <div>
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-[.18em] text-[#955B32]">Operación de proyectos</p>
-            <h1 className="font-display text-[28px] font-bold tracking-tight text-[#17314A] md:text-[32px]">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-[.18em] text-[#664A14]">Operación de proyectos</p>
+            <h1 className="font-display text-[28px] font-bold tracking-tight text-[#102A46] md:text-[32px]">
               Pipeline de Producción
             </h1>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-[#718093]">
@@ -51,16 +51,16 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
         </div>
 
         <div className="grid grid-cols-3 gap-2 sm:min-w-[390px] sm:gap-3">
-          <div className="rounded-2xl border border-[#E3E8ED] bg-white px-3 py-3 shadow-sm sm:px-4">
-            <p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#8290A0]">Expedientes</p>
-            <p className="mt-1 text-2xl font-bold leading-none text-[#17314A]">{claims.length}</p>
+          <div className="rounded-2xl border border-[#DCE4EB] bg-white px-3 py-3 shadow-sm sm:px-4">
+            <p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#5C6D7D]">Expedientes</p>
+            <p className="mt-1 text-2xl font-bold leading-none text-[#102A46]">{claims.length}</p>
           </div>
-          <div className="rounded-2xl border border-[#E3E8ED] bg-white px-3 py-3 shadow-sm sm:px-4">
-            <p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#8290A0]">En construcción</p>
+          <div className="rounded-2xl border border-[#DCE4EB] bg-white px-3 py-3 shadow-sm sm:px-4">
+            <p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#5C6D7D]">En construcción</p>
             <p className="mt-1 text-2xl font-bold leading-none text-[#4F7390]">{constructionCount}</p>
           </div>
-          <div className="rounded-2xl border border-[#E3E8ED] bg-white px-3 py-3 shadow-sm sm:px-4">
-            <p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#8290A0]">Finalizados</p>
+          <div className="rounded-2xl border border-[#DCE4EB] bg-white px-3 py-3 shadow-sm sm:px-4">
+            <p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#5C6D7D]">Finalizados</p>
             <p className="mt-1 text-2xl font-bold leading-none text-[#4E8C75]">{finishedCount}</p>
           </div>
         </div>
@@ -130,15 +130,15 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
 
                         <h3 className="mt-3 text-[13px] font-bold leading-5 text-[#20364B]">{project.name}</h3>
                         <p className="mt-1 flex items-start gap-1.5 text-[11px] leading-4 text-[#7C8B99]">
-                          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#A77C5E]" />
+                          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#735818]" />
                           <span className="line-clamp-2">{project.address || "Dirección pendiente"}</span>
                         </p>
 
                         {totalTasks > 0 && (
                           <div className="mt-4 rounded-xl bg-[#F6F8F9] px-3 py-2.5">
                             <div className="mb-2 flex items-center justify-between gap-2">
-                              <span className="flex items-center gap-1.5 text-[10px] font-semibold text-[#68798A]">
-                                <ClipboardCheck className="h-3.5 w-3.5 text-[#A77C5E]" /> Avance de tareas
+                              <span className="flex items-center gap-1.5 text-[10px] font-semibold text-[#53677B]">
+                                <ClipboardCheck className="h-3.5 w-3.5 text-[#735818]" /> Avance de tareas
                               </span>
                               <span className="text-[10px] font-bold tabular-nums text-[#506579]">{completedTasks}/{totalTasks}</span>
                             </div>
@@ -163,10 +163,10 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
                             type="button"
                             onClick={() => onMoveProject(project.id, "next")}
                             disabled={index === PIPELINE_COLUMNS.length - 1}
-                            className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl bg-[#17314A] text-[11px] font-bold text-white shadow-sm transition-colors hover:bg-[#25435B] disabled:cursor-not-allowed disabled:opacity-40"
+                            className="flex h-9 flex-1 items-center justify-center gap-2 rounded-xl bg-[#102A46] text-[11px] font-bold text-white shadow-sm transition-colors hover:bg-[#193856] disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             <span>Avanzar etapa</span>
-                            <ArrowRight className="h-3.5 w-3.5 text-[#E7C3A8]" />
+                            <ArrowRight className="h-3.5 w-3.5 text-[#D5BF7A]" />
                           </button>
                         </div>
                       </article>
@@ -180,7 +180,7 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
       </div>
 
       <div className="flex items-center gap-2 text-[11px] text-[#84919D]">
-        <HardHat className="h-3.5 w-3.5 text-[#A77C5E]" />
+        <HardHat className="h-3.5 w-3.5 text-[#735818]" />
         Desplázate horizontalmente para recorrer todas las etapas del proyecto.
         <CheckCircle2 className="ml-auto hidden h-4 w-4 text-[#4E8C75] sm:block" />
       </div>

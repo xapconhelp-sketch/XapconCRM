@@ -11,6 +11,7 @@ const LeadsView = lazy(() => import("./components/LeadsView"));
 const EstimatorView = lazy(() => import("./components/EstimatorView"));
 const ProductionView = lazy(() => import("./components/ProductionView"));
 const InsuranceDirectoryView = lazy(() => import("./components/InsuranceDirectoryView"));
+const ValuesInsuranceView = lazy(() => import("./components/ValuesInsuranceView"));
 import { fetchDbInsuranceCompanies, getAllInsuranceCompanyNames } from "./data/insuranceDirectoryData";
 const TeamView = lazy(() => import("./components/TeamView"));
 const SettingsView = lazy(() => import("./components/SettingsView"));
@@ -61,7 +62,7 @@ function LiveDateTime() {
   const dateStr = now.toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const timeStr = now.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   return (
-    <span className="text-[11px] text-slate-400 font-medium tracking-wide capitalize">
+    <span className="font-display text-[10px] text-slate-400 font-medium tracking-[0.04em] capitalize">
       {dateStr} &nbsp;·&nbsp; {timeStr}
     </span>
   );
@@ -121,6 +122,8 @@ export default function App() {
   const [openClaimFormOnEnter, setOpenClaimFormOnEnter] = useState(false);
   useEffect(() => {
     if (userRole === "contractor" && currentView === ViewType.INSURANCE_DIRECTORY) {
+      setCurrentView(ViewType.DASHBOARD);
+    } else if (userRole === "contractor" && currentView === ViewType.VALORES_INSURANCE) {
       setCurrentView(ViewType.DASHBOARD);
     } else if (userRole === "admin" && currentView === ViewType.CLAIMS) {
       setCurrentView(ViewType.DASHBOARD);
@@ -980,7 +983,7 @@ export default function App() {
   };
   if (passwordRecovery && session) return <PasswordRecoveryView onComplete={finishPasswordRecovery} />;
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#17314A] text-white">Cargando plataforma...</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-[#102A46] text-white">Cargando plataforma...</div>;
   }
 
   if (!session) {
@@ -988,11 +991,11 @@ export default function App() {
   }
 
   if (accountError || !profile) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F5F7F8] p-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#F4F6F8] p-6">
       <div className="max-w-lg rounded-2xl bg-white p-8 shadow-sm">
-        <h1 className="text-xl font-bold text-[#17314A]">No se pudo preparar tu cuenta</h1>
+        <h1 className="text-xl font-bold text-[#102A46]">No se pudo preparar tu cuenta</h1>
         <p role="alert" className="my-4 text-sm text-slate-600">{accountError || 'No se encontró tu perfil.'}</p>
-        <div className="flex gap-3"><button onClick={retryAccount} className="rounded-lg bg-[#17314A] px-4 py-2 text-white">Reintentar</button>
+        <div className="flex gap-3"><button onClick={retryAccount} className="rounded-lg bg-[#102A46] px-4 py-2 text-white">Reintentar</button>
           <button onClick={signOut} className="rounded-lg border px-4 py-2">Cerrar sesión</button></div>
       </div>
     </div>
@@ -1012,7 +1015,7 @@ export default function App() {
   const construidosCount = finalizadoCount + esperandoDepreciacionCount;
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-[#F5F7F8] text-[#191c1e] font-sans antialiased overflow-hidden">
+    <div className={`${userRole === "contractor" ? "contractor-app" : "admin-app"} min-h-screen flex flex-col md:flex-row bg-[#F4F6F8] text-[#191c1e] font-sans antialiased overflow-hidden`}>
 
       {/* Sidebar - Desktop */}
       <Sidebar
@@ -1030,7 +1033,7 @@ export default function App() {
       />
 
       {/* Header - Mobile */}
-      <header className="no-print md:hidden flex items-center justify-between px-6 py-4 bg-[#17314A] text-white border-b border-white/15 shrink-0 select-none">
+      <header className="no-print md:hidden flex items-center justify-between px-6 py-4 bg-[#102A46] text-white border-b border-white/15 shrink-0 select-none">
         <div className="flex items-center">
           <img
             src={logo}
@@ -1050,7 +1053,7 @@ export default function App() {
 
       {/* Mobile Drawer Navigation links */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-[65px] bg-[#17314A] z-50 p-6 flex flex-col space-y-3 animate-fade-in select-none">
+        <div className="md:hidden fixed inset-0 top-[65px] bg-[#102A46] z-50 p-6 flex flex-col space-y-3 animate-fade-in select-none">
           {[
             { id: ViewType.DASHBOARD, label: "Dashboard" },
             { id: ViewType.INSURANCE_CLAIM, label: "Insurance Claim" },
@@ -1058,6 +1061,7 @@ export default function App() {
             { id: ViewType.PRODUCTION, label: "Production Pipeline" },
             ...(userRole === "admin" ? [
               { id: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras" },
+              { id: ViewType.VALORES_INSURANCE, label: "Valores Insurance" },
             ] : []),
             { id: ViewType.TEAM, label: "Personal & Crews" },
             { id: ViewType.SETTINGS, label: "Configuración" }
@@ -1070,8 +1074,8 @@ export default function App() {
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-150 ${
                 currentView === item.id
-                  ? "bg-[#B77A4B] text-[#17314A] font-bold"
-                  : "text-[#7c839b] hover:text-white hover:bg-white/5"
+                  ? "bg-[#8C6A22] text-[#102A46] font-bold"
+                  : "text-[#CFD9E1] hover:text-white hover:bg-white/5"
               }`}
             >
               <span>{item.label}</span>
@@ -1087,15 +1091,15 @@ export default function App() {
       )}
 
       {/* Main Container Content viewport */}
-      <main className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ${sidebarCollapsed ? "md:ml-[76px]" : "md:ml-[280px]"}`}>
+      <main data-sidebar-collapsed={sidebarCollapsed} className={`crm-main flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ${sidebarCollapsed ? "md:ml-[76px]" : "md:ml-[280px]"}`}>
 
         {/* Visual Top Bar for Company Selection */}
         {userRole === "admin" && (
-          <div className="crm-topbar no-print bg-white border-b border-[#D8E0E6]/30 px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 select-none shadow-sm">
+          <div className="crm-topbar no-print bg-white border-b border-[#DCE4EB]/30 px-6 py-3 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 shrink-0 select-none shadow-sm">
             {/* Left: Admin Welcome + Live Clock & Company Filter */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex flex-col justify-center">
-                <span className="text-sm font-semibold text-[#1e293b] tracking-wide">
+                <span className="font-display whitespace-nowrap text-[14px] font-semibold text-[#1e293b] tracking-[-0.02em]">
                   Bienvenido, {profile?.full_name || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "Usuario"}
                 </span>
                 <LiveDateTime />
@@ -1108,10 +1112,10 @@ export default function App() {
                 <select
                   value={activeOrganization?.id || "Todas"}
                   onChange={(e) => handleSetCompanyFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl py-1 px-3 text-xs font-bold text-[#17314A] focus:outline-none focus:ring-1 focus:ring-[#B77A4B] cursor-pointer shadow-sm"
+                  className="bg-slate-50 border border-slate-200 rounded-xl py-1 px-3 text-xs font-bold text-[#102A46] focus:outline-none focus:ring-1 focus:ring-[#8C6A22] cursor-pointer shadow-sm"
                 >
                   <option value="Todas">Todas las Empresas (Vista Consolidada)</option>
-                  {organizations.map(org => (
+                  {organizations.filter(org => !org.is_internal && org.name.trim().toLowerCase() !== "xapcon group").map(org => (
                      <option key={org.id} value={org.id}>{org.name}</option>
                   ))}
                 </select>
@@ -1125,7 +1129,7 @@ export default function App() {
                 placeholder="Buscar homeowner, claim o dirección..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-8 py-1.5 bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-xl text-xs text-[#17314A] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#B77A4B] focus:border-[#B77A4B] shadow-sm transition-all"
+                className="w-full pl-9 pr-8 py-1.5 bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-xl text-xs text-[#102A46] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#8C6A22] focus:border-[#8C6A22] shadow-sm transition-all"
               />
               <div className="absolute left-7 top-1/2 -translate-y-1/2 text-slate-500">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1144,7 +1148,7 @@ export default function App() {
 
               {/* Search Autocomplete Dropdown Results */}
               {searchTerm.trim() !== "" && (
-                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-[#E2E4EA] rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto divide-y divide-[#D8E0E6]/20">
+                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-[#E2E4EA] rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto divide-y divide-[#DCE4EB]/20">
                   {headerSearchResults.length === 0 ? (
                     <div className="p-4 text-xs text-slate-500 text-center font-medium">
                       No se encontraron casos que coincidan con "<span className="font-bold">{searchTerm}</span>".
@@ -1161,7 +1165,7 @@ export default function App() {
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-[#17314A] group-hover:text-[#B77A4B] transition-colors truncate">
+                            <span className="text-xs font-bold text-[#102A46] group-hover:text-[#664A14] transition-colors truncate">
                               {claim.name}
                             </span>
                             {claim.claimNumber && (
@@ -1176,7 +1180,7 @@ export default function App() {
                         </div>
 
                         <div className="flex items-center shrink-0">
-                          <svg className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#B8860B] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#664A14] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                           </svg>
                         </div>
@@ -1201,7 +1205,7 @@ export default function App() {
         )}
 
         {userRole === "contractor" && (
-          <div className="crm-topbar contractor-topbar no-print bg-white border-b border-[#D8E0E6]/30 px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 select-none shadow-sm">
+          <div className="crm-topbar contractor-topbar no-print bg-white border-b border-[#DCE4EB]/30 px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 select-none shadow-sm">
             {/* Company Logo & Welcome Header */}
             <div className="contractor-topbar-brand">
               {activeOrganization?.logo_url && (
@@ -1229,7 +1233,7 @@ export default function App() {
                 placeholder="Buscar homeowner, claim o dirección..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-8 py-1.5 bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-xl text-xs text-[#17314A] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#B77A4B] focus:border-[#B77A4B] shadow-sm transition-all"
+                className="w-full pl-9 pr-8 py-1.5 bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-xl text-xs text-[#102A46] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#8C6A22] focus:border-[#8C6A22] shadow-sm transition-all"
               />
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1248,7 +1252,7 @@ export default function App() {
 
               {/* Search Autocomplete Dropdown Results */}
               {searchTerm.trim() !== "" && (
-                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-[#E2E4EA] rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto divide-y divide-[#D8E0E6]/20">
+                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-[#E2E4EA] rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto divide-y divide-[#DCE4EB]/20">
                   {headerSearchResults.length === 0 ? (
                     <div className="p-4 text-xs text-slate-500 text-center font-medium">
                       No se encontraron casos que coincidan con "<span className="font-bold">{searchTerm}</span>".
@@ -1265,7 +1269,7 @@ export default function App() {
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-[#17314A] group-hover:text-[#B77A4B] transition-colors truncate">
+                            <span className="text-xs font-bold text-[#102A46] group-hover:text-[#664A14] transition-colors truncate">
                               {claim.name}
                             </span>
                             {claim.claimNumber && (
@@ -1280,7 +1284,7 @@ export default function App() {
                         </div>
 
                         <div className="flex items-center shrink-0">
-                          <svg className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#B8860B] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#664A14] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
                           </svg>
                         </div>
@@ -1293,7 +1297,7 @@ export default function App() {
 
             <div className="flex items-center gap-4">
 
-              {organizations.length > 1 && <label className="text-xs font-semibold text-[#17314A]">Empresa
+              {organizations.length > 1 && <label className="text-xs font-semibold text-[#102A46]">Empresa
                 <select aria-label="Cambiar empresa" value={activeOrganization?.id || ''} onChange={e => {
                   const org = organizations.find(o => o.id === e.target.value); if (org) { setActiveOrganization(org); setSelectedInsuranceClaimId(''); }
                 }} className="ml-2 rounded-lg border bg-white p-2">
@@ -1308,7 +1312,7 @@ export default function App() {
         )}
 
         {/* View selections viewport */}
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="crm-content flex flex-col flex-1 overflow-hidden">
           <Suspense fallback={<div className="flex flex-1 items-center justify-center text-sm font-medium text-slate-500">Cargando sección…</div>}>
           {currentView === ViewType.DASHBOARD && (
             userRole === "contractor" ? (
@@ -1402,6 +1406,10 @@ export default function App() {
               onNavigateToClaim={handleNavigateToInsuranceClaim}
               onInsuranceRegistered={() => setInsuranceRefreshKey(k => k + 1)}
             />
+          )}
+
+          {currentView === ViewType.VALORES_INSURANCE && userRole === "admin" && (
+            <ValuesInsuranceView claims={filteredInsuranceClaims} />
           )}
 
           {currentView === ViewType.TEAM && (

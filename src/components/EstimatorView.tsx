@@ -38,8 +38,8 @@ export default function EstimatorView({
 }: EstimatorViewProps) {
   const { profile, activeOrganization } = useAuth();
   const userRole = profile?.role === 'super_admin' ? 'admin' : 'contractor';
-  const pdfPrimaryColor = activeOrganization?.brand_primary_color || "#17314A";
-  const pdfAccentColor = activeOrganization?.brand_accent_color || "#B77A4B";
+  const pdfPrimaryColor = activeOrganization?.brand_primary_color || "#102A46";
+  const pdfAccentColor = activeOrganization?.brand_accent_color || "#8C6A22";
   const pdfUsesOrganizationBranding = userRole === "contractor" || Boolean(activeOrganization);
   const pdfCompanyLogo = activeOrganization?.logo_url || (userRole === "contractor" ? profile?.avatar_url : undefined);
   const pdfCompanyName = activeOrganization?.company_name || activeOrganization?.name || (userRole === "contractor" ? profile?.full_name : "Xapcon Group") || "Roofing Contractor";
@@ -303,7 +303,7 @@ export default function EstimatorView({
   const isMarginUnderStandard = activeEstimate.profitMargin < 30;
 
   return (
-    <div className="flex-1 flex h-screen overflow-hidden bg-[#F5F7F8]">
+    <div className="retail-estimator flex-1 flex h-screen overflow-hidden bg-[#F4F6F8]">
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
@@ -363,7 +363,7 @@ export default function EstimatorView({
           /* Clean typography */
           h1, h2, h3, h4 {
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
-            color: #17314A !important;
+            color: #102A46 !important;
           }
 
           /* Homeowner card columns layout (4 columns on print) */
@@ -374,7 +374,7 @@ export default function EstimatorView({
           }
 
           #print-area label {
-            color: #64748B !important;
+            color: #53677B !important;
             font-weight: 700 !important;
             text-transform: uppercase !important;
             font-size: 8px !important;
@@ -389,7 +389,7 @@ export default function EstimatorView({
             border: none !important;
             padding: 0 !important;
             margin: 0 !important;
-            color: #17314A !important;
+            color: #102A46 !important;
             font-weight: 600 !important;
             font-size: 11px !important;
             width: 100% !important;
@@ -412,7 +412,7 @@ export default function EstimatorView({
           }
 
           #print-area th {
-            background-color: #17314A !important;
+            background-color: #102A46 !important;
             color: #FFFFFF !important;
             font-weight: 700 !important;
             text-transform: uppercase !important;
@@ -500,10 +500,10 @@ export default function EstimatorView({
             gap: 22px;
             padding: 19px 20px;
             background: #ffffff !important;
-            color: #17314a !important;
+            color: #102A46 !important;
             border: 1px solid #e0e7ec;
-            border-top: 3px solid var(--pdf-primary, #17314a);
-            border-bottom: 2px solid var(--pdf-accent, #b77a4b);
+            border-top: 3px solid var(--pdf-primary, #102A46);
+            border-bottom: 2px solid var(--pdf-accent, #8C6A22);
             border-radius: 9px;
             page-break-inside: avoid;
           }
@@ -511,23 +511,23 @@ export default function EstimatorView({
           .pdf-brand { display: flex; flex: 1 1 auto; align-items: center; gap: 14px; min-width: 0; }
           .pdf-logo-frame { display: flex; width: 164px; height: 77px; flex: 0 0 164px; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #e5eaee; border-radius: 9px; background: #ffffff !important; }
           .pdf-logo { display: block; width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; padding: 0; border: 0; border-radius: 0; background: transparent !important; }
-          #print-area .pdf-logo-placeholder { width: 72px; height: 64px; flex: 0 0 72px; color: var(--pdf-primary, #17314a) !important; background: #f7f9fa !important; font-weight: 700; }
-          #print-area .pdf-brand-name { margin: 0; color: var(--pdf-primary, #17314a) !important; font-size: 17pt; line-height: 1.15; font-weight: 750; letter-spacing: -.02em; }
+          #print-area .pdf-logo-placeholder { width: 72px; height: 64px; flex: 0 0 72px; color: var(--pdf-primary, #102A46) !important; background: #f7f9fa !important; font-weight: 700; }
+          #print-area .pdf-brand-name { margin: 0; color: var(--pdf-primary, #102A46) !important; font-size: 17pt; line-height: 1.15; font-weight: 750; letter-spacing: -.02em; }
           #print-area .pdf-brand-meta { max-width: 330px; margin-top: 6px; color: #657583 !important; font-size: 7.5pt; line-height: 1.5; }
-          #print-area .pdf-doc-label { display: inline-flex; align-items: center; gap: 6px; color: var(--pdf-primary, #17314a) !important; font-size: 6.5pt; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
-          #print-area .pdf-doc-label::before { content: ""; display: inline-block; width: 14px; height: 2px; border-radius: 2px; background: var(--pdf-accent, #b77a4b); }
-          #print-area .pdf-doc-title { margin: 5px 0 0; color: var(--pdf-primary, #17314a) !important; font-size: 19pt; line-height: 1.1; font-weight: 750; letter-spacing: -.02em; }
-          .pdf-doc-meta { min-width: 190px; flex-shrink: 0; padding: 10px 13px; border-left: 2px solid var(--pdf-accent, #b77a4b); border-radius: 0 7px 7px 0; background: #f5f7f8 !important; background: color-mix(in srgb, var(--pdf-primary, #17314a) 5%, #ffffff) !important; text-align: left; }
+          #print-area .pdf-doc-label { display: inline-flex; align-items: center; gap: 6px; color: var(--pdf-primary, #102A46) !important; font-size: 6.5pt; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+          #print-area .pdf-doc-label::before { content: ""; display: inline-block; width: 14px; height: 2px; border-radius: 2px; background: var(--pdf-accent, #8C6A22); }
+          #print-area .pdf-doc-title { margin: 5px 0 0; color: var(--pdf-primary, #102A46) !important; font-size: 19pt; line-height: 1.1; font-weight: 750; letter-spacing: -.02em; }
+          .pdf-doc-meta { min-width: 190px; flex-shrink: 0; padding: 10px 13px; border-left: 2px solid var(--pdf-accent, #8C6A22); border-radius: 0 7px 7px 0; background: #F4F6F8 !important; background: color-mix(in srgb, var(--pdf-primary, #102A46) 5%, #ffffff) !important; text-align: left; }
           .pdf-ref-label { margin-top: 9px; color: #71808c !important; font-size: 6.5pt; text-transform: uppercase; letter-spacing: .12em; }
-          .pdf-ref-value { color: var(--pdf-primary, #17314a) !important; font-family: Consolas, monospace; font-size: 9.5pt; font-weight: 700; }
-          .pdf-status { display: inline-block; margin-top: 7px; border: 1px solid #d6dfe5; border-radius: 999px; padding: 3px 8px; color: var(--pdf-primary, #17314a) !important; background: #fff !important; font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+          .pdf-ref-value { color: var(--pdf-primary, #102A46) !important; font-family: Consolas, monospace; font-size: 9.5pt; font-weight: 700; }
+          .pdf-status { display: inline-block; margin-top: 7px; border: 1px solid #d6dfe5; border-radius: 999px; padding: 3px 8px; color: var(--pdf-primary, #102A46) !important; background: #fff !important; font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
           .pdf-section { margin-top: 22px; page-break-inside: avoid; }
-          .pdf-section-title { display: flex; align-items: center; gap: 9px; margin: 0 0 10px; color: var(--pdf-primary, #17314a) !important; font-size: 9pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-          .pdf-section-title::before { content: ""; display: inline-block; width: 3px; height: 14px; background: var(--pdf-accent, #b77a4b); }
+          .pdf-section-title { display: flex; align-items: center; gap: 9px; margin: 0 0 10px; color: var(--pdf-primary, #102A46) !important; font-size: 9pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+          .pdf-section-title::before { content: ""; display: inline-block; width: 3px; height: 14px; background: var(--pdf-accent, #8C6A22); }
           .pdf-client-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(58px, auto); gap: 8px; min-width: 0; border: 0; }
-          .pdf-client-cell { display: flex; min-width: 0; min-height: 58px; flex-direction: column; justify-content: center; padding: 10px 12px; border: 1px solid #e0e7ec; border-left: 2px solid var(--pdf-accent, #b77a4b); border-radius: 7px; background: #f8fafb !important; }
-          .pdf-field-label { display: block; min-width: 0; margin-bottom: 5px; color: #6c7c8a !important; font-size: 6.5pt; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-          .pdf-field-value { display: block; min-width: 0; max-width: 100%; color: #17314a !important; font-size: 9pt; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; word-break: break-word; white-space: normal !important; }
+          .pdf-client-cell { display: flex; min-width: 0; min-height: 58px; flex-direction: column; justify-content: center; padding: 10px 12px; border: 1px solid #e0e7ec; border-left: 2px solid var(--pdf-accent, #8C6A22); border-radius: 7px; background: #f8fafb !important; }
+          .pdf-field-label { display: block; min-width: 0; margin-bottom: 5px; color: #53677B !important; font-size: 6.5pt; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+          .pdf-field-value { display: block; min-width: 0; max-width: 100%; color: #102A46 !important; font-size: 9pt; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; word-break: break-word; white-space: normal !important; }
           #print-area .pdf-table { width: 100% !important; margin: 0 !important; border-collapse: collapse; table-layout: fixed; }
           #print-area .pdf-table th { padding: 9px 8px !important; background: #e9eef1 !important; color: #405367 !important; border-bottom: 1px solid #cbd5dc !important; font-size: 6.5pt !important; letter-spacing: .08em; text-transform: uppercase; }
           #print-area .pdf-table td { padding: 9px 8px !important; border-bottom: 1px solid #e3e8eb !important; color: #25364a !important; font-size: 8pt; vertical-align: top; }
@@ -540,34 +540,34 @@ export default function EstimatorView({
           .pdf-table .pdf-col-total { width: 9%; }
           .pdf-table .pdf-right { text-align: right !important; }
           .pdf-table .pdf-center { text-align: center !important; }
-          .pdf-category { color: #6c7c8a !important; font-size: 7pt !important; text-transform: capitalize; }
-          .pdf-empty { padding: 20px !important; color: #718096 !important; text-align: center !important; font-style: italic; }
+          .pdf-category { color: #53677B !important; font-size: 7pt !important; text-transform: capitalize; }
+          .pdf-empty { padding: 20px !important; color: #596D80 !important; text-align: center !important; font-style: italic; }
           .pdf-bottom-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 24px; align-items: start; }
-          .pdf-note { padding: 12px 14px; border-left: 2px solid #b77a4b; background: #f5f7f8 !important; color: #526574 !important; font-size: 8pt; }
+          .pdf-note { padding: 12px 14px; border-left: 2px solid #8C6A22; background: #F4F6F8 !important; color: #465D70 !important; font-size: 8pt; }
           .pdf-totals { border: 1px solid #d7e0e6; }
-          .pdf-total-row { display: flex; justify-content: space-between; gap: 16px; padding: 8px 11px; border-bottom: 1px solid #e3e8eb; color: #526574 !important; font-size: 8pt; }
-          .pdf-total-row strong { color: #17314a !important; font-family: Consolas, monospace; font-size: 8pt; }
-          .pdf-grand-total { padding: 12px 11px; background: var(--pdf-primary, #17314a) !important; color: white !important; }
+          .pdf-total-row { display: flex; justify-content: space-between; gap: 16px; padding: 8px 11px; border-bottom: 1px solid #e3e8eb; color: #465D70 !important; font-size: 8pt; }
+          .pdf-total-row strong { color: #102A46 !important; font-family: Consolas, monospace; font-size: 8pt; }
+          .pdf-grand-total { padding: 12px 11px; background: var(--pdf-primary, #102A46) !important; color: white !important; }
           .pdf-grand-total span, .pdf-grand-total strong { color: white !important; }
           .pdf-grand-total strong { font-size: 14pt; }
-          .pdf-subsection-label { margin: 12px 0 5px; color: #6c7c8a !important; font-size: 6.5pt; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-          .pdf-terms { color: #526574 !important; font-size: 8pt; white-space: pre-wrap; }
-          .pdf-warranties { margin: 6px 0 0; padding-left: 16px; color: #526574 !important; font-size: 8pt; }
+          .pdf-subsection-label { margin: 12px 0 5px; color: #53677B !important; font-size: 6.5pt; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+          .pdf-terms { color: #465D70 !important; font-size: 8pt; white-space: pre-wrap; }
+          .pdf-warranties { margin: 6px 0 0; padding-left: 16px; color: #465D70 !important; font-size: 8pt; }
           .pdf-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; margin-top: 36px; page-break-inside: avoid; }
           .pdf-signature-line { height: 34px; border-bottom: 1px solid #82909b; }
-          .pdf-signature-label { margin-top: 7px; color: #526574 !important; font-size: 7pt; }
+          .pdf-signature-label { margin-top: 7px; color: #465D70 !important; font-size: 7pt; }
           .pdf-footer { margin-top: 24px; padding-top: 8px; border-top: 1px solid #d7e0e6; color: #82909b !important; font-size: 6.5pt; display: flex; justify-content: space-between; }
         }
       `}</style>
 
       {/* Left Sidebar: Retail Directory */}
-      <div className="no-print w-[290px] border-r border-[#D8E0E6]/30 bg-white flex flex-col shrink-0 select-none">
-        <div className="p-4 border-b border-[#D8E0E6]/30 space-y-3">
+      <div className="estimator-case-list no-print w-[290px] border-r border-[#DCE4EB]/30 bg-white flex flex-col shrink-0 select-none">
+        <div className="p-4 border-b border-[#DCE4EB]/30 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold text-[#17314A] uppercase tracking-wider">Estimados Retail</h2>
+            <h2 className="text-xs font-bold text-[#102A46] uppercase tracking-wider">Estimados Retail</h2>
             <button
               onClick={() => setIsAddingLead(true)}
-              className="p-1 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold rounded-lg transition-colors flex items-center justify-center btn-gold-3d"
+              className="p-1 bg-[#8C6A22] hover:bg-[#664A14] text-slate-900 font-bold rounded-lg transition-colors flex items-center justify-center btn-gold-3d"
               title="Nueva Cotización"
             >
               <Plus className="w-4 h-4" />
@@ -580,16 +580,16 @@ export default function EstimatorView({
               placeholder="Buscar cotización..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#f2f4f6] border border-transparent rounded-lg py-1.5 pl-8 pr-3 text-xs outline-none focus:bg-white focus:border-[#B77A4B] font-medium"
+              className="w-full bg-[#f2f4f6] border border-transparent rounded-lg py-1.5 pl-8 pr-3 text-xs outline-none focus:bg-white focus:border-[#8C6A22] font-medium"
             />
-            <Search className="w-3.5 h-3.5 text-[#7c839b] absolute left-2.5 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-[#566A7E] absolute left-2.5 top-2.5" />
           </div>
         </div>
 
         {/* Directory List */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
           {filteredLeads.length === 0 ? (
-            <p className="text-xs text-[#7c839b] text-center py-6 font-medium">No se encontraron cotizaciones.</p>
+            <p className="text-xs text-[#566A7E] text-center py-6 font-medium">No se encontraron cotizaciones.</p>
           ) : (
             filteredLeads.map((l) => {
               const isActive = l.id === selectedLeadId;
@@ -600,8 +600,8 @@ export default function EstimatorView({
                   onClick={() => setSelectedLeadId(l.id)}
                   className={`p-3 rounded-xl cursor-pointer transition-all duration-150 border text-left ${
                     isActive
-                      ? "bg-[#B77A4B]/10 border-[#B77A4B] shadow-sm"
-                      : "bg-white border-[#D8E0E6]/20 hover:bg-[#F5F7F8]"
+                      ? "bg-[#8C6A22]/10 border-[#8C6A22] shadow-sm"
+                      : "bg-white border-[#DCE4EB]/20 hover:bg-[#F4F6F8]"
                   }`}
                 >
                   <div className="flex justify-between items-start gap-1">
@@ -620,7 +620,7 @@ export default function EstimatorView({
                           <Trash2 className="w-3 h-3" />
                         </button>
                       )}
-                      <span className="text-xs font-bold text-[#17314A] truncate">{l.name}</span>
+                      <span className="text-xs font-bold text-[#102A46] truncate">{l.name}</span>
                     </div>
                     <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold border shrink-0 ${
                       est.status === "Approved"
@@ -633,11 +633,11 @@ export default function EstimatorView({
                     </span>
                   </div>
                   {l.address && (
-                    <span className="text-[10px] text-[#7c839b] block truncate mt-0.5 font-medium">{l.address}</span>
+                    <span className="text-[10px] text-[#566A7E] block truncate mt-0.5 font-medium">{l.address}</span>
                   )}
                   <div className="flex justify-between items-center mt-2 pt-1.5 border-t border-gray-100">
-                    <span className="text-[10px] text-[#7c839b] font-medium">{l.createdAt}</span>
-                    <span className="text-xs font-bold text-[#17314A] font-mono">
+                    <span className="text-[10px] text-[#566A7E] font-medium">{l.createdAt}</span>
+                    <span className="text-xs font-bold text-[#102A46] font-mono">
                       ${(est.total || 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}
                     </span>
                   </div>
@@ -649,17 +649,17 @@ export default function EstimatorView({
       </div>
 
       {/* Right Content: Active Estimator Editor */}
-      <div className="flex-1 flex flex-col h-screen overflow-y-auto">
+      <div className="estimator-workbench flex-1 flex flex-col h-screen overflow-y-auto">
         {!selectedLead ? (
           <div className="no-print flex-1 flex flex-col items-center justify-center p-8 text-center select-none">
-            <div className="w-16 h-16 rounded-full bg-yellow-50 flex items-center justify-center text-[#955B32] mb-4">
+            <div className="w-16 h-16 rounded-full bg-yellow-50 flex items-center justify-center text-[#664A14] mb-4">
               <FileSignature className="w-8 h-8" />
             </div>
-            <h2 className="text-lg font-bold text-[#17314A]">Sin Estimados Retail</h2>
-            <p className="text-xs text-[#7c839b] mt-1 max-w-sm font-medium">Comienza registrando tu primera cotización de venta directa en el sistema.</p>
+            <h2 className="text-lg font-bold text-[#102A46]">Sin Estimados Retail</h2>
+            <p className="text-xs text-[#566A7E] mt-1 max-w-sm font-medium">Comienza registrando tu primera cotización de venta directa en el sistema.</p>
             <button
               onClick={() => setIsAddingLead(true)}
-              className="mt-4 px-4 py-2 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold text-xs rounded-xl shadow-sm transition-transform active:scale-95 btn-gold-3d"
+              className="mt-4 px-4 py-2 bg-[#8C6A22] hover:bg-[#664A14] text-slate-900 font-bold text-xs rounded-xl shadow-sm transition-transform active:scale-95 btn-gold-3d"
             >
               Crear Cotización Retail
             </button>
@@ -668,15 +668,15 @@ export default function EstimatorView({
           <div className="flex-1 p-6 space-y-6">
 
             {/* Header / Actions */}
-            <div className="no-print flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#D8E0E6]/30 pb-4">
+            <div className="no-print flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#DCE4EB]/30 pb-4">
               <div>
-                <h1 className="font-sans text-[26px] font-bold text-[#17314A] tracking-tight">Estimador Retail</h1>
-                <p className="font-sans text-xs text-[#7c839b] mt-1 font-medium">{userRole === 'admin' ? 'Borrador de presupuestos de venta directa (Retail) con validación de márgenes de ganancia.' : 'Cotizaciones de venta directa con los datos y la identidad de tu empresa.'}</p>
+                <h1 className="font-sans text-[26px] font-bold text-[#102A46] tracking-tight">Estimador Retail</h1>
+                <p className="font-sans text-xs text-[#566A7E] mt-1 font-medium">{userRole === 'admin' ? 'Borrador de presupuestos de venta directa (Retail) con validación de márgenes de ganancia.' : 'Cotizaciones de venta directa con los datos y la identidad de tu empresa.'}</p>
               </div>
               <div className="flex gap-2 shrink-0">
                 <button
                   onClick={handlePrint}
-                  className="px-3 py-1.5 bg-white border border-[#D8E0E6] hover:bg-slate-100 text-[#45464d] text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                  className="px-3 py-1.5 bg-white border border-[#DCE4EB] hover:bg-slate-100 text-[#45464d] text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
                   title="Descargar versión PDF"
                 >
                   <Download className="w-3.5 h-3.5" />
@@ -684,7 +684,7 @@ export default function EstimatorView({
                 </button>
                 <button
                   disabled
-                  className="px-3 py-1.5 bg-white border border-[#D8E0E6] hover:bg-slate-100 text-[#45464d] text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                  className="px-3 py-1.5 bg-white border border-[#DCE4EB] hover:bg-slate-100 text-[#45464d] text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
                   title="El envío automático requiere configurar un proveedor de correo. Descarga el PDF para compartirlo."
                 >
                   <Mail className="w-3.5 h-3.5" />
@@ -692,7 +692,7 @@ export default function EstimatorView({
                 </button>
                 <button
                   onClick={() => handleUpdateStatus("Approved")}
-                  className={`px-3 py-1.5 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold text-xs rounded-lg transition-colors flex items-center gap-1 shadow-sm btn-gold-3d`}
+                  className={`px-3 py-1.5 bg-[#8C6A22] hover:bg-[#664A14] text-slate-900 font-bold text-xs rounded-lg transition-colors flex items-center gap-1 shadow-sm btn-gold-3d`}
                 >
                   Aprobar Estimado
                 </button>
@@ -779,7 +779,7 @@ export default function EstimatorView({
                     </ul>
                   </div>
                   <div>
-                    <h2 className="pdf-section-title">Investment summary <span style={{ marginLeft: "auto", fontSize: "6.5pt", letterSpacing: ".08em", color: "#6c7c8a" }}>USD</span></h2>
+                    <h2 className="pdf-section-title">Investment summary <span style={{ marginLeft: "auto", fontSize: "6.5pt", letterSpacing: ".08em", color: "#53677B" }}>USD</span></h2>
                     <div className="pdf-totals">
                       <div className="pdf-total-row"><span>Materials</span><strong>${activeEstimate.subtotalMaterials.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
                       <div className="pdf-total-row"><span>Labor</span><strong>${activeEstimate.subtotalLabor.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
@@ -811,15 +811,15 @@ export default function EstimatorView({
                           className="h-16 w-auto object-contain shrink-0 rounded-lg border border-slate-100"
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded-xl bg-yellow-50 border border-yellow-200 flex items-center justify-center text-[#955B32] font-extrabold text-lg shrink-0 uppercase">
+                        <div className="w-16 h-16 rounded-xl bg-yellow-50 border border-yellow-200 flex items-center justify-center text-[#664A14] font-extrabold text-lg shrink-0 uppercase">
                           {(activeOrganization?.name || "CO").substring(0, 2)}
                         </div>
                       )}
                       <div className="space-y-1 text-left">
-                        <h1 className="text-xl font-extrabold text-[#17314A] tracking-tight uppercase font-sans">
+                        <h1 className="text-xl font-extrabold text-[#102A46] tracking-tight uppercase font-sans">
                           {activeOrganization?.name || "CONSTRUCTION ESTIMATE"}
                         </h1>
-                        <div className="border-l-2 border-[#B77A4B] pl-3 text-[10px] text-slate-500 font-mono space-y-0.5">
+                        <div className="border-l-2 border-[#8C6A22] pl-3 text-[10px] text-slate-500 font-mono space-y-0.5">
                           <div className="font-bold text-slate-700">Lic. #{profile?.license_number || "N/A"} · Reg. #{profile?.registration_number || "N/A"}</div>
                           {(profile?.company_email || profile?.company_website) && (
                             <div>
@@ -839,10 +839,10 @@ export default function EstimatorView({
                         className="h-16 w-auto object-contain shrink-0"
                       />
                       <div className="space-y-1 text-left">
-                        <h1 className="text-xl font-extrabold text-[#17314A] tracking-tight uppercase font-sans">
+                        <h1 className="text-xl font-extrabold text-[#102A46] tracking-tight uppercase font-sans">
                           RETAIL ESTIMATE
                         </h1>
-                        <div className="border-l-2 border-[#B77A4B] pl-3 text-[10px] text-slate-500 font-mono">
+                        <div className="border-l-2 border-[#8C6A22] pl-3 text-[10px] text-slate-500 font-mono">
                           <span className="font-bold text-slate-700 block">Xapcon Group</span>
                           <span>Lic. #98240-TX</span>
                         </div>
@@ -853,8 +853,8 @@ export default function EstimatorView({
 
                 {/* Modern metadata box */}
                 <div className="bg-[#f8fafc] border border-slate-200 rounded-xl p-3.5 text-right min-w-[190px] shadow-sm">
-                  <div className="text-[9px] font-extrabold uppercase tracking-widest text-[#64748b] font-sans">Estimate Details</div>
-                  <div className="text-sm font-black text-[#17314A] mt-0.5 tracking-tight font-mono">{activeEstimate.id}</div>
+                  <div className="text-[9px] font-extrabold uppercase tracking-widest text-[#53677B] font-sans">Estimate Details</div>
+                  <div className="text-sm font-black text-[#102A46] mt-0.5 tracking-tight font-mono">{activeEstimate.id}</div>
                   <div className="text-[10px] text-slate-500 font-mono mt-1 pt-1 border-t border-slate-200/60">
                     Date: {selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' }) : new Date().toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' })}
                   </div>
@@ -862,26 +862,26 @@ export default function EstimatorView({
               </div>
 
               {/* Homeowner Details Card */}
-              <div className="bg-white print:bg-[#f8fafc] border border-[#D8E0E6]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
+              <div className="bg-white print:bg-[#f8fafc] border border-[#DCE4EB]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-100 pb-3 gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-yellow-50 flex items-center justify-center text-[#955B32] shrink-0 print:hidden">
+                    <div className="w-8 h-8 rounded-full bg-yellow-50 flex items-center justify-center text-[#664A14] shrink-0 print:hidden">
                       <Users className="w-4 h-4" />
                     </div>
                     <div>
-                      <h2 className="font-sans text-xs font-bold text-[#17314A]">
+                      <h2 className="font-sans text-xs font-bold text-[#102A46]">
                         <span className="print:hidden">Datos del Homeowner (Propietario)</span>
                         <span className="hidden print:inline">Homeowner Information</span>
                       </h2>
-                      <p className="text-[10px] text-[#7c839b] font-medium print:hidden">Información de contacto y dirección de la obra</p>
+                      <p className="text-[10px] text-[#566A7E] font-medium print:hidden">Información de contacto y dirección de la obra</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 no-print">
-                    <span className="font-sans text-xs text-[#7c839b] font-medium">Estado:</span>
+                    <span className="font-sans text-xs text-[#566A7E] font-medium">Estado:</span>
                     <select
                       value={activeEstimate.status}
                       onChange={(e) => handleUpdateStatus(e.target.value as any)}
-                      className="bg-gray-50 border border-gray-300 rounded-lg py-1 px-2 text-[10px] font-bold text-[#17314A] outline-none cursor-pointer"
+                      className="bg-gray-50 border border-gray-300 rounded-lg py-1 px-2 text-[10px] font-bold text-[#102A46] outline-none cursor-pointer"
                     >
                       <option value="Draft">Borrador (Draft)</option>
                       <option value="Sent">Enviado (Sent)</option>
@@ -893,7 +893,7 @@ export default function EstimatorView({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Inputs render as editable inside UI, but static text in print mode */}
                   <div>
-                    <label className="block text-[10px] font-bold text-[#7c839b] mb-1">
+                    <label className="block text-[10px] font-bold text-[#566A7E] mb-1">
                       <span className="print:hidden">Nombre</span>
                       <span className="hidden print:inline">Name</span>
                     </label>
@@ -901,12 +901,12 @@ export default function EstimatorView({
                       type="text"
                       value={activeEstimate.clientName}
                       onChange={(e) => handleUpdateHomeownerDetails("clientName", e.target.value)}
-                      className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
+                      className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
                       placeholder="Nombre del Homeowner"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[#7c839b] mb-1">
+                    <label className="block text-[10px] font-bold text-[#566A7E] mb-1">
                       <span className="print:hidden">Dirección de la Obra</span>
                       <span className="hidden print:inline">Job Address</span>
                     </label>
@@ -914,12 +914,12 @@ export default function EstimatorView({
                       type="text"
                       value={activeEstimate.address}
                       onChange={(e) => handleUpdateHomeownerDetails("address", e.target.value)}
-                      className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
+                      className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
                       placeholder="Dirección completa"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[#7c839b] mb-1">
+                    <label className="block text-[10px] font-bold text-[#566A7E] mb-1">
                       <span className="print:hidden">Teléfono</span>
                       <span className="hidden print:inline">Phone</span>
                     </label>
@@ -927,12 +927,12 @@ export default function EstimatorView({
                       type="text"
                       value={activeEstimate.clientPhone || ""}
                       onChange={(e) => handleUpdateHomeownerDetails("clientPhone", e.target.value)}
-                      className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
+                      className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
                       placeholder="Teléfono"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[#7c839b] mb-1">
+                    <label className="block text-[10px] font-bold text-[#566A7E] mb-1">
                       <span className="print:hidden">Correo Electrónico</span>
                       <span className="hidden print:inline">Email</span>
                     </label>
@@ -940,7 +940,7 @@ export default function EstimatorView({
                       type="email"
                       value={activeEstimate.clientEmail || ""}
                       onChange={(e) => handleUpdateHomeownerDetails("clientEmail", e.target.value)}
-                      className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
+                      className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/40 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none transition-all font-medium print:bg-transparent print:border-none print:p-0 print:text-black print:font-bold"
                       placeholder="Correo electrónico"
                     />
                   </div>
@@ -948,21 +948,21 @@ export default function EstimatorView({
               </div>
 
               {/* Item List Table Card */}
-              <div className="bg-white print:bg-transparent border border-[#D8E0E6]/30 print:border-none rounded-2xl shadow-sm print:shadow-none overflow-hidden print:overflow-visible">
-                <div className="p-4 border-b border-[#EEF1F3] flex items-center justify-between no-print">
-                  <h2 className="font-sans text-xs font-bold text-[#17314A]">Desglose de Conceptos de Construcción</h2>
+              <div className="bg-white print:bg-transparent border border-[#DCE4EB]/30 print:border-none rounded-2xl shadow-sm print:shadow-none overflow-hidden print:overflow-visible">
+                <div className="p-4 border-b border-[#E6ECF1] flex items-center justify-between no-print">
+                  <h2 className="font-sans text-xs font-bold text-[#102A46]">Desglose de Conceptos de Construcción</h2>
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setShowCatalogModal(true)}
-                      className="text-xs text-gray-500 hover:text-[#955B32] font-bold flex items-center gap-1 hover:underline transition-colors"
+                      className="text-xs text-gray-500 hover:text-[#664A14] font-bold flex items-center gap-1 hover:underline transition-colors"
                     >
-                      <FileSpreadsheet className="w-3.5 h-3.5 text-[#955B32]" />
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-[#664A14]" />
                       Catálogo de Materiales
                     </button>
                     <button
                       onClick={() => setIsAddingItem(!isAddingItem)}
-                      className="text-xs text-[#955B32] font-bold flex items-center gap-1 hover:underline"
+                      className="text-xs text-[#664A14] font-bold flex items-center gap-1 hover:underline"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Añadir Concepto
@@ -971,9 +971,9 @@ export default function EstimatorView({
                 </div>
 
                 {isAddingItem && (
-                  <form onSubmit={handleAddItem} className="no-print p-4 bg-[#F5F7F8] border-b border-[#EEF1F3] grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                  <form onSubmit={handleAddItem} className="no-print p-4 bg-[#F4F6F8] border-b border-[#E6ECF1] grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                     <div className="md:col-span-4 relative">
-                      <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Descripción</label>
+                      <label className="block text-[10px] font-bold text-[#566A7E] mb-1">Descripción</label>
                       <input
                         type="text"
                         value={newDesc}
@@ -986,7 +986,7 @@ export default function EstimatorView({
                           setTimeout(() => setShowAutocomplete(false), 200);
                         }}
                         placeholder="Ej. Tejas de asfalto"
-                        className="w-full bg-white border border-[#D8E0E6] rounded-lg p-1.5 text-xs text-[#191c1e] outline-none focus:border-[#B77A4B]"
+                        className="w-full bg-white border border-[#DCE4EB] rounded-lg p-1.5 text-xs text-[#191c1e] outline-none focus:border-[#8C6A22]"
                         required
                       />
                       {/* Autocomplete Dropdown */}
@@ -1025,11 +1025,11 @@ export default function EstimatorView({
                       })()}
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Categoría</label>
+                      <label className="block text-[10px] font-bold text-[#566A7E] mb-1">Categoría</label>
                       <select
                         value={newCategory}
                         onChange={(e) => setNewCategory(e.target.value as any)}
-                        className="w-full bg-white border border-[#D8E0E6] rounded-lg p-1.5 text-xs text-[#191c1e]"
+                        className="w-full bg-white border border-[#DCE4EB] rounded-lg p-1.5 text-xs text-[#191c1e]"
                       >
                         <option value="material">Material</option>
                         <option value="labor">Mano de Obra</option>
@@ -1037,32 +1037,32 @@ export default function EstimatorView({
                       </select>
                     </div>
                     <div className="md:col-span-1">
-                      <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Cant.</label>
+                      <label className="block text-[10px] font-bold text-[#566A7E] mb-1">Cant.</label>
                       <input
                         type="text"
                         inputMode="decimal"
                         value={newQty}
                         onChange={(e) => { if (/^\d*\.?\d*$/.test(e.target.value)) setNewQty(e.target.value); }}
-                        className="w-full bg-white border border-[#D8E0E6] rounded-lg p-1.5 text-xs text-[#191c1e]"
+                        className="w-full bg-white border border-[#DCE4EB] rounded-lg p-1.5 text-xs text-[#191c1e]"
                       />
                     </div>
                     <div className="md:col-span-1">
-                      <label className="block text-[10px] font-bold text-[#7c839b] mb-1">Unidad</label>
+                      <label className="block text-[10px] font-bold text-[#566A7E] mb-1">Unidad</label>
                       <input
                         type="text"
                         value={newUnit}
                         onChange={(e) => setNewUnit(e.target.value)}
-                        className="w-full bg-white border border-[#D8E0E6] rounded-lg p-1.5 text-xs text-[#191c1e]"
+                        className="w-full bg-white border border-[#DCE4EB] rounded-lg p-1.5 text-xs text-[#191c1e]"
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-[10px] font-bold text-[#7c839b] mb-1">P. Unitario</label>
+                      <label className="block text-[10px] font-bold text-[#566A7E] mb-1">P. Unitario</label>
                       <input
                         type="text"
                         inputMode="decimal"
                         value={newPrice}
                         onChange={(e) => { if (/^\d*\.?\d*$/.test(e.target.value)) setNewPrice(e.target.value); }}
-                        className="w-full bg-white border border-[#D8E0E6] rounded-lg p-1.5 text-xs text-[#191c1e]"
+                        className="w-full bg-white border border-[#DCE4EB] rounded-lg p-1.5 text-xs text-[#191c1e]"
                       />
                     </div>
                     <div className="md:col-span-2 flex gap-2">
@@ -1075,7 +1075,7 @@ export default function EstimatorView({
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 py-1.5 bg-[#B77A4B] text-slate-900 font-bold text-xs rounded-lg shadow-sm btn-gold-3d"
+                        className="flex-1 py-1.5 bg-[#8C6A22] text-slate-900 font-bold text-xs rounded-lg shadow-sm btn-gold-3d"
                       >
                         Añadir
                       </button>
@@ -1086,7 +1086,7 @@ export default function EstimatorView({
                 <div className="overflow-x-auto select-none">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-[#F5F7F8] border-b border-[#EEF1F3] text-[#7c839b] text-[10px] font-mono uppercase tracking-wider font-semibold">
+                      <tr className="bg-[#F4F6F8] border-b border-[#E6ECF1] text-[#566A7E] text-[10px] font-mono uppercase tracking-wider font-semibold">
                         <th className="py-3 px-4">
                           <span className="print:hidden">Concepto</span>
                           <span className="hidden print:inline">Item Description</span>
@@ -1107,13 +1107,13 @@ export default function EstimatorView({
                         <th className="py-3 px-4 text-center no-print">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#EEF1F3]">
+                    <tbody className="divide-y divide-[#E6ECF1]">
                       {activeEstimate.items.map((item) => (
                         <tr key={item.id} className="text-xs hover:bg-slate-50/50 transition-colors">
                           <td className="py-4 px-4 font-medium">
                             <div className="space-y-0.5">
                               <span className="font-semibold text-[#191c1e] block">{item.description}</span>
-                              <span className="text-[10px] text-[#7c839b] font-mono uppercase bg-[#EEF1F3] px-1.5 py-0.5 rounded w-max block print:hidden">{item.category}</span>
+                              <span className="text-[10px] text-[#566A7E] font-mono uppercase bg-[#E6ECF1] px-1.5 py-0.5 rounded w-max block print:hidden">{item.category}</span>
                             </div>
                           </td>
                           <td className="py-4 px-4 text-center font-semibold">
@@ -1124,25 +1124,25 @@ export default function EstimatorView({
                               value={itemNumericDrafts[`${item.id}:qty`] ?? String(item.qty)}
                               onChange={(e) => updateItemNumericDraft(item.id, "qty", e.target.value)}
                               onBlur={() => clearItemNumericDraft(item.id, "qty")}
-                              className="no-print w-16 bg-[#F5F7F8] border border-[#D8E0E6]/50 rounded p-1 text-center font-semibold text-xs"
+                              className="no-print w-16 bg-[#F4F6F8] border border-[#DCE4EB]/50 rounded p-1 text-center font-semibold text-xs"
                             />
                           </td>
-                          <td className="py-4 px-4 text-center text-[#7c839b] font-medium">{item.unit}</td>
+                          <td className="py-4 px-4 text-center text-[#566A7E] font-medium">{item.unit}</td>
                           <td className="py-4 px-4 text-right font-medium">
                             <span className="hidden print:inline">${item.unitPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
                             <div className="no-print flex items-center justify-end gap-1">
-                              <span className="text-[#7c839b] font-medium">$</span>
+                              <span className="text-[#566A7E] font-medium">$</span>
                               <input
                                 type="text"
                                 inputMode="decimal"
                                 value={itemNumericDrafts[`${item.id}:unitPrice`] ?? String(item.unitPrice)}
                                 onChange={(e) => updateItemNumericDraft(item.id, "unitPrice", e.target.value)}
                                 onBlur={() => clearItemNumericDraft(item.id, "unitPrice")}
-                                className="w-20 bg-[#F5F7F8] border border-[#D8E0E6]/50 rounded p-1 text-right font-semibold text-xs"
+                                className="w-20 bg-[#F4F6F8] border border-[#DCE4EB]/50 rounded p-1 text-right font-semibold text-xs"
                               />
                             </div>
                           </td>
-                          <td className="py-4 px-4 text-right font-mono font-bold text-[#17314A]">${item.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="py-4 px-4 text-right font-mono font-bold text-[#102A46]">${item.total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           <td className="py-4 px-4 text-center no-print">
                             <button
                               onClick={() => handleDeleteItem(item.id)}
@@ -1162,9 +1162,9 @@ export default function EstimatorView({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 
                 {/* Warranty Digital Contract terms */}
-                <div className="bg-white print:bg-[#f8fafc] border border-[#D8E0E6]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
-                  <div className="flex items-center gap-2 border-b pb-2 text-[#17314A] font-bold text-xs">
-                    <FileText className="w-4 h-4 text-[#955B32] print:hidden" />
+                <div className="bg-white print:bg-[#f8fafc] border border-[#DCE4EB]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
+                  <div className="flex items-center gap-2 border-b pb-2 text-[#102A46] font-bold text-xs">
+                    <FileText className="w-4 h-4 text-[#664A14] print:hidden" />
                     <span>
                       <span className="print:hidden">Terminos y compromiso del Servicio</span>
                       <span className="hidden print:inline">Terms and Service Commitment</span>
@@ -1176,21 +1176,21 @@ export default function EstimatorView({
                     <textarea
                       value={activeEstimate.termsAndCommitment ?? DEFAULT_TERMS_TEXT}
                       onChange={(e) => handleUpdateTermsText(e.target.value)}
-                      className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/40 rounded-lg p-2.5 text-xs text-[#191c1e] focus:bg-white focus:border-[#B77A4B] outline-none transition-all font-medium h-36 resize-y"
+                      className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/40 rounded-lg p-2.5 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none transition-all font-medium h-36 resize-y"
                       placeholder="Escribe los términos y compromiso del servicio aquí..."
                     />
                   </div>
 
                   {/* Print Mode: Plain Text */}
-                  <p className="hidden print:block text-[11px] text-[#7c839b] leading-relaxed whitespace-pre-wrap">
+                  <p className="hidden print:block text-[11px] text-[#566A7E] leading-relaxed whitespace-pre-wrap">
                     {activeEstimate.termsAndCommitment ?? DEFAULT_TERMS_TEXT}
                   </p>
 
                   <div className="space-y-2 print:border-none print:bg-transparent print:p-0">
-                    <label className="block text-[10px] font-bold text-[#7c839b] print:hidden uppercase tracking-wider mb-1">Garantías Aplicables</label>
+                    <label className="block text-[10px] font-bold text-[#566A7E] print:hidden uppercase tracking-wider mb-1">Garantías Aplicables</label>
 
                     {/* Screen Mode: Scrollable Checkbox Checklist */}
-                    <div className="print:hidden space-y-2 max-h-56 overflow-y-auto pr-1 border border-[#D8E0E6]/25 rounded-lg p-2 bg-[#F5F7F8]">
+                    <div className="print:hidden space-y-2 max-h-56 overflow-y-auto pr-1 border border-[#DCE4EB]/25 rounded-lg p-2 bg-[#F4F6F8]">
                       {[
                         { id: "labor_5", label: "Incluye garantía estándar (5 años mano de obra)" },
                         { id: "labor_10", label: "Incluye garantía estándar (10 años mano de obra)" },
@@ -1211,7 +1211,7 @@ export default function EstimatorView({
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => handleToggleWarrantyType(opt.id)}
-                              className="rounded text-[#955B32] focus:ring-[#B77A4B]"
+                              className="rounded text-[#664A14] focus:ring-[#8C6A22]"
                             />
                             <span className="text-xs font-semibold text-[#191c1e]">
                               {opt.label}
@@ -1250,13 +1250,13 @@ export default function EstimatorView({
                 </div>
 
                 {/* Totals and Profit Margin widget */}
-                <div className="bg-white print:bg-[#f8fafc] border border-[#D8E0E6]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
+                <div className="bg-white print:bg-[#f8fafc] border border-[#DCE4EB]/30 print:border-[#e2e8f0] rounded-2xl print:rounded-xl p-5 print:p-4 shadow-sm print:shadow-none space-y-4 print:space-y-3">
                   <div className="flex items-center justify-between border-b pb-2">
-                    <h3 className="font-sans text-xs font-bold text-[#17314A]">
+                    <h3 className="font-sans text-xs font-bold text-[#102A46]">
                       <span className="print:hidden">Resumen de Cierre de Cotización</span>
                       <span className="hidden print:inline">Estimate Summary</span>
                     </h3>
-                    <span className="font-sans text-[11px] text-[#7c839b] font-medium">
+                    <span className="font-sans text-[11px] text-[#566A7E] font-medium">
                       <span className="print:hidden">Valores en USD</span>
                       <span className="hidden print:inline">Values in USD</span>
                     </span>
@@ -1264,41 +1264,41 @@ export default function EstimatorView({
 
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-[#7c839b]">
+                      <span className="text-[#566A7E]">
                         <span className="print:hidden">Subtotal Materiales:</span>
                         <span className="hidden print:inline">Materials Subtotal:</span>
                       </span>
                       <span className="font-mono font-bold text-[#45464d]">${activeEstimate.subtotalMaterials.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[#7c839b]">
+                      <span className="text-[#566A7E]">
                         <span className="print:hidden">Subtotal Mano de Obra:</span>
                         <span className="hidden print:inline">Labor Subtotal:</span>
                       </span>
                       <span className="font-mono font-bold text-[#45464d]">${activeEstimate.subtotalLabor.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[#7c839b]">
+                      <span className="text-[#566A7E]">
                         <span className="print:hidden">Permisos y Tasas Administrativas:</span>
                         <span className="hidden print:inline">Permits & Administrative Fees:</span>
                       </span>
                       <span className="font-mono font-bold text-[#45464d]">${activeEstimate.subtotalFees.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between border-t pt-2 font-bold text-[#17314A]">
+                    <div className="flex justify-between border-t pt-2 font-bold text-[#102A46]">
                       <span>
                         <span className="print:hidden">Subtotal Bruto:</span>
                         <span className="hidden print:inline">Gross Subtotal:</span>
                       </span>
                       <span className="font-mono">${activeEstimate.subtotalGross.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between text-[#7c839b]">
+                    <div className="flex justify-between text-[#566A7E]">
                       <span>
                         <span className="print:hidden">Impuestos ({(activeEstimate.taxRate * 100).toFixed(2)}%):</span>
                         <span className="hidden print:inline">Tax ({(activeEstimate.taxRate * 100).toFixed(2)}%):</span>
                       </span>
                       <span className="font-mono">${activeEstimate.taxAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between border-t pt-2 font-bold text-lg text-[#17314A]">
+                    <div className="flex justify-between border-t pt-2 font-bold text-lg text-[#102A46]">
                       <span>
                         <span className="print:hidden">Total Estimado:</span>
                         <span className="hidden print:inline">Estimated Total:</span>
@@ -1308,19 +1308,19 @@ export default function EstimatorView({
                   </div>
 
                   {/* Internal financial data is superadmin-only. */}
-                  {userRole === "admin" && <div className="bg-[#F5F7F8] border border-[#D8E0E6]/30 rounded-xl p-4 no-print">
+                  {userRole === "admin" && <div className="bg-[#F4F6F8] border border-[#DCE4EB]/30 rounded-xl p-4 no-print">
                     <div className="flex justify-between items-center mb-1.5">
                       <span className="text-xs font-bold text-[#45464d] flex items-center gap-1.5">
-                        <Calculator className="w-4 h-4 text-[#955B32]" />
+                        <Calculator className="w-4 h-4 text-[#664A14]" />
                         <span>Margen de Beneficio Estimado</span>
                       </span>
                       <span className={`font-mono font-bold text-xs ${isMarginUnderStandard ? "text-amber-600" : "text-yellow-600"}`}>
                         {activeEstimate.profitMargin}%
                       </span>
                     </div>
-                    <div className="w-full bg-[#EEF1F3] rounded-full h-2 overflow-hidden mb-3">
+                    <div className="w-full bg-[#E6ECF1] rounded-full h-2 overflow-hidden mb-3">
                       <div
-                        className={`h-full rounded-full transition-all duration-300 ${isMarginUnderStandard ? "bg-amber-500" : "bg-[#B77A4B]"}`}
+                        className={`h-full rounded-full transition-all duration-300 ${isMarginUnderStandard ? "bg-amber-500" : "bg-[#8C6A22]"}`}
                         style={{ width: `${Math.min(100, (activeEstimate.profitMargin / 50) * 100)}%` }}
                       ></div>
                     </div>
@@ -1366,15 +1366,15 @@ export default function EstimatorView({
       {/* Modal: New Estimate Lead Registration */}
       {isAddingLead && (
         <div className="no-print fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#D8E0E6]/30 rounded-2xl p-6 shadow-2xl max-w-md w-full animate-in fade-in zoom-in duration-150 animate-fade-in select-none">
+          <div className="bg-white border border-[#DCE4EB]/30 rounded-2xl p-6 shadow-2xl max-w-md w-full animate-in fade-in zoom-in duration-150 animate-fade-in select-none">
             <div className="flex items-center justify-between border-b pb-3 mb-4">
               <div className="flex items-center gap-2">
-                <FileCheck2 className="w-5 h-5 text-[#955B32]" />
-                <h3 className="font-bold text-sm text-[#17314A]">Nueva Cotización Retail</h3>
+                <FileCheck2 className="w-5 h-5 text-[#664A14]" />
+                <h3 className="font-bold text-sm text-[#102A46]">Nueva Cotización Retail</h3>
               </div>
               <button
                 onClick={() => setIsAddingLead(false)}
-                className="text-[#7c839b] hover:text-red-500 p-1 rounded-lg"
+                className="text-[#566A7E] hover:text-red-500 p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1382,46 +1382,46 @@ export default function EstimatorView({
 
             <form onSubmit={handleCreateLeadSubmit} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold text-[#7c839b] uppercase tracking-wider mb-1">Nombre Completo *</label>
+                <label className="block text-[10px] font-bold text-[#566A7E] uppercase tracking-wider mb-1">Nombre Completo *</label>
                 <input
                   type="text"
                   value={newLeadName}
                   onChange={(e) => setNewLeadName(e.target.value)}
-                  className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#B77A4B] font-medium"
+                  className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#8C6A22] font-medium"
                   placeholder="Ej. Juan Pérez"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#7c839b] uppercase tracking-wider mb-1">Dirección de la Propiedad</label>
+                <label className="block text-[10px] font-bold text-[#566A7E] uppercase tracking-wider mb-1">Dirección de la Propiedad</label>
                 <input
                   type="text"
                   value={newLeadAddress}
                   onChange={(e) => setNewLeadAddress(e.target.value)}
-                  className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#B77A4B] font-medium"
+                  className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#8C6A22] font-medium"
                   placeholder="Calle, Ciudad, Estado, Zip"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-[#7c839b] uppercase tracking-wider mb-1">Teléfono</label>
+                  <label className="block text-[10px] font-bold text-[#566A7E] uppercase tracking-wider mb-1">Teléfono</label>
                   <input
                     type="text"
                     value={newLeadPhone}
                     onChange={(e) => setNewLeadPhone(e.target.value)}
-                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#B77A4B] font-medium"
+                    className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#8C6A22] font-medium"
                     placeholder="(555) 000-0000"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-[#7c839b] uppercase tracking-wider mb-1">Correo Electrónico</label>
+                  <label className="block text-[10px] font-bold text-[#566A7E] uppercase tracking-wider mb-1">Correo Electrónico</label>
                   <input
                     type="email"
                     value={newLeadEmail}
                     onChange={(e) => setNewLeadEmail(e.target.value)}
-                    className="w-full bg-[#F5F7F8] border border-[#D8E0E6]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#B77A4B] font-medium"
+                    className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg py-2 px-3 text-xs outline-none focus:bg-white focus:border-[#8C6A22] font-medium"
                     placeholder="correo@ejemplo.com"
                   />
                 </div>
@@ -1437,7 +1437,7 @@ export default function EstimatorView({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#B77A4B] hover:bg-[#955B32] text-slate-900 font-bold text-xs rounded-lg transition-colors shadow-sm btn-gold-3d"
+                  className="px-4 py-2 bg-[#8C6A22] hover:bg-[#664A14] text-slate-900 font-bold text-xs rounded-lg transition-colors shadow-sm btn-gold-3d"
                 >
                   Crear Cotización
                 </button>
@@ -1449,7 +1449,7 @@ export default function EstimatorView({
 
       {/* Floating Success Toast */}
       {showToast && (
-        <div className="no-print fixed bottom-6 right-6 bg-[#17314A] border border-emerald-500 text-white rounded-xl p-4 shadow-2xl flex items-center gap-3 z-50 animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <div className="no-print fixed bottom-6 right-6 bg-[#102A46] border border-emerald-500 text-white rounded-xl p-4 shadow-2xl flex items-center gap-3 z-50 animate-in fade-in slide-in-from-bottom-4 duration-200">
           <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
             <CheckCircle2 className="w-5 h-5" />
           </div>

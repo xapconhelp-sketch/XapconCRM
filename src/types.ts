@@ -4,6 +4,7 @@ export enum ViewType {
   CLAIMS = "claims",
   PRODUCTION = "production",
   INSURANCE_DIRECTORY = "insurance_directory",
+  VALORES_INSURANCE = "valores_insurance",
   TEAM = "team",
   SETTINGS = "settings"
 }

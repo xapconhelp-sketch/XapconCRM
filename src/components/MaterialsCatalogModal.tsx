@@ -23,17 +23,17 @@ export default function MaterialsCatalogModal({ onClose }: MaterialsCatalogModal
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#17314A]/60 backdrop-blur-sm p-4 animate-fade-in select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#102A46]/60 backdrop-blur-sm p-4 animate-fade-in select-none">
       <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden animate-slide-up flex flex-col h-[80vh]">
         
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-[#EEF1F3] flex items-center justify-between bg-[#f8fafc] shrink-0">
+        <div className="px-6 py-4 border-b border-[#E6ECF1] flex items-center justify-between bg-[#f8fafc] shrink-0">
           <div>
-            <h2 className="text-sm font-bold text-[#17314A] flex items-center gap-2">
-              <FileSpreadsheet className="w-5 h-5 text-[#955B32]" />
+            <h2 className="text-sm font-bold text-[#102A46] flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5 text-[#664A14]" />
               Lista de Precios de Referencia (Materiales & Mano de Obra)
             </h2>
-            <p className="text-[10px] text-[#7c839b] font-medium mt-0.5">Catálogo global actualizado mensualmente por el administrador de la plataforma.</p>
+            <p className="text-[10px] text-[#566A7E] font-medium mt-0.5">Catálogo global actualizado mensualmente por el administrador de la plataforma.</p>
           </div>
           <button 
             onClick={onClose} 
@@ -61,14 +61,14 @@ export default function MaterialsCatalogModal({ onClose }: MaterialsCatalogModal
                 placeholder="Buscar material o trabajo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-[#F5F7F8] border border-[#D8E0E6]/50 rounded-xl text-xs text-[#17314A] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#B77A4B] focus:border-[#B77A4B] shadow-sm transition-all"
+                className="w-full pl-8 pr-3 py-1.5 bg-[#F4F6F8] border border-[#DCE4EB]/50 rounded-xl text-xs text-[#102A46] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#8C6A22] focus:border-[#8C6A22] shadow-sm transition-all"
               />
               <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             </div>
           </div>
 
           {/* Materials Table Viewer */}
-          <div className="flex-1 min-h-[250px] border border-[#D8E0E6]/30 rounded-xl overflow-hidden flex flex-col">
+          <div className="flex-1 min-h-[250px] border border-[#DCE4EB]/30 rounded-xl overflow-hidden flex flex-col">
             <div className="overflow-x-auto overflow-y-auto flex-1">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -79,7 +79,7 @@ export default function MaterialsCatalogModal({ onClose }: MaterialsCatalogModal
                     <th className="py-2.5 px-4 text-right rounded-tr-lg">Precio Unitario</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#EEF1F3] text-xs">
+                <tbody className="divide-y divide-[#E6ECF1] text-xs">
                   {filteredMaterials.length > 0 ? (
                     filteredMaterials.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
@@ -100,7 +100,7 @@ export default function MaterialsCatalogModal({ onClose }: MaterialsCatalogModal
                         <td className="py-3 px-4 text-center font-mono font-bold text-gray-500">
                           {item.unit}
                         </td>
-                        <td className="py-3 px-4 text-right font-mono font-bold text-[#17314A]">
+                        <td className="py-3 px-4 text-right font-mono font-bold text-[#102A46]">
                           ${item.unitPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>

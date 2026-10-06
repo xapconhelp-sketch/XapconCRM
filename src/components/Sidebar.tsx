@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  ChartNoAxesCombined
 } from "lucide-react";
 
 interface SidebarProps {
@@ -32,6 +33,7 @@ const SECTION_MANAGEMENT = [
 
 const SECTION_ADMIN = [
   { type: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras",  icon: ShieldCheck },
+  { type: ViewType.VALORES_INSURANCE, label: "Valores Insurance", icon: ChartNoAxesCombined },
 ];
 
 const SECTION_TEAM = [
@@ -65,7 +67,7 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
   const SectionLabel = ({ label }: { label: string }) => {
     if (collapsed) return <div className="h-px bg-white/5 my-2 mx-1" />;
     return (
-      <p className="px-4 pt-4 pb-1 text-[9px] font-bold tracking-[0.12em] uppercase text-[#374151]/60 select-none">
+      <p className="px-4 pt-4 pb-1 text-[10px] font-bold tracking-[0.12em] uppercase text-[#9AAABC] select-none">
         {label}
       </p>
     );
@@ -73,6 +75,7 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
 
   return (
     <nav
+      data-collapsed={collapsed}
       className={`crm-sidebar hidden md:flex flex-col h-screen text-white fixed left-0 top-0 z-50 shrink-0 select-none transition-all duration-300 ${
         collapsed ? "w-[76px]" : "w-[280px]"
       }`}
@@ -89,7 +92,7 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
         )}
         <button
           onClick={onToggleCollapse}
-          className="p-1.5 rounded-lg text-[#475569] hover:text-[#94A3B8] hover:bg-white/5 transition-colors"
+          className="p-1.5 rounded-lg text-[#475569] hover:text-[#CFD9E1] hover:bg-white/5 transition-colors"
           title={collapsed ? "Expandir menú" : "Colapsar menú"}
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}

@@ -42,7 +42,7 @@ interface InsuranceDirectoryViewProps {
 
 type DirectoryFilter = "all" | "with-cases" | "missing-contact";
 
-const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#B77A4B] focus:ring-4 focus:ring-[#B77A4B]/10";
+const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#8C6A22] focus:ring-4 focus:ring-[#8C6A22]/10";
 
 export default function InsuranceDirectoryView({
   claims,
@@ -254,7 +254,7 @@ export default function InsuranceDirectoryView({
           <div className="pointer-events-none absolute -right-1 -top-16 h-48 w-48 rounded-full border border-white/10" />
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-2xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.07] px-3 py-1 text-[10px] font-bold uppercase tracking-[.17em] text-[#E7B98F]">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.07] px-3 py-1 text-[10px] font-bold uppercase tracking-[.17em] text-[#D5BF7A]">
                 <ShieldCheck className="h-3.5 w-3.5" /> Centro de relaciones
               </div>
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Directorio de aseguranzas</h1>
@@ -288,7 +288,7 @@ export default function InsuranceDirectoryView({
                   {filteredList.length} / {directory.length}
                 </span>
               </div>
-              <label className="mt-4 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3 py-2.5 transition focus-within:border-[#B77A4B] focus-within:ring-4 focus-within:ring-[#B77A4B]/10">
+              <label className="mt-4 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3 py-2.5 transition focus-within:border-[#8C6A22] focus-within:ring-4 focus-within:ring-[#8C6A22]/10">
                 <Search className="h-4 w-4 shrink-0 text-slate-400" />
                 <input
                   type="search"
@@ -318,14 +318,14 @@ export default function InsuranceDirectoryView({
                   >
                     <CompanyMark name={company.name} active={isSelected} />
                     <span className="min-w-0 flex-1">
-                      <span className={`block truncate text-[13px] font-semibold ${isSelected ? "text-[#17314A]" : "text-slate-800"}`}>{company.name}</span>
+                      <span className={`block truncate text-[13px] font-semibold ${isSelected ? "text-[#102A46]" : "text-slate-800"}`}>{company.name}</span>
                       <span className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
                         <span>{company.totalClaims} {company.totalClaims === 1 ? "caso" : "casos"}</span>
                         <span className="h-0.5 w-0.5 rounded-full bg-slate-300" />
                         <span>{company.emails.length} {company.emails.length === 1 ? "correo" : "correos"}</span>
                       </span>
                     </span>
-                    {isSelected ? <ChevronRight className="h-4 w-4 shrink-0 text-[#B77A4B]" /> : <span className="mr-1 h-1.5 w-1.5 shrink-0 rounded-full bg-transparent group-hover:bg-slate-300" />}
+                    {isSelected ? <ChevronRight className="h-4 w-4 shrink-0 text-[#8C6A22]" /> : <span className="mr-1 h-1.5 w-1.5 shrink-0 rounded-full bg-transparent group-hover:bg-slate-300" />}
                   </button>
                 );
               }) : (
@@ -333,7 +333,7 @@ export default function InsuranceDirectoryView({
                   <Search className="mx-auto h-7 w-7 text-slate-300" />
                   <p className="mt-3 text-sm font-medium text-slate-700">Sin resultados</p>
                   <p className="mt-1 text-xs text-slate-500">Prueba otro término o registra una aseguradora nueva.</p>
-                  {searchTerm && <button onClick={() => { setCustomCompanyName(searchTerm); setIsAddingNewCompany(true); }} className="mt-3 text-xs font-semibold text-[#955B32] hover:underline">Agregar “{searchTerm}”</button>}
+                  {searchTerm && <button onClick={() => { setCustomCompanyName(searchTerm); setIsAddingNewCompany(true); }} className="mt-3 text-xs font-semibold text-[#664A14] hover:underline">Agregar “{searchTerm}”</button>}
                 </div>
               )}
             </div>
@@ -342,20 +342,20 @@ export default function InsuranceDirectoryView({
           {selectedCompany ? (
             <section className={`${showMobileDetail ? "block" : "hidden xl:block"} min-w-0 space-y-5`}>
               <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)]">
-                <div className="border-b border-slate-100 px-5 pt-4 xl:hidden"><button onClick={() => setShowMobileDetail(false)} className="inline-flex items-center gap-1.5 pb-3 text-xs font-semibold text-[#955B32]"><ChevronRight className="h-4 w-4 rotate-180" /> Volver a aseguradoras</button></div>
+                <div className="border-b border-slate-100 px-5 pt-4 xl:hidden"><button onClick={() => setShowMobileDetail(false)} className="inline-flex items-center gap-1.5 pb-3 text-xs font-semibold text-[#664A14]"><ChevronRight className="h-4 w-4 rotate-180" /> Volver a aseguradoras</button></div>
                 <div className="flex flex-col gap-4 border-b border-slate-100 p-5 xl:flex-row xl:items-start xl:justify-between xl:p-6">
                   <div className="flex min-w-0 items-center gap-4">
                     <CompanyMark name={selectedCompany.name} large />
                     <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[#955B32]">Ficha de aseguradora</p>
-                      <h2 className="mt-1 truncate text-xl font-semibold tracking-tight text-[#17314A] sm:text-2xl">{selectedCompany.name}</h2>
+                      <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[#664A14]">Ficha de aseguradora</p>
+                      <h2 className="mt-1 truncate text-xl font-semibold tracking-tight text-[#102A46] sm:text-2xl">{selectedCompany.name}</h2>
                       <p className="mt-1 line-clamp-2 text-sm text-slate-500">{selectedCompany.customNotes || "Sin notas registradas."}</p>
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-                    {selectedCompany.portalUrl && <a href={selectedCompany.portalUrl} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:border-[#B77A4B] hover:text-[#955B32]"><ExternalLink className="h-3.5 w-3.5" /> Portal de reclamos</a>}
-                    <button onClick={openEditCompany} className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:border-[#B77A4B] hover:text-[#955B32]"><Pencil className="h-3.5 w-3.5" /> Editar</button>
-                    <button onClick={() => setIsAddingContact(true)} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#17314A] px-3 text-xs font-semibold text-white transition hover:bg-[#234762]"><Plus className="h-3.5 w-3.5" /> Agregar contacto</button>
+                    {selectedCompany.portalUrl && <a href={selectedCompany.portalUrl} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:border-[#8C6A22] hover:text-[#664A14]"><ExternalLink className="h-3.5 w-3.5" /> Portal de reclamos</a>}
+                    <button onClick={openEditCompany} className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:border-[#8C6A22] hover:text-[#664A14]"><Pencil className="h-3.5 w-3.5" /> Editar</button>
+                    <button onClick={() => setIsAddingContact(true)} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#102A46] px-3 text-xs font-semibold text-white transition hover:bg-[#193856]"><Plus className="h-3.5 w-3.5" /> Agregar contacto</button>
                     <button onClick={() => { setDirectoryActionError(""); setIsConfirmingDelete(true); }} aria-label={`Eliminar ${selectedCompany.name}`} title="Eliminar aseguradora del directorio" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600 transition hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 </div>
@@ -395,7 +395,7 @@ export default function InsuranceDirectoryView({
                     {selectedCompany.emails.map((email) => <div key={email}><ContactRow value={email} copied={copiedText === email} onCopy={handleCopy} /></div>)}
                     {!selectedCompany.emails.length && <EmptyInline icon={Mail} title="No hay correos guardados" description="Agrega una dirección de reclamos para tenerla a mano." />}
                   </div>
-                  <button onClick={() => setIsAddingContact(true)} className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#955B32] hover:text-[#754522]"><Plus className="h-3.5 w-3.5" /> Añadir dato de contacto</button>
+                  <button onClick={() => setIsAddingContact(true)} className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#664A14] hover:text-[#754522]"><Plus className="h-3.5 w-3.5" /> Añadir dato de contacto</button>
                 </section>
               </div>
 
@@ -413,14 +413,14 @@ export default function InsuranceDirectoryView({
                     {selectedCompany.claims.map((claim) => <button key={claim.id} type="button" onClick={() => onNavigateToClaim(claim.id)} className="group flex w-full items-center gap-3 p-3 text-left transition hover:bg-[#F8FAFC] sm:px-4">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F3F6F8] text-slate-500 transition group-hover:bg-[#E8EEF2]"><FileText className="h-4 w-4" /></span>
                       <span className="min-w-0 flex-1"><span className="flex min-w-0 items-center gap-2"><span className="truncate text-sm font-semibold text-slate-800">{claim.name}</span>{claim.claimNumber && <span className="hidden shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 sm:inline">#{claim.claimNumber}</span>}</span><span className="mt-1 block truncate text-xs text-slate-500">{claim.address || "Sin dirección"}{claim.adjusterName ? ` · ${claim.adjusterName}` : ""}</span></span>
-                      <span className="hidden max-w-28 truncate rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600 sm:block">{claim.status}</span><ArrowUpRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-[#955B32]" />
+                      <span className="hidden max-w-28 truncate rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600 sm:block">{claim.status}</span><ArrowUpRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-[#664A14]" />
                     </button>)}
                   </div> : <EmptyInline icon={FileText} title="Sin expedientes relacionados" description="Los casos asociados a esta aseguradora aparecerán aquí." />}
                 </section>
               </div>
             </section>
           ) : <section className={`${showMobileDetail ? "flex" : "hidden xl:flex"} min-h-[500px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center`}>
-            <div className="max-w-sm"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F5F1EC] text-[#955B32]"><Building2 className="h-6 w-6" /></span><h2 className="mt-4 text-lg font-semibold text-slate-900">Elige una aseguradora</h2><p className="mt-2 text-sm leading-6 text-slate-500">Selecciona un registro del catálogo para consultar su actividad y datos de contacto.</p></div>
+            <div className="max-w-sm"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F5F1EC] text-[#664A14]"><Building2 className="h-6 w-6" /></span><h2 className="mt-4 text-lg font-semibold text-slate-900">Elige una aseguradora</h2><p className="mt-2 text-sm leading-6 text-slate-500">Selecciona un registro del catálogo para consultar su actividad y datos de contacto.</p></div>
           </section>}
         </main>
       </div>
@@ -463,7 +463,7 @@ export default function InsuranceDirectoryView({
 }
 
 function SummaryMetric({ label, value, icon: Icon }: { label: string; value: number; icon: React.ElementType }) {
-  return <div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#E7B98F]"><Icon className="h-4 w-4" /></span><span><span className="block text-lg font-semibold tabular-nums text-white">{value.toLocaleString()}</span><span className="block text-[11px] text-slate-300">{label}</span></span></div>;
+  return <div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#D5BF7A]"><Icon className="h-4 w-4" /></span><span><span className="block text-lg font-semibold tabular-nums text-white">{value.toLocaleString()}</span><span className="block text-[11px] text-slate-300">{label}</span></span></div>;
 }
 
 function DetailMetric({ label, value }: { label: string; value: number }) {
@@ -472,15 +472,15 @@ function DetailMetric({ label, value }: { label: string; value: number }) {
 
 function CompanyMark({ name, active = false, large = false }: { name: string; active?: boolean; large?: boolean }) {
   const initials = name.split(/[^a-z0-9]+/i).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-  return <span className={`flex shrink-0 items-center justify-center font-semibold tracking-tight ${large ? "h-14 w-14 rounded-2xl text-lg" : "h-10 w-10 rounded-xl text-xs"} ${active || large ? "bg-[#17314A] text-[#E7B98F]" : "bg-[#F1F4F6] text-slate-600"}`}>{initials}</span>;
+  return <span className={`flex shrink-0 items-center justify-center font-semibold tracking-tight ${large ? "h-14 w-14 rounded-2xl text-lg" : "h-10 w-10 rounded-xl text-xs"} ${active || large ? "bg-[#102A46] text-[#D5BF7A]" : "bg-[#F1F4F6] text-slate-600"}`}>{initials}</span>;
 }
 
 function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return <button type="button" onClick={onClick} className={`rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition ${active ? "bg-[#17314A] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{children}</button>;
+  return <button type="button" onClick={onClick} className={`rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition ${active ? "bg-[#102A46] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{children}</button>;
 }
 
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
-  return <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[#955B32]">{children}</p>;
+  return <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[#664A14]">{children}</p>;
 }
 
 function EmptyInline({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description: string }) {
@@ -488,7 +488,7 @@ function EmptyInline({ icon: Icon, title, description }: { icon: React.ElementTy
 }
 
 function ContactRow({ value, copied, onCopy }: { value: string; copied: boolean; onCopy: (value: string) => void }) {
-  return <div className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-100 bg-[#FBFCFD] px-3 py-2.5"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><Mail className="h-4 w-4" /></span><span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700" title={value}>{value}</span><button type="button" onClick={() => onCopy(value)} aria-label="Copiar correo" className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-600 transition hover:border-[#B77A4B] hover:text-[#955B32]">{copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}{copied ? "Copiado" : "Copiar"}</button></div>;
+  return <div className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-100 bg-[#FBFCFD] px-3 py-2.5"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><Mail className="h-4 w-4" /></span><span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700" title={value}>{value}</span><button type="button" onClick={() => onCopy(value)} aria-label="Copiar correo" className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-600 transition hover:border-[#8C6A22] hover:text-[#664A14]">{copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}{copied ? "Copiado" : "Copiar"}</button></div>;
 }
 
 function Dialog({ title, subtitle, onClose, children }: { title: string; subtitle: string; onClose: () => void; children: React.ReactNode }) {
@@ -505,5 +505,5 @@ function FormField({ label, value, onChange, placeholder, type = "text", require
 }
 
 function DialogActions({ onCancel, saving, submitLabel, disabled = false }: { onCancel: () => void; saving: boolean; submitLabel: string; disabled?: boolean }) {
-  return <div className="flex justify-end gap-2 border-t border-slate-100 pt-4"><button type="button" onClick={onCancel} disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50">Cancelar</button><button type="submit" disabled={saving || disabled} className="inline-flex min-w-36 items-center justify-center gap-2 rounded-xl bg-[#17314A] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234762] disabled:cursor-not-allowed disabled:opacity-50">{saving ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />Guardando...</> : <><Check className="h-4 w-4" />{submitLabel}</>}</button></div>;
+  return <div className="flex justify-end gap-2 border-t border-slate-100 pt-4"><button type="button" onClick={onCancel} disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50">Cancelar</button><button type="submit" disabled={saving || disabled} className="inline-flex min-w-36 items-center justify-center gap-2 rounded-xl bg-[#102A46] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#193856] disabled:cursor-not-allowed disabled:opacity-50">{saving ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />Guardando...</> : <><Check className="h-4 w-4" />{submitLabel}</>}</button></div>;
 }
