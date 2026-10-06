@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { eligibleCaseMembers } from "../lib/teamAccess.js";
+import { formatTimelineDate, getDaysSinceLastUpdate } from "../lib/caseActivity";
 import { Lead, TimelineEvent, DocumentItem, TeamMember } from "../types";
 import { 
   Users, 
@@ -346,41 +347,6 @@ export default function LeadsView({
       (lead.assignedRep && lead.assignedRep.toLowerCase().includes(term))
     );
   });
-
-  const getDaysSinceLastUpdate = (lead: Lead) => {
-    let lastTimestamp = lead.createdAt ? Date.parse(lead.createdAt) : Date.now();
-    if (isNaN(lastTimestamp)) {
-      const parts = lead.createdAt.split('/');
-      if (parts.length === 3) {
-        const d = parseInt(parts[0]);
-        const m = parseInt(parts[1]) - 1;
-        const y = parseInt(parts[2]);
-        const parsedDate = new Date(y, m, d);
-        if (!isNaN(parsedDate.getTime())) {
-          lastTimestamp = parsedDate.getTime();
-        }
-      } else {
-        lastTimestamp = Date.now();
-      }
-    }
-    
-    if (lead.timeline && lead.timeline.length > 0) {
-      lead.timeline.forEach(event => {
-        const match = event.id.match(/\d+/);
-        if (match) {
-          const ts = parseInt(match[0]);
-          if (ts > 1000000000000 && ts < 5000000000000) {
-            if (ts > lastTimestamp) {
-              lastTimestamp = ts;
-            }
-          }
-        }
-      });
-    }
-    const diffMs = Date.now() - lastTimestamp;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    return diffDays < 0 ? 0 : diffDays;
-  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -1701,9 +1667,9 @@ export default function LeadsView({
                           </div>
                           <div className="space-y-1.5 flex-1">
                             <div className="flex items-center justify-between">
-                              <span className="font-sans text-xs font-bold text-[#102A46]">{ev.title}</span>
+                              <span className="font-sans text-xs font-bold text-[#102A46]">{ev.type === "note" ? (ev.author || ev.title) : ev.title}</span>
                               <div className="flex items-center gap-2">
-                                <span className="text-[9px] text-[#566A7E]">{ev.timestamp}</span>
+                                <span className="text-[9px] text-[#566A7E]">{formatTimelineDate(ev)}</span>
                                 {onDeleteTimelineEvent && (ev.type === "note" || ev.id.startsWith("timeline-")) && (
                                   <button
                                     onClick={() => {
@@ -1719,6 +1685,7 @@ export default function LeadsView({
                                 )}
                               </div>
                             </div>
+                            {ev.author && ev.type !== "note" && <p className="text-[11px] font-medium text-[#566A7E]">{ev.author}</p>}
                             <p className="font-sans text-xs text-[#45464d] leading-relaxed whitespace-pre-wrap">{ev.content}</p>
                             
                             {ev.duration && (

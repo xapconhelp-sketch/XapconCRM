@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertCircle, BadgeDollarSign, CalendarDays, Check, CheckCircle2, ChevronRight, FileCheck2, FilePlus2, LoaderCircle, Plus, Search, Trash2 } from "lucide-react";
+import { AlertCircle, BadgeDollarSign, BarChart3, CalendarDays, Check, CheckCircle2, ChevronRight, CircleDollarSign, Clock3, FileCheck2, FilePlus2, LoaderCircle, Plus, Search, ShieldCheck, Trash2, TrendingUp } from "lucide-react";
 import { Lead } from "../types";
 import { supabase } from "../lib/supabase";
 
@@ -15,6 +15,9 @@ type ValueEntry = {
   estimate_sent: boolean;
 };
 type EntryDraft = Omit<Pick<ValueEntry, "record_type" | "entry_number" | "event_date" | "estimate_sent">, "amount"> & { amount: string; id?: string };
+type AnalyticsValue = Pick<ValueEntry, "lead_id" | "record_type" | "entry_number" | "amount" | "event_date" | "estimate_sent">;
+type AnalyticsFinance = { claim_id: string; rcv: number | null; acv: number | null };
+type AnalyticsPayment = { claim_id: string; status: "expected" | "received"; amount: number };
 
 const MAX_REPEATED_ENTRIES = 4;
 const money = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(amount);
@@ -102,8 +105,222 @@ function ValueEntryCard({ title, subtitle, kind, entries, onChange, onSave, onDe
   );
 }
 
+function AnalyticsStat({ label, value, detail, icon: Icon, tone = "blue" }: {
+  label: string; value: string; detail: string; icon: React.ElementType; tone?: "blue" | "gold" | "green" | "slate";
+}) {
+  const tones = {
+    blue: "bg-[#EEF3F7] text-[#254C68]",
+    gold: "bg-[#F7F2E5] text-[#80621F]",
+    green: "bg-[#EDF5F0] text-[#39705A]",
+    slate: "bg-[#F0F3F5] text-[#596D78]",
+  };
+  return <article className="min-w-0 rounded-2xl border border-[#DDE3E8] bg-white p-4 shadow-[0_5px_18px_rgba(23,49,74,0.035)] sm:p-5">
+    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[.1em] text-[#687C89]">{label}</p><p className="mt-2 truncate font-display text-[24px] font-semibold tracking-[-.035em] text-[#122B40] sm:text-[28px]">{value}</p></div><span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}><Icon className="h-5 w-5" /></span></div>
+    <p className="mt-2 text-[11px] leading-5 text-[#637782]">{detail}</p>
+  </article>;
+}
+
+function CaseMetric({ label, value, detail, tone = "blue" }: {
+  label: string; value: string; detail: string; tone?: "blue" | "gold" | "green" | "slate";
+}) {
+  const tones = {
+    blue: "border-[#DCE5EC] bg-[#F3F7FA]",
+    gold: "border-[#E8DFCA] bg-[#FBF8EF]",
+    green: "border-[#D8E7DE] bg-[#F1F7F3]",
+    slate: "border-[#E2E7EA] bg-[#F6F8F9]",
+  };
+  return <article className={`min-w-0 rounded-xl border p-4 ${tones[tone]}`}>
+    <p className="text-[10px] font-bold uppercase tracking-[.09em] text-[#596D78]">{label}</p>
+    <p className="mt-2 truncate font-display text-[21px] font-semibold tracking-[-.03em] text-[#122B40]">{value}</p>
+    <p className="mt-1 text-[11px] leading-4 text-[#637782]">{detail}</p>
+  </article>;
+}
+
+function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
+  const [values, setValues] = useState<AnalyticsValue[]>([]);
+  const [finances, setFinances] = useState<AnalyticsFinance[]>([]);
+  const [payments, setPayments] = useState<AnalyticsPayment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [selectedCaseId, setSelectedCaseId] = useState("");
+  const [caseQuery, setCaseQuery] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      const [valueResult, financeResult, paymentResult] = await Promise.all([
+        supabase.from("admin_insurance_values").select("lead_id,record_type,entry_number,amount,event_date,estimate_sent"),
+        supabase.from("contractor_claim_financials").select("claim_id,rcv,acv"),
+        supabase.from("contractor_claim_payments").select("claim_id,status,amount"),
+      ]);
+      if (cancelled) return;
+      const nextErrors: string[] = [];
+      if (valueResult.error) nextErrors.push(`Valores Insurance: ${valueResult.error.message}`);
+      else setValues((valueResult.data || []) as AnalyticsValue[]);
+      if (financeResult.error) nextErrors.push("No fue posible leer RCV/ACV. Revisa el acceso superadmin a las finanzas de contratistas.");
+      else setFinances((financeResult.data || []) as AnalyticsFinance[]);
+      if (paymentResult.error) nextErrors.push("No fue posible leer los pagos registrados. Revisa el acceso superadmin a pagos de contratistas.");
+      else setPayments((paymentResult.data || []) as AnalyticsPayment[]);
+      setErrors(nextErrors);
+      setLoading(false);
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [claims]);
+
+  const analysis = useMemo(() => {
+    const claimIds = new Set(claims.map((claim) => claim.id));
+    const scopedValues = values.filter((row) => claimIds.has(row.lead_id));
+    const claimRows = claims.map((claim) => {
+      const rows = scopedValues.filter((row) => row.lead_id === claim.id);
+      const estimate = rows.find((row) => row.record_type === "estimate");
+      const sows = rows.filter((row) => row.record_type === "sow");
+      const sowsWithAmount = sows.filter((row) => row.amount !== null);
+      const latestSow = [...sowsWithAmount].sort((a, b) => (b.event_date || "").localeCompare(a.event_date || "") || b.entry_number - a.entry_number)[0];
+      const firstSow = [...sowsWithAmount].sort((a, b) => {
+        if (a.event_date && b.event_date) return a.event_date.localeCompare(b.event_date) || a.entry_number - b.entry_number;
+        if (a.event_date) return -1;
+        if (b.event_date) return 1;
+        return a.entry_number - b.entry_number;
+      })[0];
+      const supplements = rows.filter((row) => row.record_type === "supplement");
+      const estimateAmount = Number(estimate?.amount) || 0;
+      const sowAmount = Number(latestSow?.amount) || 0;
+      const finance = finances.find((row) => row.claim_id === claim.id);
+      const claimPayments = payments.filter((row) => row.claim_id === claim.id);
+      return {
+        claim, estimate, firstSow, latestSow, estimateAmount, sowAmount,
+        hasSupplement: supplements.length > 0,
+        gap: estimate && latestSow && estimate.amount !== null && latestSow.amount !== null ? estimateAmount - sowAmount : null,
+        sowAmountCount: sowsWithAmount.length,
+        sowChange: sowsWithAmount.length >= 2 && firstSow && latestSow ? Number(latestSow.amount) - Number(firstSow.amount) : null,
+        sowChangePercent: sowsWithAmount.length >= 2 && firstSow && latestSow && Number(firstSow.amount) > 0
+          ? ((Number(latestSow.amount) - Number(firstSow.amount)) / Number(firstSow.amount)) * 100
+          : null,
+        daysToFirstSow: estimate?.estimate_sent && estimate.event_date
+          ? (() => {
+              const firstDate = sows.map((row) => row.event_date).filter((date): date is string => Boolean(date) && date >= estimate.event_date!).sort()[0];
+              if (!firstDate) return null;
+              const days = Math.floor((Date.parse(firstDate) - Date.parse(estimate.event_date!)) / 86400000);
+              return days >= 0 ? days : null;
+            })()
+          : null,
+        rcv: Number(finance?.rcv) || 0,
+        acv: Number(finance?.acv) || 0,
+        received: claimPayments.filter((row) => row.status === "received").reduce((sum, row) => sum + Number(row.amount || 0), 0),
+        expected: claimPayments.filter((row) => row.status === "expected").reduce((sum, row) => sum + Number(row.amount || 0), 0),
+      };
+    });
+    const totals = claimRows.reduce((acc, row) => ({
+      estimates: acc.estimates + row.estimateAmount,
+      latestSow: acc.latestSow + row.sowAmount,
+      additionalSow: acc.additionalSow + (row.sowChange ?? 0),
+      received: acc.received + row.received,
+      expected: acc.expected + row.expected,
+      rcv: acc.rcv + row.rcv,
+      acv: acc.acv + row.acv,
+    }), { estimates: 0, latestSow: 0, additionalSow: 0, received: 0, expected: 0, rcv: 0, acv: 0 });
+    const carrierMap = new Map<string, typeof claimRows>();
+    for (const row of claimRows) {
+      const carrier = row.claim.insuranceProvider?.trim() || "Aseguradora sin registrar";
+      carrierMap.set(carrier, [...(carrierMap.get(carrier) || []), row]);
+    }
+    const carriers = [...carrierMap.entries()].map(([name, rows]) => {
+      const comparable = rows.filter((row) => row.gap !== null);
+      const responseTimes = rows.map((row) => row.daysToFirstSow).filter((days): days is number => days !== null);
+      return {
+        name, claims: rows.length,
+        estimates: rows.reduce((sum, row) => sum + row.estimateAmount, 0),
+        latestSows: rows.reduce((sum, row) => sum + row.sowAmount, 0),
+        avgGap: comparable.length ? comparable.reduce((sum, row) => sum + (row.gap || 0), 0) / comparable.length : null,
+        avgResponse: responseTimes.length ? responseTimes.reduce((sum, days) => sum + days, 0) / responseTimes.length : null,
+        comparable: comparable.length,
+      };
+    }).sort((a, b) => b.claims - a.claims || a.name.localeCompare(b.name));
+    const statuses = [...new Set(claimRows.map((row) => row.claim.status || "Sin etapa"))].map((status) => ({
+      status, count: claimRows.filter((row) => row.claim.status === status).length,
+    })).sort((a, b) => b.count - a.count);
+    const maxStatus = Math.max(1, ...statuses.map((row) => row.count));
+    const missingValues = claimRows.filter((row) => !row.estimate && !row.latestSow && !row.hasSupplement).length;
+    const claimsWithSow = claimRows.filter((row) => row.latestSow).length;
+    const comparableSowCount = claimRows.filter((row) => row.sowChange !== null).length;
+    const datedSowCount = scopedValues.filter((row) => row.record_type === "sow" && row.event_date).length;
+    const responseRows = claimRows.filter((row) => row.daysToFirstSow !== null);
+    const avgResponse = responseRows.length ? responseRows.reduce((sum, row) => sum + (row.daysToFirstSow || 0), 0) / responseRows.length : null;
+    return { claimRows, totals, carriers, statuses, maxStatus, missingValues, claimsWithSow, comparableSowCount, datedSowCount, avgResponse, responseSample: responseRows.length, scopedValues };
+  }, [claims, values, finances, payments]);
+
+  const selectedCase = analysis.claimRows.find((row) => row.claim.id === selectedCaseId) || analysis.claimRows[0];
+  const visibleCases = analysis.claimRows.filter(({ claim }) =>
+    `${claim.name} ${claim.claimNumber} ${claim.insuranceProvider} ${claim.company}`.toLowerCase().includes(caseQuery.trim().toLowerCase()),
+  );
+
+  if (loading) return <div className="flex min-h-[300px] items-center justify-center gap-2 rounded-2xl border border-[#DDE3E8] bg-white text-sm text-[#596D80]"><LoaderCircle className="h-4 w-4 animate-spin" />Calculando análisis de cartera…</div>;
+
+  return <div className="space-y-5">
+    {errors.length > 0 && <div role="alert" className="rounded-xl border border-[#E9D9B2] bg-[#FBF7EB] px-4 py-3 text-[11px] leading-5 text-[#765B22]">{errors.join(" ")}</div>}
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <AnalyticsStat label="Expedientes de seguro" value={String(claims.length)} detail={`${analysis.claimRows.filter((row) => row.claim.status !== "Finalizado" && row.claim.status !== "Cancelado" && row.claim.status !== "Negados").length} activos según etapa actual`} icon={ShieldCheck} />
+      <AnalyticsStat label="Total esperado" value={money(analysis.totals.estimates)} detail="Suma de los montos que se esperan cobrar al seguro en todos los expedientes" icon={BadgeDollarSign} tone="gold" />
+      <AnalyticsStat label="Total aprobado · último SOW" value={money(analysis.totals.latestSow)} detail={`Suma del SOW más reciente en ${analysis.claimsWithSow} expedientes`} icon={FileCheck2} tone="blue" />
+      <AnalyticsStat label="Incremento adicional logrado" value={money(analysis.totals.additionalSow)} detail={`Último SOW − primer SOW en ${analysis.comparableSowCount} expedientes comparables`} icon={TrendingUp} tone="green" />
+    </div>
+
+    <section className="overflow-hidden rounded-2xl border border-[#DDE3E8] bg-white shadow-[0_6px_22px_rgba(23,49,74,0.04)]">
+      <header className="flex flex-col gap-3 border-b border-[#E9EDF0] bg-[linear-gradient(112deg,#102945_0%,#102A46_65%,#1A3854_100%)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div><div className="flex items-center gap-2"><CircleDollarSign className="h-4 w-4 text-[#D3B566]" /><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#D3B566]">Lectura por expediente</p></div><h2 className="mt-1 font-display text-[17px] font-semibold tracking-[-.02em] text-white">Desempeño del caso</h2></div>
+        {selectedCase && <div className="text-left sm:text-right"><p className="max-w-[320px] truncate text-[13px] font-semibold text-white">{selectedCase.claim.name}</p><p className="mt-1 text-[10px] text-[#D6E0E7]">{selectedCase.claim.claimNumber} <span className="mx-1 text-[#D3B566]">·</span> {selectedCase.claim.insuranceProvider || "Aseguradora sin registrar"}</p></div>}
+      </header>
+      {selectedCase ? <div className="space-y-4 p-4 sm:p-5">
+        <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-5">
+          <CaseMetric label="Estimado del equipo" value={selectedCase.estimate?.amount === null || !selectedCase.estimate ? "Sin registro" : money(Number(selectedCase.estimate.amount))} detail={selectedCase.estimate?.estimate_sent ? "Marcado como enviado" : "Estimado del alcance esperado"} tone="blue" />
+          <CaseMetric label="Primer SOW recibido" value={selectedCase.firstSow?.amount === null || !selectedCase.firstSow ? "Sin registro" : money(Number(selectedCase.firstSow.amount))} detail={selectedCase.firstSow?.event_date ? `Base · ${selectedCase.firstSow.event_date}` : "Monto base de aseguradora"} tone="slate" />
+          <CaseMetric label="SOW más reciente" value={selectedCase.latestSow?.amount === null || !selectedCase.latestSow ? "Sin registro" : money(Number(selectedCase.latestSow.amount))} detail={selectedCase.latestSow?.event_date ? `Última revisión · ${selectedCase.latestSow.event_date}` : "Último monto registrado"} tone="blue" />
+          <CaseMetric label="Incremento adicional" value={selectedCase.sowChange === null ? "Sin comparación" : `${selectedCase.sowChange > 0 ? "+" : selectedCase.sowChange < 0 ? "−" : ""}${money(Math.abs(selectedCase.sowChange))}`} detail={selectedCase.sowChange === null ? "Registra dos SOW con monto" : "Último SOW menos primer SOW"} tone={selectedCase.sowChange !== null && selectedCase.sowChange > 0 ? "green" : "gold"} />
+          <CaseMetric label="% adicional logrado" value={selectedCase.sowChangePercent === null ? "Sin comparación" : `${selectedCase.sowChangePercent > 0 ? "+" : selectedCase.sowChangePercent < 0 ? "−" : ""}${Math.abs(selectedCase.sowChangePercent).toFixed(1)}%`} detail={selectedCase.sowChangePercent === null ? "Requiere dos SOW y un primer SOW mayor a $0" : "Incremento respecto al primer SOW"} tone={selectedCase.sowChangePercent !== null && selectedCase.sowChangePercent > 0 ? "green" : "gold"} />
+        </div>
+        <div className="flex flex-col gap-2 rounded-xl border border-[#E5E9EC] bg-[#F7F9FA] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[11px] leading-5 text-[#526879]">Incremento por caso: último SOW menos primer SOW. El porcentaje se calcula sobre el monto del primer SOW.</p>
+          <p className="shrink-0 text-[11px] font-semibold text-[#183249]">Pagos: <span className="text-[#39705A]">{money(selectedCase.received)} recibidos</span><span className="mx-1.5 text-[#A7B2BA]">·</span><span className="text-[#80621F]">{money(selectedCase.expected)} esperados</span></p>
+        </div>
+      </div> : <div className="px-5 py-12 text-center text-sm text-[#637782]">No hay expedientes para mostrar.</div>}
+    </section>
+
+    <section className="overflow-hidden rounded-2xl border border-[#DDE3E8] bg-white shadow-[0_6px_22px_rgba(23,49,74,0.035)]">
+      <header className="flex flex-col gap-3 border-b border-[#E9EDF0] px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-display text-[15px] font-semibold text-[#122B40]">Comparativo de expedientes</h2><p className="mt-1 text-[11px] text-[#637782]">Selecciona un caso para ver el cambio entre sus SOW y los montos registrados.</p></div><label className="relative block w-full sm:max-w-[280px]"><Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#7B8D99]" /><input value={caseQuery} onChange={(event) => setCaseQuery(event.target.value)} placeholder="Buscar caso, reclamo o aseguradora" className="h-9 w-full rounded-lg border border-[#DDE3E8] bg-[#F8FAFB] pl-9 pr-3 text-[11px] text-[#183249] outline-none placeholder:text-[#82909A] focus:border-[#8C6A22]/60 focus:ring-4 focus:ring-[#8C6A22]/[0.08]" /></label></header>
+      <div className="overflow-x-auto"><table className="w-full min-w-[980px] text-left"><thead className="bg-[#F4F6F7] text-[10px] uppercase tracking-[.08em] text-[#627582]"><tr><th className="px-5 py-3">Expediente</th><th className="px-4 py-3">Etapa</th><th className="px-4 py-3 text-right">Estimado</th><th className="px-4 py-3 text-right">Primer SOW</th><th className="px-4 py-3 text-right">Último SOW</th><th className="px-4 py-3 text-right">Incremento</th><th className="px-5 py-3 text-right">% adicional</th></tr></thead><tbody className="divide-y divide-[#EDF0F2]">{visibleCases.map((row) => <tr key={row.claim.id} className={`text-[11px] text-[#405766] transition hover:bg-[#F8FAFB] ${selectedCase?.claim.id === row.claim.id ? "bg-[#F3F7FA]" : ""}`}><td className="max-w-[260px] px-5 py-2.5"><button type="button" onClick={() => setSelectedCaseId(row.claim.id)} className="block max-w-full text-left"><span className="block truncate font-semibold text-[#183249] hover:text-[#755613]">{row.claim.name}</span><span className="mt-0.5 block truncate text-[10px] text-[#71838F]">{row.claim.claimNumber} · {row.claim.insuranceProvider || "Aseguradora sin registrar"}</span></button></td><td className="px-4 py-2.5">{row.claim.status || "Sin etapa"}</td><td className="px-4 py-2.5 text-right tabular-nums">{row.estimate?.amount === null || !row.estimate ? "—" : money(Number(row.estimate.amount))}</td><td className="px-4 py-2.5 text-right tabular-nums">{row.firstSow?.amount === null || !row.firstSow ? "—" : money(Number(row.firstSow.amount))}</td><td className="px-4 py-2.5 text-right tabular-nums">{row.latestSow?.amount === null || !row.latestSow ? "—" : money(Number(row.latestSow.amount))}</td><td className={`px-4 py-2.5 text-right font-semibold tabular-nums ${row.sowChange !== null && row.sowChange > 0 ? "text-[#39705A]" : row.sowChange !== null && row.sowChange < 0 ? "text-[#9E4D4D]" : "text-[#71838F]"}`}>{row.sowChange === null ? "—" : `${row.sowChange > 0 ? "+" : row.sowChange < 0 ? "−" : ""}${money(Math.abs(row.sowChange))}`}</td><td className={`px-5 py-2.5 text-right font-semibold tabular-nums ${row.sowChangePercent !== null && row.sowChangePercent > 0 ? "text-[#39705A]" : row.sowChangePercent !== null && row.sowChangePercent < 0 ? "text-[#9E4D4D]" : "text-[#71838F]"}`}>{row.sowChangePercent === null ? "—" : `${row.sowChangePercent > 0 ? "+" : row.sowChangePercent < 0 ? "−" : ""}${Math.abs(row.sowChangePercent).toFixed(1)}%`}</td></tr>)}{visibleCases.length === 0 && <tr><td colSpan={7} className="px-5 py-10 text-center text-xs text-[#6B7E89]">No encontramos casos con esa búsqueda.</td></tr>}</tbody></table></div>
+    </section>
+
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,.85fr)]">
+      <section className="overflow-hidden rounded-2xl border border-[#DDE3E8] bg-white shadow-[0_6px_22px_rgba(23,49,74,0.035)]">
+        <header className="border-b border-[#E9EDF0] px-5 py-4"><h2 className="font-display text-[15px] font-semibold text-[#122B40]">Comparativo por aseguradora</h2><p className="mt-1 text-[11px] text-[#637782]">Diferencia entre el estimado y el SOW más reciente registrado por fecha.</p></header>
+        <div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left"><thead className="bg-[#F4F6F7] text-[9px] uppercase tracking-[.1em] text-[#627582]"><tr><th className="px-5 py-3">Aseguradora</th><th className="px-4 py-3 text-right">Casos</th><th className="px-4 py-3 text-right">Estimado</th><th className="px-4 py-3 text-right">Último SOW</th><th className="px-4 py-3 text-right">Brecha media</th><th className="px-5 py-3 text-right">Días al 1.er SOW</th></tr></thead><tbody className="divide-y divide-[#EDF0F2]">{analysis.carriers.map((carrier) => <tr key={carrier.name} className="text-[11px] text-[#405766]"><td className="max-w-[200px] truncate px-5 py-3 font-semibold text-[#183249]">{carrier.name}</td><td className="px-4 py-3 text-right tabular-nums">{carrier.claims}</td><td className="px-4 py-3 text-right tabular-nums">{money(carrier.estimates)}</td><td className="px-4 py-3 text-right tabular-nums">{money(carrier.latestSows)}</td><td className={`px-4 py-3 text-right font-semibold tabular-nums ${carrier.avgGap !== null && carrier.avgGap > 0 ? "text-[#956C22]" : "text-[#536879]"}`}>{carrier.avgGap === null ? "—" : money(carrier.avgGap)}<span className="ml-1 text-[9px] font-normal text-[#8997A0]">{carrier.comparable ? `n=${carrier.comparable}` : ""}</span></td><td className="px-5 py-3 text-right tabular-nums">{carrier.avgResponse === null ? "—" : `${carrier.avgResponse.toFixed(1)} d`}</td></tr>)}{analysis.carriers.length === 0 && <tr><td colSpan={6} className="px-5 py-10 text-center text-xs text-[#6B7E89]">Todavía no hay casos para comparar.</td></tr>}</tbody></table></div>
+      </section>
+
+      <section className="rounded-2xl border border-[#DDE3E8] bg-white p-5 shadow-[0_6px_22px_rgba(23,49,74,0.035)]">
+        <div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-[#82621e]" /><h2 className="font-display text-[15px] font-semibold text-[#122B40]">Cartera por etapa</h2></div>
+        <div className="mt-4 space-y-3">{analysis.statuses.map((row) => <div key={row.status}><div className="mb-1.5 flex items-center justify-between gap-2 text-[10px]"><span className="truncate font-medium text-[#425968]">{row.status}</span><span className="font-bold tabular-nums text-[#183249]">{row.count}</span></div><div className="h-2 overflow-hidden rounded-full bg-[#EEF2F4]"><div className="h-full rounded-full bg-[#234662]" style={{ width: `${(row.count / analysis.maxStatus) * 100}%` }} /></div></div>)}{analysis.statuses.length === 0 && <p className="py-8 text-center text-xs text-[#6B7E89]">Sin expedientes.</p>}</div>
+        <div className="mt-5 grid grid-cols-2 gap-2 border-t border-[#E9EDF0] pt-4"><div className="rounded-xl bg-[#F5F7F8] p-3"><p className="text-[9px] font-bold uppercase tracking-wide text-[#72838D]">RCV registrado</p><p className="mt-1 text-[14px] font-semibold tabular-nums text-[#183249]">{money(analysis.totals.rcv)}</p></div><div className="rounded-xl bg-[#F5F7F8] p-3"><p className="text-[9px] font-bold uppercase tracking-wide text-[#72838D]">ACV registrado</p><p className="mt-1 text-[14px] font-semibold tabular-nums text-[#183249]">{money(analysis.totals.acv)}</p></div></div>
+      </section>
+    </div>
+
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <AnalyticsStat label="Pagos recibidos" value={money(analysis.totals.received)} detail="Suma de pagos que el equipo registró como recibidos." icon={CircleDollarSign} tone="green" />
+      <AnalyticsStat label="Pagos esperados" value={money(analysis.totals.expected)} detail="Suma de pagos pendientes según los registros actuales." icon={Clock3} tone="gold" />
+      <AnalyticsStat label="Sin valores de negociación" value={String(analysis.missingValues)} detail={`De ${claims.length} expedientes, no tienen estimado, SOW ni suplemento registrados.`} icon={FilePlus2} tone="slate" />
+    </div>
+
+    <section className="rounded-2xl border border-[#DDE3E8] bg-white p-5 shadow-[0_6px_22px_rgba(23,49,74,0.035)]">
+      <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F5F1E4] text-[#80621F]"><Clock3 className="h-4 w-4" /></span><div><h2 className="font-display text-[14px] font-semibold text-[#122B40]">Calidad de datos y tiempos</h2><p className="mt-1 text-[11px] leading-5 text-[#637782]">{analysis.avgResponse === null ? "Aún no hay suficientes fechas enlazadas para calcular días entre el envío del estimado y la llegada del primer SOW." : `Promedio de ${analysis.avgResponse.toFixed(1)} días entre el estimado marcado como enviado y el primer SOW fechado, usando ${analysis.responseSample} casos con ambas fechas.`} {analysis.datedSowCount} SOW tienen fecha registrada.</p></div></div>
+      <div className="mt-4 rounded-xl border border-[#E9DFBF] bg-[#FCFAF3] px-4 py-3 text-[10px] leading-5 text-[#6D5B32]">Los suplementos se muestran como <strong>preparados</strong>. El CRM todavía no registra si fueron enviados, aprobados, reducidos o rechazados; por eso este tablero no los cuenta como dinero recuperado ni calcula una tasa de éxito.</div>
+    </section>
+  </div>;
+}
+
 export default function ValuesInsuranceView({ claims }: { claims: Lead[] }) {
   const activeClaims = useMemo(() => claims.filter((claim) => claim.is_insurance_claim), [claims]);
+  const [sectionTab, setSectionTab] = useState<"records" | "analysis">("records");
   const [selectedClaimId, setSelectedClaimId] = useState("");
   const [query, setQuery] = useState("");
   const [estimate, setEstimate] = useState<EntryDraft>({ record_type: "estimate", entry_number: 1, amount: "", event_date: null, estimate_sent: false });
@@ -252,7 +469,12 @@ export default function ValuesInsuranceView({ claims }: { claims: Lead[] }) {
           </div>
         </header>
 
-        {activeClaims.length === 0 ? <section className="rounded-[20px] border border-dashed border-[#CED7DE] bg-white px-5 py-16 text-center shadow-[0_6px_24px_rgba(23,49,74,0.035)]"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F1F4F6] text-[#8294A2]"><FilePlus2 className="h-5 w-5" /></span><h2 className="mt-4 font-display text-[15px] font-semibold text-[#102A46]">No hay expedientes de seguro</h2><p className="mx-auto mt-1.5 max-w-sm text-[11px] leading-relaxed text-[#596D80]">Cuando la cartera tenga casos, podrás registrar sus estimados, SOW y suplementos aquí.</p></section> : <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
+        <div role="tablist" aria-label="Secciones de Valores Insurance" className="inline-flex w-fit rounded-xl border border-[#DDE3E8] bg-white p-1 shadow-[0_3px_12px_rgba(23,49,74,0.04)]">
+          <button type="button" role="tab" aria-selected={sectionTab === "records"} onClick={() => setSectionTab("records")} className={`inline-flex h-9 items-center gap-2 rounded-lg px-4 text-[12px] font-semibold transition ${sectionTab === "records" ? "bg-[#102A46] text-white shadow-sm" : "text-[#526879] hover:bg-[#F3F6F8] hover:text-[#183249]"}`}><FileCheck2 className="h-4 w-4" />Registro</button>
+          <button type="button" role="tab" aria-selected={sectionTab === "analysis"} onClick={() => setSectionTab("analysis")} className={`inline-flex h-9 items-center gap-2 rounded-lg px-4 text-[12px] font-semibold transition ${sectionTab === "analysis" ? "bg-[#102A46] text-white shadow-sm" : "text-[#526879] hover:bg-[#F3F6F8] hover:text-[#183249]"}`}><BarChart3 className="h-4 w-4" />Análisis</button>
+        </div>
+
+        {sectionTab === "analysis" ? <ValuesInsuranceAnalytics claims={activeClaims} /> : activeClaims.length === 0 ? <section className="rounded-[20px] border border-dashed border-[#CED7DE] bg-white px-5 py-16 text-center shadow-[0_6px_24px_rgba(23,49,74,0.035)]"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F1F4F6] text-[#8294A2]"><FilePlus2 className="h-5 w-5" /></span><h2 className="mt-4 font-display text-[15px] font-semibold text-[#102A46]">No hay expedientes de seguro</h2><p className="mx-auto mt-1.5 max-w-sm text-[11px] leading-relaxed text-[#596D80]">Cuando la cartera tenga casos, podrás registrar sus estimados, SOW y suplementos aquí.</p></section> : <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
           <ClaimSelector claims={activeClaims} selectedId={selectedClaimId} onSelect={setSelectedClaimId} query={query} onQuery={setQuery} />
           <div className="min-w-0 space-y-4 sm:space-y-5">
             {selectedClaim && <section className="relative overflow-hidden rounded-[20px] border border-[#29465D] bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] px-4 py-4 shadow-[0_10px_28px_rgba(23,49,74,0.15)] sm:px-5 sm:py-[18px]">

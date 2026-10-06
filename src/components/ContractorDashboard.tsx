@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { eligibleCaseMembers, isTaskAssignedTo } from "../lib/teamAccess.js";
+import { getDaysSinceLastUpdate } from "../lib/caseActivity";
 import { Lead, TaskItem, TeamMember, ViewType } from "../types";
 
 type NewTaskDetails = {
@@ -119,14 +120,7 @@ export default function ContractorDashboard({
   const taskCountToday = dueToday.length;
   const lateCount = overdue.length;
   const inactivity = React.useMemo(() => activeClaims.map((claim) => {
-    const createdAt = claim.created_at ? Date.parse(claim.created_at) : 0;
-    const latest = (claim.timeline || []).reduce((latestTime, event) => {
-      const dateTime = Date.parse(event.date || "");
-      const timestamp = Date.parse(event.timestamp || "");
-      const parsed = Math.max(Number.isFinite(dateTime) ? dateTime : 0, Number.isFinite(timestamp) ? timestamp : 0);
-      return Math.max(latestTime, parsed);
-    }, Number.isFinite(createdAt) ? createdAt : 0);
-    const days = latest ? Math.max(0, Math.floor((Date.now() - latest) / 86400000)) : 0;
+    const days = getDaysSinceLastUpdate(claim);
     return { claim, days };
   }).filter(({ days }) => days >= 7).sort((a, b) => b.days - a.days).slice(0, 5), [activeClaims]);
 

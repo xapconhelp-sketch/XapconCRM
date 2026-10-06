@@ -420,14 +420,45 @@ END $$;
 
 CREATE OR REPLACE FUNCTION public.add_xapcon_timeline_event(p_lead_id UUID, p_event JSONB)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth AS $$
-DECLARE l public.leads%ROWTYPE; event JSONB; items JSONB; author TEXT; recipient UUID;
+DECLARE l public.leads%ROWTYPE; event JSONB; items JSONB; author TEXT; author_role TEXT; recipient UUID;
 BEGIN
   SELECT * INTO l FROM public.leads WHERE id = p_lead_id FOR UPDATE;
   IF NOT FOUND OR NOT public.can_access_xapcon_org(l.organization_id) THEN RAISE EXCEPTION 'No tienes acceso a este caso.'; END IF;
   IF coalesce(p_event ->> 'type', '') NOT IN ('status_change', 'photo_upload', 'call_log', 'note', 'system')
     OR jsonb_typeof(coalesce(p_event -> 'mentionedUserIds', '[]'::jsonb)) <> 'array'
     THEN RAISE EXCEPTION 'Evento no válido.'; END IF;
-  SELECT coalesce(nullif(full_name, ''), email) INTO author FROM public.profiles WHERE id = auth.uid();
+  SELECT coalesce(nullif(btrim(full_name), ''), nullif(btrim(email), '')),
+    CASE lower(btrim(role))
+      WHEN 'super_admin' THEN 'Superadmin'
+      WHEN 'admin' THEN 'Superadmin'
+      WHEN 'platform_staff' THEN 'Equipo Xapcon'
+      WHEN 'owner' THEN 'Propietario'
+      WHEN 'dueño' THEN 'Propietario'
+      WHEN 'employee' THEN 'Empleado'
+      WHEN 'colaborador' THEN 'Empleado'
+      WHEN 'contractor' THEN 'Contratista'
+      WHEN 'contratista' THEN 'Contratista'
+      WHEN 'vendedor' THEN 'Vendedor'
+      WHEN 'gerente de ventas' THEN 'Gerente de ventas'
+      ELSE initcap(role)
+    END
+    INTO author, author_role
+    FROM public.profiles WHERE id = auth.uid();
+  author := coalesce(
+    nullif(btrim(author), ''),
+    nullif(btrim(auth.jwt() -> 'user_metadata' ->> 'full_name'), ''),
+    nullif(btrim(auth.jwt() -> 'user_metadata' ->> 'name'), ''),
+    nullif(btrim(split_part(auth.jwt() ->> 'email', '@', 1)), ''),
+    'Usuario del equipo'
+  );
+  author_role := coalesce(author_role, CASE lower(coalesce(auth.jwt() -> 'app_metadata' ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', ''))
+    WHEN 'super_admin' THEN 'Superadmin' WHEN 'admin' THEN 'Superadmin'
+    WHEN 'platform_staff' THEN 'Equipo Xapcon' WHEN 'owner' THEN 'Propietario' WHEN 'dueño' THEN 'Propietario'
+    WHEN 'employee' THEN 'Empleado' WHEN 'colaborador' THEN 'Empleado'
+    WHEN 'contractor' THEN 'Contratista' WHEN 'contratista' THEN 'Contratista'
+    WHEN 'vendedor' THEN 'Vendedor' WHEN 'gerente de ventas' THEN 'Gerente de ventas'
+    ELSE 'Usuario del equipo' END);
+  author := author || ' (' || author_role || ')';
   event := p_event || jsonb_build_object('id', 'timeline-' || gen_random_uuid()::text, 'author', author, 'authorId', auth.uid(), 'date', now(), 'timestamp', now());
   items := jsonb_build_array(event) || coalesce(l.timeline::jsonb, '[]'::jsonb);
   UPDATE public.leads SET timeline = items WHERE id = l.id;
