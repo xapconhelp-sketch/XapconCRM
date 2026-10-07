@@ -95,6 +95,8 @@ export interface TimelineEvent {
   duration?: string;
   photos?: string[];
   mentionedUserIds?: string[];
+  fromStatus?: string;
+  toStatus?: string;
 }
 
 export interface DocumentItem {

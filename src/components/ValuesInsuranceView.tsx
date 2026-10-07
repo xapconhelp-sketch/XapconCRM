@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertCircle, BadgeDollarSign, BarChart3, CalendarDays, Check, CheckCircle2, ChevronRight, CircleDollarSign, Clock3, FileCheck2, FilePlus2, LoaderCircle, Plus, Search, ShieldCheck, Trash2, TrendingUp } from "lucide-react";
+import { AlertCircle, BadgeDollarSign, BarChart3, CalendarDays, Check, CheckCircle2, ChevronRight, CircleDollarSign, FileCheck2, FilePlus2, LoaderCircle, Plus, Search, ShieldCheck, Trash2, TrendingUp } from "lucide-react";
 import { Lead } from "../types";
 import { supabase } from "../lib/supabase";
 
@@ -17,10 +17,35 @@ type ValueEntry = {
 type EntryDraft = Omit<Pick<ValueEntry, "record_type" | "entry_number" | "event_date" | "estimate_sent">, "amount"> & { amount: string; id?: string };
 type AnalyticsValue = Pick<ValueEntry, "lead_id" | "record_type" | "entry_number" | "amount" | "event_date" | "estimate_sent">;
 type AnalyticsFinance = { claim_id: string; rcv: number | null; acv: number | null };
-type AnalyticsPayment = { claim_id: string; status: "expected" | "received"; amount: number };
-
 const MAX_REPEATED_ENTRIES = 4;
 const money = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(amount);
+const terminalCaseStatuses = new Set(["Finalizado", "Negados", "Cancelado"]);
+
+function parseCaseDate(value?: string | null): Date | null {
+  if (!value) return null;
+  const dateOnly = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const parsed = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatCaseDate(date: Date | null): string {
+  return date ? new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", year: "numeric" }).format(date) : "Sin registro";
+}
+
+function getCaseClosureDate(claim: Lead): Date | null {
+  const terminalEvents = (claim.timeline || [])
+    .filter((event) => event.type === "status_change" && event.toStatus === claim.status && terminalCaseStatuses.has(event.toStatus))
+    .map((event) => parseCaseDate(event.timestamp) || parseCaseDate(event.date))
+    .filter((date): date is Date => date !== null)
+    .sort((a, b) => b.getTime() - a.getTime());
+  return terminalEvents[0] || null;
+}
+
+function daysBetween(start: Date, end: Date): number {
+  return Math.max(0, Math.floor((end.getTime() - start.getTime()) / 86_400_000));
+}
 
 function newDraft(recordType: "sow" | "supplement", entryNumber: number): EntryDraft {
   return { record_type: recordType, entry_number: entryNumber, amount: "", event_date: null, estimate_sent: false };
@@ -32,12 +57,12 @@ function ClaimSelector({ claims, selectedId, onSelect, query, onQuery }: {
   const visible = claims.filter((claim) => `${claim.name} ${claim.claimNumber} ${claim.company} ${claim.insuranceProvider}`.toLowerCase().includes(query.trim().toLowerCase()));
   return (
     <aside className="overflow-hidden rounded-[20px] border border-[#DDE3E8] bg-white shadow-[0_8px_30px_rgba(23,49,74,0.045)]">
-      <div className="border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] p-4 sm:p-5">
+      <div className="border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] p-3 sm:p-4">
         <div className="flex items-center justify-between gap-3">
-          <div><h2 className="font-display text-[16px] font-semibold tracking-[-0.02em] text-white">Expedientes</h2><p className="mt-1 text-[11px] text-[#CBD6DE]">Selecciona un caso para ver sus valores.</p></div>
+          <h2 className="font-display text-[16px] font-semibold tracking-[-0.02em] text-white">Expedientes</h2>
           <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[#D3B566]/20 bg-[#8C6A22]/15 px-2 font-sans text-[11px] font-semibold text-[#D8C68A]">{claims.length}</span>
         </div>
-        <label className="group relative mt-4 block">
+        <label className="group relative mt-3 block">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#AFC0CD] transition-colors group-focus-within:text-[#D3B566]" />
           <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Buscar por nombre o reclamo" className="h-10 w-full rounded-xl border border-white/15 bg-[#0C2036]/55 pl-9 pr-3 text-[12px] text-white outline-none transition placeholder:text-[#AFC0CD] focus:border-[#D3B566]/60 focus:bg-[#0C2036]/75 focus:ring-4 focus:ring-[#8C6A22]/[0.14]" />
         </label>
@@ -139,20 +164,19 @@ function CaseMetric({ label, value, detail, tone = "blue" }: {
 function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
   const [values, setValues] = useState<AnalyticsValue[]>([]);
   const [finances, setFinances] = useState<AnalyticsFinance[]>([]);
-  const [payments, setPayments] = useState<AnalyticsPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<string[]>([]);
   const [selectedCaseId, setSelectedCaseId] = useState("");
   const [caseQuery, setCaseQuery] = useState("");
+  const [caseSearchOpen, setCaseSearchOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
-      const [valueResult, financeResult, paymentResult] = await Promise.all([
+      const [valueResult, financeResult] = await Promise.all([
         supabase.from("admin_insurance_values").select("lead_id,record_type,entry_number,amount,event_date,estimate_sent"),
         supabase.from("contractor_claim_financials").select("claim_id,rcv,acv"),
-        supabase.from("contractor_claim_payments").select("claim_id,status,amount"),
       ]);
       if (cancelled) return;
       const nextErrors: string[] = [];
@@ -160,14 +184,15 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
       else setValues((valueResult.data || []) as AnalyticsValue[]);
       if (financeResult.error) nextErrors.push("No fue posible leer RCV/ACV. Revisa el acceso superadmin a las finanzas de contratistas.");
       else setFinances((financeResult.data || []) as AnalyticsFinance[]);
-      if (paymentResult.error) nextErrors.push("No fue posible leer los pagos registrados. Revisa el acceso superadmin a pagos de contratistas.");
-      else setPayments((paymentResult.data || []) as AnalyticsPayment[]);
       setErrors(nextErrors);
       setLoading(false);
     };
     void load();
     return () => { cancelled = true; };
-  }, [claims]);
+  // These tables do not depend on the periodically refreshed claims array.
+  // Keeping this effect mount-scoped prevents the analytics screen from
+  // returning to its loading state on every background CRM refresh.
+  }, []);
 
   const analysis = useMemo(() => {
     const claimIds = new Set(claims.map((claim) => claim.id));
@@ -184,14 +209,11 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
         if (b.event_date) return 1;
         return a.entry_number - b.entry_number;
       })[0];
-      const supplements = rows.filter((row) => row.record_type === "supplement");
       const estimateAmount = Number(estimate?.amount) || 0;
       const sowAmount = Number(latestSow?.amount) || 0;
       const finance = finances.find((row) => row.claim_id === claim.id);
-      const claimPayments = payments.filter((row) => row.claim_id === claim.id);
       return {
         claim, estimate, firstSow, latestSow, estimateAmount, sowAmount,
-        hasSupplement: supplements.length > 0,
         gap: estimate && latestSow && estimate.amount !== null && latestSow.amount !== null ? estimateAmount - sowAmount : null,
         sowAmountCount: sowsWithAmount.length,
         sowChange: sowsWithAmount.length >= 2 && firstSow && latestSow ? Number(latestSow.amount) - Number(firstSow.amount) : null,
@@ -208,19 +230,15 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
           : null,
         rcv: Number(finance?.rcv) || 0,
         acv: Number(finance?.acv) || 0,
-        received: claimPayments.filter((row) => row.status === "received").reduce((sum, row) => sum + Number(row.amount || 0), 0),
-        expected: claimPayments.filter((row) => row.status === "expected").reduce((sum, row) => sum + Number(row.amount || 0), 0),
       };
     });
     const totals = claimRows.reduce((acc, row) => ({
       estimates: acc.estimates + row.estimateAmount,
       latestSow: acc.latestSow + row.sowAmount,
       additionalSow: acc.additionalSow + (row.sowChange ?? 0),
-      received: acc.received + row.received,
-      expected: acc.expected + row.expected,
       rcv: acc.rcv + row.rcv,
       acv: acc.acv + row.acv,
-    }), { estimates: 0, latestSow: 0, additionalSow: 0, received: 0, expected: 0, rcv: 0, acv: 0 });
+    }), { estimates: 0, latestSow: 0, additionalSow: 0, rcv: 0, acv: 0 });
     const carrierMap = new Map<string, typeof claimRows>();
     for (const row of claimRows) {
       const carrier = row.claim.insuranceProvider?.trim() || "Aseguradora sin registrar";
@@ -242,19 +260,24 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
       status, count: claimRows.filter((row) => row.claim.status === status).length,
     })).sort((a, b) => b.count - a.count);
     const maxStatus = Math.max(1, ...statuses.map((row) => row.count));
-    const missingValues = claimRows.filter((row) => !row.estimate && !row.latestSow && !row.hasSupplement).length;
     const claimsWithSow = claimRows.filter((row) => row.latestSow).length;
     const comparableSowCount = claimRows.filter((row) => row.sowChange !== null).length;
-    const datedSowCount = scopedValues.filter((row) => row.record_type === "sow" && row.event_date).length;
-    const responseRows = claimRows.filter((row) => row.daysToFirstSow !== null);
-    const avgResponse = responseRows.length ? responseRows.reduce((sum, row) => sum + (row.daysToFirstSow || 0), 0) / responseRows.length : null;
-    return { claimRows, totals, carriers, statuses, maxStatus, missingValues, claimsWithSow, comparableSowCount, datedSowCount, avgResponse, responseSample: responseRows.length, scopedValues };
-  }, [claims, values, finances, payments]);
+    return { claimRows, totals, carriers, statuses, maxStatus, claimsWithSow, comparableSowCount };
+  }, [claims, values, finances]);
 
-  const selectedCase = analysis.claimRows.find((row) => row.claim.id === selectedCaseId) || analysis.claimRows[0];
-  const visibleCases = analysis.claimRows.filter(({ claim }) =>
+  const selectedCase = analysis.claimRows.find((row) => row.claim.id === selectedCaseId);
+  const caseStartDate = selectedCase
+    ? parseCaseDate(selectedCase.claim.created_at) || parseCaseDate(selectedCase.claim.createdAt)
+    : null;
+  const isCaseTerminal = Boolean(selectedCase && terminalCaseStatuses.has(selectedCase.claim.status));
+  const caseClosureDate = selectedCase && isCaseTerminal ? getCaseClosureDate(selectedCase.claim) : null;
+  const caseDurationDays = caseStartDate && (!isCaseTerminal || caseClosureDate)
+    ? daysBetween(caseStartDate, caseClosureDate || new Date())
+    : null;
+  const hasCaseQuery = Boolean(caseQuery.trim());
+  const matchingCases = hasCaseQuery ? analysis.claimRows.filter(({ claim }) =>
     `${claim.name} ${claim.claimNumber} ${claim.insuranceProvider} ${claim.company}`.toLowerCase().includes(caseQuery.trim().toLowerCase()),
-  );
+  ).slice(0, 8) : [];
 
   if (loading) return <div className="flex min-h-[300px] items-center justify-center gap-2 rounded-2xl border border-[#DDE3E8] bg-white text-sm text-[#596D80]"><LoaderCircle className="h-4 w-4 animate-spin" />Calculando análisis de cartera…</div>;
 
@@ -268,9 +291,16 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
     </div>
 
     <section className="overflow-hidden rounded-2xl border border-[#DDE3E8] bg-white shadow-[0_6px_22px_rgba(23,49,74,0.04)]">
-      <header className="flex flex-col gap-3 border-b border-[#E9EDF0] bg-[linear-gradient(112deg,#102945_0%,#102A46_65%,#1A3854_100%)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-4 border-b border-[#E9EDF0] bg-[linear-gradient(112deg,#102945_0%,#102A46_65%,#1A3854_100%)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div><div className="flex items-center gap-2"><CircleDollarSign className="h-4 w-4 text-[#D3B566]" /><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#D3B566]">Lectura por expediente</p></div><h2 className="mt-1 font-display text-[17px] font-semibold tracking-[-.02em] text-white">Desempeño del caso</h2></div>
-        {selectedCase && <div className="text-left sm:text-right"><p className="max-w-[320px] truncate text-[13px] font-semibold text-white">{selectedCase.claim.name}</p><p className="mt-1 text-[10px] text-[#D6E0E7]">{selectedCase.claim.claimNumber} <span className="mx-1 text-[#D3B566]">·</span> {selectedCase.claim.insuranceProvider || "Aseguradora sin registrar"}</p></div>}
+        <div className="relative w-full sm:max-w-[350px]">
+          <label className="relative block"><Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#738596]" /><input value={caseQuery} onFocus={() => setCaseSearchOpen(true)} onBlur={() => setCaseSearchOpen(false)} onChange={(event) => { setCaseQuery(event.target.value); setSelectedCaseId(""); setCaseSearchOpen(true); }} placeholder="Buscar cliente, reclamo o aseguradora" className="h-10 w-full rounded-xl border border-white/15 bg-white px-3 pl-9 text-[12px] text-[#183249] outline-none placeholder:text-[#82909A] focus:border-[#D3B566] focus:ring-4 focus:ring-[#D3B566]/20" /></label>
+          {caseSearchOpen && hasCaseQuery && <div role="listbox" className="absolute right-0 top-full z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-[#DDE3E8] bg-white p-1.5 text-[#183249] shadow-[0_16px_40px_rgba(8,27,44,.25)]">
+            {matchingCases.length ? matchingCases.map((row) => <button key={row.claim.id} type="button" role="option" aria-selected={selectedCaseId === row.claim.id} onMouseDown={(event) => event.preventDefault()} onClick={() => { setSelectedCaseId(row.claim.id); setCaseQuery(row.claim.name); setCaseSearchOpen(false); }} className="flex w-full flex-col items-start rounded-lg px-3 py-2 text-left transition hover:bg-[#F1F5F8]">
+              <span className="w-full truncate text-[12px] font-semibold">{row.claim.name}</span><span className="mt-0.5 w-full truncate text-[10px] text-[#687D8C]">{row.claim.claimNumber || "Sin número de reclamo"} <span className="mx-1 text-[#A6843D]">·</span> {row.claim.insuranceProvider || "Aseguradora sin registrar"}</span>
+            </button>) : <p className="px-3 py-3 text-[11px] text-[#687D8C]">No encontramos casos con esa búsqueda.</p>}
+          </div>}
+        </div>
       </header>
       {selectedCase ? <div className="space-y-4 p-4 sm:p-5">
         <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-5">
@@ -280,16 +310,24 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
           <CaseMetric label="Incremento adicional" value={selectedCase.sowChange === null ? "Sin comparación" : `${selectedCase.sowChange > 0 ? "+" : selectedCase.sowChange < 0 ? "−" : ""}${money(Math.abs(selectedCase.sowChange))}`} detail={selectedCase.sowChange === null ? "Registra dos SOW con monto" : "Último SOW menos primer SOW"} tone={selectedCase.sowChange !== null && selectedCase.sowChange > 0 ? "green" : "gold"} />
           <CaseMetric label="% adicional logrado" value={selectedCase.sowChangePercent === null ? "Sin comparación" : `${selectedCase.sowChangePercent > 0 ? "+" : selectedCase.sowChangePercent < 0 ? "−" : ""}${Math.abs(selectedCase.sowChangePercent).toFixed(1)}%`} detail={selectedCase.sowChangePercent === null ? "Requiere dos SOW y un primer SOW mayor a $0" : "Incremento respecto al primer SOW"} tone={selectedCase.sowChangePercent !== null && selectedCase.sowChangePercent > 0 ? "green" : "gold"} />
         </div>
-        <div className="flex flex-col gap-2 rounded-xl border border-[#E5E9EC] bg-[#F7F9FA] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[11px] leading-5 text-[#526879]">Incremento por caso: último SOW menos primer SOW. El porcentaje se calcula sobre el monto del primer SOW.</p>
-          <p className="shrink-0 text-[11px] font-semibold text-[#183249]">Pagos: <span className="text-[#39705A]">{money(selectedCase.received)} recibidos</span><span className="mx-1.5 text-[#A7B2BA]">·</span><span className="text-[#80621F]">{money(selectedCase.expected)} esperados</span></p>
+        <div className="grid grid-cols-1 gap-2.5 rounded-xl border border-[#E5E9EC] bg-[#F7F9FA] p-3 sm:grid-cols-3">
+          <div className="rounded-lg bg-white px-3 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-[.1em] text-[#758591]">Fecha de inicio</p>
+            <p className="mt-1 text-[12px] font-semibold text-[#183249]">{formatCaseDate(caseStartDate)}</p>
+            <p className="mt-0.5 text-[10px] text-[#81909D]">Creación del caso</p>
+          </div>
+          <div className="rounded-lg bg-white px-3 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-[.1em] text-[#758591]">Estado y cierre</p>
+            <p className="mt-1 text-[12px] font-semibold text-[#183249]">{isCaseTerminal ? selectedCase.claim.status : "En curso"}</p>
+            <p className="mt-0.5 text-[10px] text-[#81909D]">{isCaseTerminal ? (caseClosureDate ? `Cierre · ${formatCaseDate(caseClosureDate)}` : "Fecha de cierre no registrada") : `Etapa actual · ${selectedCase.claim.status || "Sin etapa"}`}</p>
+          </div>
+          <div className="rounded-lg bg-white px-3 py-2.5">
+            <p className="text-[9px] font-bold uppercase tracking-[.1em] text-[#758591]">Duración del caso</p>
+            <p className="mt-1 text-[12px] font-semibold text-[#183249]">{caseDurationDays === null ? "Sin cálculo" : `${caseDurationDays} ${caseDurationDays === 1 ? "día" : "días"}`}</p>
+            <p className="mt-0.5 text-[10px] text-[#81909D]">{caseDurationDays === null ? "Requiere fechas de inicio y cierre" : isCaseTerminal ? "Desde su creación hasta el cierre" : "Desde su creación hasta hoy"}</p>
+          </div>
         </div>
-      </div> : <div className="px-5 py-12 text-center text-sm text-[#637782]">No hay expedientes para mostrar.</div>}
-    </section>
-
-    <section className="overflow-hidden rounded-2xl border border-[#DDE3E8] bg-white shadow-[0_6px_22px_rgba(23,49,74,0.035)]">
-      <header className="flex flex-col gap-3 border-b border-[#E9EDF0] px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-display text-[15px] font-semibold text-[#122B40]">Comparativo de expedientes</h2><p className="mt-1 text-[11px] text-[#637782]">Selecciona un caso para ver el cambio entre sus SOW y los montos registrados.</p></div><label className="relative block w-full sm:max-w-[280px]"><Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#7B8D99]" /><input value={caseQuery} onChange={(event) => setCaseQuery(event.target.value)} placeholder="Buscar caso, reclamo o aseguradora" className="h-9 w-full rounded-lg border border-[#DDE3E8] bg-[#F8FAFB] pl-9 pr-3 text-[11px] text-[#183249] outline-none placeholder:text-[#82909A] focus:border-[#8C6A22]/60 focus:ring-4 focus:ring-[#8C6A22]/[0.08]" /></label></header>
-      <div className="overflow-x-auto"><table className="w-full min-w-[980px] text-left"><thead className="bg-[#F4F6F7] text-[10px] uppercase tracking-[.08em] text-[#627582]"><tr><th className="px-5 py-3">Expediente</th><th className="px-4 py-3">Etapa</th><th className="px-4 py-3 text-right">Estimado</th><th className="px-4 py-3 text-right">Primer SOW</th><th className="px-4 py-3 text-right">Último SOW</th><th className="px-4 py-3 text-right">Incremento</th><th className="px-5 py-3 text-right">% adicional</th></tr></thead><tbody className="divide-y divide-[#EDF0F2]">{visibleCases.map((row) => <tr key={row.claim.id} className={`text-[11px] text-[#405766] transition hover:bg-[#F8FAFB] ${selectedCase?.claim.id === row.claim.id ? "bg-[#F3F7FA]" : ""}`}><td className="max-w-[260px] px-5 py-2.5"><button type="button" onClick={() => setSelectedCaseId(row.claim.id)} className="block max-w-full text-left"><span className="block truncate font-semibold text-[#183249] hover:text-[#755613]">{row.claim.name}</span><span className="mt-0.5 block truncate text-[10px] text-[#71838F]">{row.claim.claimNumber} · {row.claim.insuranceProvider || "Aseguradora sin registrar"}</span></button></td><td className="px-4 py-2.5">{row.claim.status || "Sin etapa"}</td><td className="px-4 py-2.5 text-right tabular-nums">{row.estimate?.amount === null || !row.estimate ? "—" : money(Number(row.estimate.amount))}</td><td className="px-4 py-2.5 text-right tabular-nums">{row.firstSow?.amount === null || !row.firstSow ? "—" : money(Number(row.firstSow.amount))}</td><td className="px-4 py-2.5 text-right tabular-nums">{row.latestSow?.amount === null || !row.latestSow ? "—" : money(Number(row.latestSow.amount))}</td><td className={`px-4 py-2.5 text-right font-semibold tabular-nums ${row.sowChange !== null && row.sowChange > 0 ? "text-[#39705A]" : row.sowChange !== null && row.sowChange < 0 ? "text-[#9E4D4D]" : "text-[#71838F]"}`}>{row.sowChange === null ? "—" : `${row.sowChange > 0 ? "+" : row.sowChange < 0 ? "−" : ""}${money(Math.abs(row.sowChange))}`}</td><td className={`px-5 py-2.5 text-right font-semibold tabular-nums ${row.sowChangePercent !== null && row.sowChangePercent > 0 ? "text-[#39705A]" : row.sowChangePercent !== null && row.sowChangePercent < 0 ? "text-[#9E4D4D]" : "text-[#71838F]"}`}>{row.sowChangePercent === null ? "—" : `${row.sowChangePercent > 0 ? "+" : row.sowChangePercent < 0 ? "−" : ""}${Math.abs(row.sowChangePercent).toFixed(1)}%`}</td></tr>)}{visibleCases.length === 0 && <tr><td colSpan={7} className="px-5 py-10 text-center text-xs text-[#6B7E89]">No encontramos casos con esa búsqueda.</td></tr>}</tbody></table></div>
+      </div> : <div className="px-5 py-12 text-center text-sm text-[#637782]">{claims.length ? "Busca un cliente para consultar su desempeño por caso." : "No hay expedientes para mostrar."}</div>}
     </section>
 
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,.85fr)]">
@@ -305,16 +343,6 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
       </section>
     </div>
 
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <AnalyticsStat label="Pagos recibidos" value={money(analysis.totals.received)} detail="Suma de pagos que el equipo registró como recibidos." icon={CircleDollarSign} tone="green" />
-      <AnalyticsStat label="Pagos esperados" value={money(analysis.totals.expected)} detail="Suma de pagos pendientes según los registros actuales." icon={Clock3} tone="gold" />
-      <AnalyticsStat label="Sin valores de negociación" value={String(analysis.missingValues)} detail={`De ${claims.length} expedientes, no tienen estimado, SOW ni suplemento registrados.`} icon={FilePlus2} tone="slate" />
-    </div>
-
-    <section className="rounded-2xl border border-[#DDE3E8] bg-white p-5 shadow-[0_6px_22px_rgba(23,49,74,0.035)]">
-      <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F5F1E4] text-[#80621F]"><Clock3 className="h-4 w-4" /></span><div><h2 className="font-display text-[14px] font-semibold text-[#122B40]">Calidad de datos y tiempos</h2><p className="mt-1 text-[11px] leading-5 text-[#637782]">{analysis.avgResponse === null ? "Aún no hay suficientes fechas enlazadas para calcular días entre el envío del estimado y la llegada del primer SOW." : `Promedio de ${analysis.avgResponse.toFixed(1)} días entre el estimado marcado como enviado y el primer SOW fechado, usando ${analysis.responseSample} casos con ambas fechas.`} {analysis.datedSowCount} SOW tienen fecha registrada.</p></div></div>
-      <div className="mt-4 rounded-xl border border-[#E9DFBF] bg-[#FCFAF3] px-4 py-3 text-[10px] leading-5 text-[#6D5B32]">Los suplementos se muestran como <strong>preparados</strong>. El CRM todavía no registra si fueron enviados, aprobados, reducidos o rechazados; por eso este tablero no los cuenta como dinero recuperado ni calcula una tasa de éxito.</div>
-    </section>
   </div>;
 }
 

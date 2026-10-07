@@ -7,6 +7,7 @@ import {
   getInsuranceDirectoryEdits,
   getInsuranceDirectoryKey,
   getAggregatedInsuranceDirectory,
+  MASTER_INSURANCE_COMPANIES,
   restoreInsuranceDirectoryCompany,
   saveInsuranceDirectoryEdit,
   saveCustomContactToDb,
@@ -21,13 +22,11 @@ import {
   ChevronRight,
   Clock3,
   Copy,
-  ExternalLink,
   FileText,
   Mail,
   Pencil,
   Plus,
   Search,
-  ShieldCheck,
   Trash2,
   Users,
   X,
@@ -38,6 +37,8 @@ interface InsuranceDirectoryViewProps {
   claims: Lead[];
   onNavigateToClaim: (claimId: string) => void;
   onInsuranceRegistered?: () => void;
+  canManageDirectory?: boolean;
+  directoryRefreshKey?: number;
 }
 
 type DirectoryFilter = "all" | "with-cases" | "missing-contact";
@@ -48,6 +49,8 @@ export default function InsuranceDirectoryView({
   claims,
   onNavigateToClaim,
   onInsuranceRegistered,
+  canManageDirectory = true,
+  directoryRefreshKey = 0,
 }: InsuranceDirectoryViewProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<DirectoryFilter>("all");
@@ -82,7 +85,7 @@ export default function InsuranceDirectoryView({
         const edit = edits[company.id];
         return edit ? { ...company, emails: edit.emails, customNotes: edit.notes } : company;
       });
-  }, [claims, refreshKey]);
+  }, [claims, refreshKey, directoryRefreshKey]);
 
   useEffect(() => {
     if (!selectedCompanyId && directory.length) setSelectedCompanyId(directory[0].id);
@@ -92,6 +95,9 @@ export default function InsuranceDirectoryView({
     () => directory.find((company) => company.id === selectedCompanyId) || null,
     [directory, selectedCompanyId],
   );
+  const selectedCompanyNote = selectedCompany?.customNotes && !MASTER_INSURANCE_COMPANIES.some(
+    (master) => master.description === selectedCompany.customNotes,
+  ) ? selectedCompany.customNotes : "";
 
   const filteredList = useMemo(() => {
     const query = searchTerm.toLowerCase().trim();
@@ -249,27 +255,21 @@ export default function InsuranceDirectoryView({
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-[#F5F7FA] text-slate-800">
       <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
-        <header className="relative overflow-hidden rounded-[26px] bg-[#142B40] px-5 py-6 text-white shadow-[0_18px_50px_-26px_rgba(20,43,64,.65)] sm:px-8 sm:py-7">
+        <header className="relative overflow-hidden rounded-[26px] bg-[#142B40] px-5 py-4 text-white shadow-[0_18px_50px_-26px_rgba(20,43,64,.65)] sm:px-8 sm:py-5">
           <div className="pointer-events-none absolute -right-10 -top-24 h-64 w-64 rounded-full border border-white/10" />
           <div className="pointer-events-none absolute -right-1 -top-16 h-48 w-48 rounded-full border border-white/10" />
-          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-2xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.07] px-3 py-1 text-[10px] font-bold uppercase tracking-[.17em] text-[#D5BF7A]">
-                <ShieldCheck className="h-3.5 w-3.5" /> Centro de relaciones
-              </div>
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Directorio de aseguranzas</h1>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
-                Contactos, actividad y expedientes relacionados, organizados para resolver cada gestión desde una sola vista.
-              </p>
             </div>
-            <button
+            {canManageDirectory && <button
               onClick={() => { setCustomCompanyName(""); setIsAddingNewCompany(true); }}
-              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#D89A69] px-4 text-sm font-semibold text-[#192D3E] shadow-lg shadow-black/10 transition hover:bg-[#E5AE83] focus:outline-none focus:ring-4 focus:ring-[#D89A69]/30"
+              className="admin-primary-3d btn-gold-3d inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#8C6A22] px-4 text-sm font-semibold text-white shadow-lg transition focus:outline-none focus:ring-4 focus:ring-[#8C6A22]/25"
             >
               <Plus className="h-4 w-4" /> Nueva aseguradora
-            </button>
+            </button>}
           </div>
-          <div className="relative mt-7 grid grid-cols-1 gap-3 border-t border-white/10 pt-5 sm:grid-cols-3 sm:gap-6">
+          <div className="relative mt-4 grid grid-cols-1 gap-3 border-t border-white/10 pt-4 sm:grid-cols-3 sm:gap-6">
             <SummaryMetric label="Aseguradoras en catálogo" value={summary.companies} icon={Building2} />
             <SummaryMetric label="Casos relacionados" value={summary.cases} icon={FileText} />
             <SummaryMetric label="Con correo registrado" value={summary.withContacts} icon={Mail} />
@@ -333,7 +333,7 @@ export default function InsuranceDirectoryView({
                   <Search className="mx-auto h-7 w-7 text-slate-300" />
                   <p className="mt-3 text-sm font-medium text-slate-700">Sin resultados</p>
                   <p className="mt-1 text-xs text-slate-500">Prueba otro término o registra una aseguradora nueva.</p>
-                  {searchTerm && <button onClick={() => { setCustomCompanyName(searchTerm); setIsAddingNewCompany(true); }} className="mt-3 text-xs font-semibold text-[#664A14] hover:underline">Agregar “{searchTerm}”</button>}
+                  {canManageDirectory && searchTerm && <button onClick={() => { setCustomCompanyName(searchTerm); setIsAddingNewCompany(true); }} className="mt-3 text-xs font-semibold text-[#664A14] hover:underline">Agregar “{searchTerm}”</button>}
                 </div>
               )}
             </div>
@@ -349,14 +349,15 @@ export default function InsuranceDirectoryView({
                     <div className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[#664A14]">Ficha de aseguradora</p>
                       <h2 className="mt-1 truncate text-xl font-semibold tracking-tight text-[#102A46] sm:text-2xl">{selectedCompany.name}</h2>
-                      <p className="mt-1 line-clamp-2 text-sm text-slate-500">{selectedCompany.customNotes || "Sin notas registradas."}</p>
+                      {selectedCompanyNote && <p className="mt-1 line-clamp-2 text-sm text-slate-500">{selectedCompanyNote}</p>}
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-                    {selectedCompany.portalUrl && <a href={selectedCompany.portalUrl} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:border-[#8C6A22] hover:text-[#664A14]"><ExternalLink className="h-3.5 w-3.5" /> Portal de reclamos</a>}
-                    <button onClick={openEditCompany} className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:border-[#8C6A22] hover:text-[#664A14]"><Pencil className="h-3.5 w-3.5" /> Editar</button>
-                    <button onClick={() => setIsAddingContact(true)} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#102A46] px-3 text-xs font-semibold text-white transition hover:bg-[#193856]"><Plus className="h-3.5 w-3.5" /> Agregar contacto</button>
-                    <button onClick={() => { setDirectoryActionError(""); setIsConfirmingDelete(true); }} aria-label={`Eliminar ${selectedCompany.name}`} title="Eliminar aseguradora del directorio" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600 transition hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>
+                    {canManageDirectory && <>
+                      <button onClick={openEditCompany} className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:border-[#8C6A22] hover:text-[#664A14]"><Pencil className="h-3.5 w-3.5" /> Editar</button>
+                      <button onClick={() => setIsAddingContact(true)} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#102A46] px-3 text-xs font-semibold text-white transition hover:bg-[#193856]"><Plus className="h-3.5 w-3.5" /> Agregar contacto</button>
+                      <button onClick={() => { setDirectoryActionError(""); setIsConfirmingDelete(true); }} aria-label={`Eliminar ${selectedCompany.name}`} title="Eliminar aseguradora del directorio" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600 transition hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>
+                    </>}
                   </div>
                 </div>
 
@@ -395,7 +396,7 @@ export default function InsuranceDirectoryView({
                     {selectedCompany.emails.map((email) => <div key={email}><ContactRow value={email} copied={copiedText === email} onCopy={handleCopy} /></div>)}
                     {!selectedCompany.emails.length && <EmptyInline icon={Mail} title="No hay correos guardados" description="Agrega una dirección de reclamos para tenerla a mano." />}
                   </div>
-                  <button onClick={() => setIsAddingContact(true)} className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#664A14] hover:text-[#754522]"><Plus className="h-3.5 w-3.5" /> Añadir dato de contacto</button>
+                  {canManageDirectory && <button onClick={() => setIsAddingContact(true)} className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#664A14] hover:text-[#754522]"><Plus className="h-3.5 w-3.5" /> Añadir dato de contacto</button>}
                 </section>
               </div>
 
@@ -411,7 +412,7 @@ export default function InsuranceDirectoryView({
                   <div className="flex items-start justify-between gap-3"><div><SectionEyebrow>Historial</SectionEyebrow><h3 className="mt-1 text-base font-semibold text-slate-900">Expedientes relacionados</h3></div><span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-slate-600">{selectedCompany.claims.length}</span></div>
                   {selectedCompany.claims.length ? <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-100">
                     {selectedCompany.claims.map((claim) => <button key={claim.id} type="button" onClick={() => onNavigateToClaim(claim.id)} className="group flex w-full items-center gap-3 p-3 text-left transition hover:bg-[#F8FAFC] sm:px-4">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F3F6F8] text-slate-500 transition group-hover:bg-[#E8EEF2]"><FileText className="h-4 w-4" /></span>
+                      <span className="admin-icon-well admin-icon-well-light flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F3F6F8] text-slate-500 transition group-hover:bg-[#E8EEF2]"><FileText className="h-4 w-4" /></span>
                       <span className="min-w-0 flex-1"><span className="flex min-w-0 items-center gap-2"><span className="truncate text-sm font-semibold text-slate-800">{claim.name}</span>{claim.claimNumber && <span className="hidden shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 sm:inline">#{claim.claimNumber}</span>}</span><span className="mt-1 block truncate text-xs text-slate-500">{claim.address || "Sin dirección"}{claim.adjusterName ? ` · ${claim.adjusterName}` : ""}</span></span>
                       <span className="hidden max-w-28 truncate rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600 sm:block">{claim.status}</span><ArrowUpRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-[#664A14]" />
                     </button>)}
@@ -425,7 +426,7 @@ export default function InsuranceDirectoryView({
         </main>
       </div>
 
-      {isAddingContact && selectedCompany && <Dialog title="Agregar dato de contacto" subtitle={`Completa la agenda de ${selectedCompany.name}.`} onClose={() => setIsAddingContact(false)}>
+      {canManageDirectory && isAddingContact && selectedCompany && <Dialog title="Agregar dato de contacto" subtitle={`Completa la agenda de ${selectedCompany.name}.`} onClose={() => setIsAddingContact(false)}>
         <form onSubmit={handleSaveContact} className="space-y-4">
           <FormField label="Correo de reclamos" type="email" placeholder="claims@aseguradora.com" value={newEmail} onChange={setNewEmail} />
           <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Notas para el equipo</span><textarea rows={3} placeholder="Horario, extensión o indicaciones..." value={newNotes} onChange={(event) => setNewNotes(event.target.value)} className={`${inputClass} resize-y`} /></label>
@@ -433,7 +434,7 @@ export default function InsuranceDirectoryView({
         </form>
       </Dialog>}
 
-      {isAddingNewCompany && <Dialog title="Registrar aseguradora" subtitle="Añádela al catálogo con la información de contacto disponible." onClose={() => setIsAddingNewCompany(false)}>
+      {canManageDirectory && isAddingNewCompany && <Dialog title="Registrar aseguradora" subtitle="Añádela al catálogo con la información de contacto disponible." onClose={() => setIsAddingNewCompany(false)}>
         <form onSubmit={handleCreateCompany} className="space-y-4">
           <FormField label="Nombre de la compañía" required placeholder="Nombre de la aseguradora" value={customCompanyName} onChange={setCustomCompanyName} />
           <FormField label="Correo de reclamos" type="email" placeholder="claims@aseguradora.com" value={customCompanyEmail} onChange={setCustomCompanyEmail} />
@@ -442,7 +443,7 @@ export default function InsuranceDirectoryView({
         </form>
       </Dialog>}
 
-      {isEditingCompany && selectedCompany && <Dialog title="Editar aseguradora" subtitle={`Actualiza los correos y las notas de ${selectedCompany.name}.`} onClose={() => setIsEditingCompany(false)}>
+      {canManageDirectory && isEditingCompany && selectedCompany && <Dialog title="Editar aseguradora" subtitle={`Actualiza los correos y las notas de ${selectedCompany.name}.`} onClose={() => setIsEditingCompany(false)}>
         <form onSubmit={handleEditCompany} className="space-y-4">
           <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Correos de reclamos</span><textarea rows={6} value={editEmails} onChange={(event) => setEditEmails(event.target.value)} placeholder="Un correo por línea" className={`${inputClass} resize-y font-mono text-xs`} /><span className="mt-1.5 block text-[11px] text-slate-500">Puedes incluir varios; sepáralos con saltos de línea o comas.</span></label>
           <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Notas</span><textarea rows={3} value={editNotes} onChange={(event) => setEditNotes(event.target.value)} placeholder="Información útil para el equipo..." className={`${inputClass} resize-y`} /></label>
@@ -451,7 +452,7 @@ export default function InsuranceDirectoryView({
         </form>
       </Dialog>}
 
-      {isConfirmingDelete && selectedCompany && <Dialog title="Eliminar del directorio" subtitle={selectedCompany.name} onClose={() => setIsConfirmingDelete(false)}>
+      {canManageDirectory && isConfirmingDelete && selectedCompany && <Dialog title="Eliminar del directorio" subtitle={selectedCompany.name} onClose={() => setIsConfirmingDelete(false)}>
         <div className="space-y-4">
           <div className="rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm leading-6 text-rose-900">La aseguradora y sus correos y notas guardados se quitarán del directorio. Sus {selectedCompany.totalClaims} expedientes relacionados conservarán la información del caso.</div>
           {directoryActionError && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">{directoryActionError}</p>}

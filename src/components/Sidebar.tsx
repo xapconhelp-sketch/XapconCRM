@@ -35,6 +35,7 @@ const SECTION_ADMIN = [
   { type: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras",  icon: ShieldCheck },
   { type: ViewType.VALORES_INSURANCE, label: "Valores Insurance", icon: ChartNoAxesCombined },
 ];
+const DIRECTORY_ITEM = { type: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras", icon: ShieldCheck };
 
 const SECTION_TEAM = [
   { type: ViewType.TEAM, label: "Personal & Crews", icon: Users2 },
@@ -105,6 +106,13 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
         {SECTION_MANAGEMENT
           .filter(item => userRole === "contractor" || item.type !== ViewType.CLAIMS)
           .map(renderItem)}
+
+        {userRole === "contractor" && (
+          <>
+            <SectionLabel label="Recursos" />
+            {renderItem(DIRECTORY_ITEM)}
+          </>
+        )}
 
         {userRole === "admin" && (
           <>

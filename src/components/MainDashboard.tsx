@@ -130,7 +130,7 @@ export default function MainDashboard({
   return (
     <main className="crm-workspace min-h-0 flex-1 overflow-y-auto bg-[#F2F4F6]" aria-label="Dashboard de superadministrador">
       <div className="mx-auto w-full max-w-[1680px] space-y-5 p-4 sm:p-6 2xl:p-8">
-        <section className="relative isolate overflow-hidden rounded-[22px] bg-[#102A46] px-5 py-4 text-white shadow-[0_16px_38px_rgba(23,49,74,0.14)] sm:px-7 sm:py-5">
+        <section className="admin-dashboard-hero relative overflow-hidden rounded-[22px] bg-[#102A46] px-5 py-4 text-white shadow-[0_16px_38px_rgba(23,49,74,0.14)] sm:px-7 sm:py-5">
           <div className="pointer-events-none absolute -right-10 -top-24 h-72 w-72 rounded-full border border-white/[0.07]" />
           <div className="pointer-events-none absolute -right-1 -top-16 h-56 w-56 rounded-full border border-white/[0.08]" />
           <div className="pointer-events-none absolute bottom-0 right-0 h-1 w-2/5 bg-gradient-to-l from-[#8C6A22] to-transparent" />
@@ -139,13 +139,13 @@ export default function MainDashboard({
               <div className="mb-1.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#D3B566]"><Activity className="h-3.5 w-3.5" /> Panel de control</div>
               <h1 className="font-display text-2xl font-bold tracking-tight sm:text-[30px]">Centro de operaciones</h1>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:min-w-[310px]">
-              <PrioritySummary icon={<AlertCircle className="h-4 w-4" />} label="Casos sin actividad · 14+ días" value={criticalClaimCount} tone="copper" />
-              <PrioritySummary icon={<Clock3 className="h-4 w-4" />} label="Tareas con fecha vencida" value={urgentTaskCount} tone="red" />
+            <div className="admin-dashboard-actions flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+              <div className="admin-dashboard-composer flex shrink-0 flex-wrap items-center gap-2">{taskComposer}</div>
+              <div className="grid grid-cols-2 gap-2 sm:min-w-[310px]">
+                <PrioritySummary icon={<AlertCircle className="h-4 w-4" />} label="Casos inactivos · 14+ d" value={criticalClaimCount} />
+                <PrioritySummary icon={<Clock3 className="h-4 w-4" />} label="Tareas vencidas" value={urgentTaskCount} />
+              </div>
             </div>
-          </div>
-          <div className="relative mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-3">
-            {taskComposer}
           </div>
         </section>
 
@@ -164,7 +164,7 @@ export default function MainDashboard({
           <section className="overflow-hidden rounded-2xl border border-[#E0E5E8] bg-white shadow-[0_5px_22px_rgba(23,49,74,0.045)] xl:col-span-7" aria-labelledby="tasks-heading">
             <div className="flex flex-col gap-3 border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D3B566]/20 bg-[#8C6A22]/15 text-[#D3B566]"><ListChecks className="h-5 w-5" /></span>
+              <span className="admin-icon-well flex h-10 w-10 items-center justify-center rounded-xl border border-[#D3B566]/20 bg-[#8C6A22]/15 text-[#D3B566]"><ListChecks className="h-5 w-5" /></span>
                 <div><h2 id="tasks-heading" className="text-sm font-bold text-white">Tareas pendientes</h2><p className="mt-0.5 text-[10px] text-[#CBD6DE]">Acciones asignadas a través de la cartera</p></div>
                 <span className="ml-1 rounded-full border border-[#D3B566]/20 bg-[#8C6A22]/15 px-2.5 py-1 text-[10px] font-bold tabular-nums text-[#D8C68A]">{pendingTasks.length}</span>
               </div>
@@ -205,7 +205,7 @@ export default function MainDashboard({
           <section className="overflow-hidden rounded-2xl border border-[#E0E5E8] bg-white shadow-[0_5px_22px_rgba(23,49,74,0.045)] xl:col-span-5" aria-labelledby="followup-heading">
             <div className="border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] px-4 py-4 sm:px-5">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D3B566]/20 bg-[#8C6A22]/15 text-[#D3B566]"><Activity className="h-5 w-5" /></span>
+                <span className="admin-icon-well flex h-10 w-10 items-center justify-center rounded-xl border border-[#D3B566]/20 bg-[#8C6A22]/15 text-[#D3B566]"><Activity className="h-5 w-5" /></span>
                 <div className="min-w-0 flex-1"><h2 id="followup-heading" className="text-sm font-bold text-white">Seguimiento de expedientes</h2><p className="mt-0.5 text-[10px] text-[#CBD6DE]">Casos sin movimiento reciente</p></div>
                 <span className="rounded-full border border-[#D3B566]/20 bg-[#8C6A22]/15 px-2.5 py-1 text-[10px] font-bold tabular-nums text-[#D8C68A]">{visibleClaims.length}</span>
               </div>
@@ -255,7 +255,7 @@ const metricColors: Record<MetricAccent, { icon: string; line: string; number: s
 function MetricCard({ title, value, icon: Icon, accent, onClick }: { key?: React.Key; title: string; value: string; subtitle?: string; icon: React.ComponentType<{ className?: string }>; accent: MetricAccent; onClick: () => void }) {
   const colors = metricColors[accent];
   return (
-    <button type="button" onClick={onClick} className="group relative flex min-h-[76px] min-w-0 items-center gap-3 overflow-hidden rounded-2xl border border-[#E0E5E8] bg-white px-3 py-3 text-left shadow-[0_4px_15px_rgba(23,49,74,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#D3DBDF] hover:shadow-[0_10px_22px_rgba(23,49,74,0.075)] focus-visible:outline-[#755613] sm:px-3.5">
+    <button type="button" onClick={onClick} className="admin-metric-card group relative flex min-h-[76px] min-w-0 items-center gap-3 overflow-hidden rounded-2xl border border-[#E0E5E8] bg-white px-3 py-3 text-left shadow-[0_4px_15px_rgba(23,49,74,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#D3DBDF] hover:shadow-[0_10px_22px_rgba(23,49,74,0.075)] focus-visible:outline-[#755613] sm:px-3.5">
       <span className={`absolute inset-x-0 top-0 h-[2px] ${colors.line} opacity-70`} />
       <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${colors.icon}`}><Icon className="h-4 w-4" /></span>
       <span className="min-w-0 flex-1"><span title={title} className="line-clamp-2 whitespace-normal break-words text-[9px] font-bold uppercase leading-[1.15] tracking-[0.065em] text-[#73818B]">{title}</span><span className={`mt-1 block truncate text-2xl font-bold leading-none tracking-tight tabular-nums ${colors.number}`}>{value}</span></span>
@@ -263,10 +263,9 @@ function MetricCard({ title, value, icon: Icon, accent, onClick }: { key?: React
   );
 }
 
-function PrioritySummary({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: number; tone: "copper" | "red" }) {
-  const color = tone === "red" ? "text-[#F1A49A]" : "text-[#D3B566]";
-  return <div className="min-w-0 rounded-xl border border-white/[0.11] bg-white/[0.055] px-3 py-2.5 backdrop-blur-sm">
-    <div className={`flex items-center gap-1.5 ${color}`}><span>{icon}</span><span className="truncate text-[9px] font-bold uppercase tracking-[0.1em]">{label}</span></div>
+function PrioritySummary({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+  return <div className="admin-priority-summary min-w-0 rounded-xl border border-white/[0.11] bg-white/[0.055] px-3 py-2.5 backdrop-blur-sm">
+    <div className="admin-priority-label flex items-center gap-1.5"><span className="admin-priority-icon flex h-5 w-5 shrink-0 items-center justify-center rounded-full">{icon}</span><span className="truncate text-[9px] font-bold uppercase tracking-[0.1em]">{label}</span></div>
     <p className="mt-1.5 text-2xl font-bold leading-none tabular-nums text-white">{value}</p>
   </div>;
 }

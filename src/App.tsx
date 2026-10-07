@@ -121,9 +121,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>(ViewType.DASHBOARD);
   const [openClaimFormOnEnter, setOpenClaimFormOnEnter] = useState(false);
   useEffect(() => {
-    if (userRole === "contractor" && currentView === ViewType.INSURANCE_DIRECTORY) {
-      setCurrentView(ViewType.DASHBOARD);
-    } else if (userRole === "contractor" && currentView === ViewType.VALORES_INSURANCE) {
+    if (userRole === "contractor" && currentView === ViewType.VALORES_INSURANCE) {
       setCurrentView(ViewType.DASHBOARD);
     } else if (userRole === "admin" && currentView === ViewType.CLAIMS) {
       setCurrentView(ViewType.DASHBOARD);
@@ -141,13 +139,24 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [insuranceRefreshKey, setInsuranceRefreshKey] = useState(0);
 
-  // Sync Insurance Directory with Supabase on mount
+  // Keep the shared insurer catalog in sync for both admin and contractor sessions.
   useEffect(() => {
     if (!session) return;
-    fetchDbInsuranceCompanies().then(() => {
+    let cancelled = false;
+    const refreshDirectory = async () => {
+      await fetchDbInsuranceCompanies();
+      if (cancelled) return;
       setInsuranceRefreshKey(k => k + 1);
-    });
-  }, [session]);
+    };
+    void refreshDirectory();
+    const interval = window.setInterval(() => void refreshDirectory(), 30000);
+    window.addEventListener("focus", refreshDirectory);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshDirectory);
+    };
+  }, [session?.user.id]);
 
   const availableInsuranceCompanies = useMemo(() => {
     return getAllInsuranceCompanyNames([...leads, ...insuranceClaims]);
@@ -377,6 +386,11 @@ export default function App() {
 
   // Filtered lists (fallback logic for local rendering)
   const filteredInsuranceClaims = insuranceClaims;
+  const directoryClaims = userRole === "admin"
+    ? [...leads, ...insuranceClaims]
+    : activeOrganization
+      ? insuranceClaims.filter((claim) => claim.organizationId === activeOrganization.id)
+      : [];
   const activeInsuranceClaimId = selectedInsuranceClaimId === ""
     ? ""
     : (filteredInsuranceClaims.some(c => c.id === selectedInsuranceClaimId) ? selectedInsuranceClaimId : "");
@@ -630,6 +644,7 @@ export default function App() {
   };
 
   const handleNavigateToInsuranceClaim = (claimId: string) => {
+    if (userRole === "contractor" && !insuranceClaims.some((claim) => claim.id === claimId && claim.organizationId === activeOrganization?.id)) return;
     setSelectedInsuranceClaimId(claimId);
     setCurrentView(ViewType.INSURANCE_CLAIM);
   };
@@ -978,6 +993,26 @@ export default function App() {
 
       if (error) {
         console.error("Error updating claim status:", error.message);
+        setInsuranceClaims(prev => prev.map(c => c.id === projectId ? { ...c, status: claim.status } : c));
+        setLeads(prev => prev.map(c => c.id === projectId ? { ...c, status: claim.status } : c));
+        return;
+      }
+
+      const { data: timeline, error: timelineError } = await supabase.rpc('add_xapcon_timeline_event', {
+        p_lead_id: projectId,
+        p_event: {
+          type: 'status_change',
+          title: 'Cambio de etapa',
+          content: `${claim.status} → ${newStatus}`,
+          fromStatus: claim.status,
+          toStatus: newStatus,
+        },
+      });
+      if (timelineError) {
+        console.error("Error registrando el cambio de etapa:", timelineError.message);
+      } else {
+        setInsuranceClaims(prev => prev.map(c => c.id === projectId ? { ...c, timeline: timeline as TimelineEvent[] } : c));
+        setLeads(prev => prev.map(c => c.id === projectId ? { ...c, timeline: timeline as TimelineEvent[] } : c));
       }
     }
   };
@@ -1059,6 +1094,7 @@ export default function App() {
             { id: ViewType.INSURANCE_CLAIM, label: "Insurance Claim" },
             ...(userRole === "contractor" ? [{ id: ViewType.CLAIMS, label: "Retail Estimator" }] : []),
             { id: ViewType.PRODUCTION, label: "Production Pipeline" },
+            ...(userRole === "contractor" ? [{ id: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras" }] : []),
             ...(userRole === "admin" ? [
               { id: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras" },
               { id: ViewType.VALORES_INSURANCE, label: "Valores Insurance" },
@@ -1095,7 +1131,7 @@ export default function App() {
 
         {/* Visual Top Bar for Company Selection */}
         {userRole === "admin" && (
-          <div className="crm-topbar no-print bg-white border-b border-[#DCE4EB]/30 px-6 py-3 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 shrink-0 select-none shadow-sm">
+          <div className="crm-topbar admin-topbar no-print bg-white border-b border-[#DCE4EB]/30 px-6 py-3 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 shrink-0 select-none shadow-sm">
             {/* Left: Admin Welcome + Live Clock & Company Filter */}
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex flex-col justify-center">
@@ -1400,11 +1436,13 @@ export default function App() {
             />
           )}
 
-          {currentView === ViewType.INSURANCE_DIRECTORY && userRole === "admin" && (
+          {currentView === ViewType.INSURANCE_DIRECTORY && (
             <InsuranceDirectoryView
-              claims={[...leads, ...insuranceClaims]}
+              claims={directoryClaims}
               onNavigateToClaim={handleNavigateToInsuranceClaim}
-              onInsuranceRegistered={() => setInsuranceRefreshKey(k => k + 1)}
+              canManageDirectory={userRole === "admin"}
+              directoryRefreshKey={insuranceRefreshKey}
+              onInsuranceRegistered={userRole === "admin" ? () => setInsuranceRefreshKey(k => k + 1) : undefined}
             />
           )}
 

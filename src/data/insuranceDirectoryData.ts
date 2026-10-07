@@ -240,6 +240,7 @@ export interface CustomInsuranceContact {
   phones: string[];
   notes?: string;
   emailsOverridden?: boolean;
+  displayName?: string;
 }
 
 export interface InsuranceDirectoryEdit {
@@ -293,6 +294,7 @@ export function saveCustomContact(companyIdOrName: string, contact: { email?: st
     const all = getSavedCustomContacts();
     const key = companyIdOrName.toLowerCase().trim();
     const existing = all[key] || { emails: [], phones: [], notes: "" };
+    existing.displayName = companyIdOrName.trim();
 
     if (contact.email && contact.email.trim() && !existing.emails.includes(contact.email.trim())) {
       existing.emails.push(contact.email.trim());
@@ -350,6 +352,7 @@ export async function fetchDbInsuranceCompanies(): Promise<DbInsuranceCompany[]>
             phones: Array.from(new Set([...existing.phones, ...(Array.isArray(item.phones) ? item.phones : [])])),
             notes: item.notes || "",
             emailsOverridden: true,
+            displayName: item.name,
           };
           return;
         }
@@ -359,7 +362,8 @@ export async function fetchDbInsuranceCompanies(): Promise<DbInsuranceCompany[]>
         local[key] = {
           emails,
           phones,
-          notes: item.notes || existing.notes || ""
+          notes: item.notes || existing.notes || "",
+          displayName: item.name,
         };
       });
       localStorage.setItem(LOCAL_STORAGE_DIRECTORY_EDITS_KEY, JSON.stringify(edits));
@@ -493,61 +497,11 @@ export async function deleteInsuranceDirectoryCompany(
 }
 
 export function getAllInsuranceCompanyNames(claims: Lead[] = []): string[] {
-  const set = new Set<string>();
-
-  // Map deprecated / standalone names to their canonical master name
-  const DEPRECATED_NAME_MAP: Record<string, string> = {
-    "all state": "Allstate",
-    "farmers": "Farmers Insurance",
-    "assurant": "Assurant Property",
-  };
-
-  // 1. Standard master list
-  MASTER_INSURANCE_COMPANIES.forEach(m => {
-    set.add(m.name);
-  });
-
-  // 2. LocalStorage / DB custom list
-  const local = getSavedCustomContacts();
-  Object.keys(local).forEach(key => {
-    // Check if this key is a deprecated name that should be remapped
-    const canonical = DEPRECATED_NAME_MAP[key];
-    if (canonical) {
-      set.add(canonical);
-      return;
-    }
-
-    const matched = MASTER_INSURANCE_COMPANIES.find(
-      m => m.id === key || m.name.toLowerCase().trim() === key || m.aliases.some(a => a.toLowerCase().trim() === key)
-    );
-    if (matched) {
-      set.add(matched.name);
-    } else {
-      // Capitalize proper words
-      const formatted = key.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-      set.add(formatted);
-    }
-  });
-
-  // 3. Distinct insuranceProvider from claims
-  claims.forEach(c => {
-    const p = (c.insuranceProvider || "").trim();
-    if (p && p !== "No especificada" && p !== "Por reclamar") {
-      const deprecatedCanonical = DEPRECATED_NAME_MAP[p.toLowerCase().trim()];
-      if (deprecatedCanonical) {
-        set.add(deprecatedCanonical);
-      } else {
-        set.add(p);
-      }
-    }
-  });
-
-  // Priority common names
-  set.add("Safeco Insurance");
-  set.add("State Farm");
-  set.add("Allstate");
-
-  return Array.from(set).sort((a, b) => a.localeCompare(b));
+  const deleted = new Set(getDeletedInsuranceDirectoryKeys());
+  return getAggregatedInsuranceDirectory(claims)
+    .filter((company) => !deleted.has(company.id))
+    .map((company) => company.name)
+    .sort((a, b) => a.localeCompare(b));
 }
 
 function matchCompany(providerName: string, master: MasterInsuranceCompany): boolean {
@@ -587,7 +541,42 @@ export function getAggregatedInsuranceDirectory(claims: Lead[] = []): InsuranceC
       inDisputeClaims: 0,
       adjusters: [],
       claims: [],
-      customNotes: custom.notes || master.description
+      customNotes: custom.notes || ""
+    });
+  });
+
+  // Include shared custom directory entries even when this company's current
+  // organization has no related claims. Contact records are shared; claim and
+  // adjuster details are still populated only from the claims argument.
+  Object.entries(customContacts).forEach(([key, custom]) => {
+    const normalizedKey = key.toLowerCase().trim();
+    const name = custom.displayName?.trim() || key.split(" ").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+    const normalizedName = name.toLowerCase().trim();
+    const isMasterCompany = MASTER_INSURANCE_COMPANIES.some((master) =>
+      master.id === normalizedKey
+      || master.name.toLowerCase().trim() === normalizedKey
+      || master.name.toLowerCase().trim() === normalizedName
+      || master.aliases.some((alias) => alias.toLowerCase().trim() === normalizedKey || alias.toLowerCase().trim() === normalizedName),
+    );
+    if (isMasterCompany) return;
+
+    const id = getInsuranceDirectoryKey(name);
+    if (resultMap.has(id)) return;
+    resultMap.set(id, {
+      id,
+      name,
+      aliases: [name],
+      emails: custom.emails || [],
+      phones: custom.phones || [],
+      totalClaims: 0,
+      activeClaims: 0,
+      approvedClaims: 0,
+      finalizedClaims: 0,
+      deniedClaims: 0,
+      inDisputeClaims: 0,
+      adjusters: [],
+      claims: [],
+      customNotes: custom.notes || "",
     });
   });
 
@@ -619,7 +608,7 @@ export function getAggregatedInsuranceDirectory(claims: Lead[] = []): InsuranceC
         inDisputeClaims: 0,
         adjusters: [],
         claims: [],
-        customNotes: custom.notes || "Aseguradora detectada desde casos registrados."
+        customNotes: custom.notes || ""
       };
       resultMap.set(companyId, entry);
     }

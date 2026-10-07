@@ -317,3 +317,283 @@
   .contractor-app .insurance-list-heading > div:first-child { gap: 10px; }
   .contractor-app .insurance-list-heading .lucide-shield-check { width: 32px; height: 32px; color: #82621e; }
 }
+
+/* Superadmin shares the contractor visual system while retaining its own data and workflows. */
+@media screen {
+  .admin-app {
+    --crm-ink: #122b40;
+    --crm-canvas: #f0f2ef;
+    --crm-line: #dce2df;
+    --crm-gold: #82621e;
+    --crm-muted: #526574;
+    color: var(--crm-ink);
+    background: var(--crm-canvas);
+  }
+
+  .admin-app .crm-main,
+  .admin-app .crm-content,
+  .admin-app .crm-content > :is(div, main),
+  .admin-app .crm-workspace {
+    background-color: var(--crm-canvas) !important;
+  }
+
+  .admin-app .crm-sidebar {
+    width: 248px !important;
+    background: linear-gradient(180deg, #173449 0%, #0d2232 100%) !important;
+    border-right: 1px solid #ffffff12 !important;
+  }
+  .admin-app .crm-sidebar[data-collapsed="true"] { width: 72px !important; }
+  .admin-app .crm-main[data-sidebar-collapsed="false"] { margin-left: 248px; }
+  .admin-app .crm-main[data-sidebar-collapsed="true"] { margin-left: 72px; }
+  .admin-app .crm-sidebar > div:first-child {
+    min-height: 72px;
+    padding-block: 12px;
+    background: linear-gradient(120deg, #27465d, #183449);
+    box-shadow: inset 0 -1px 0 #d5bf7a45;
+  }
+  .admin-app .crm-sidebar > div:first-child > img {
+    max-height: 44px;
+    filter: brightness(1.15) drop-shadow(0 2px 3px #0006);
+  }
+  .admin-app .crm-sidebar > div:nth-child(2) { padding-top: 10px; }
+  .admin-app .crm-sidebar button { min-height: 40px; border-radius: 10px; }
+  .admin-app .crm-sidebar button:not(.nav-item-active):hover { color: #fff; background: #ffffff0c; }
+  .admin-app .crm-sidebar .nav-item-active {
+    color: #fff;
+    background: linear-gradient(90deg, #d4bd7840, #d4bd7817);
+    border-left: 2px solid #d5bf7a;
+  }
+  .admin-app .crm-sidebar .nav-item-active .lucide { color: #f0dfae; }
+  .admin-app .crm-sidebar .lucide { width: 22px; height: 22px; color: #d5bf7a; }
+
+  .admin-app .admin-topbar {
+    min-height: 72px;
+    padding: 10px 22px;
+    gap: 14px;
+    background: linear-gradient(105deg, #fff 0%, #fbfcfa 70%, #f4f1e7 100%) !important;
+    border-bottom: 1px solid var(--crm-line) !important;
+    box-shadow: 0 2px 9px #122b4008 !important;
+  }
+  .admin-app .admin-topbar > div:first-child { gap: 14px; }
+  .admin-app .admin-topbar input:not([type="checkbox"]),
+  .admin-app .admin-topbar select {
+    min-height: 38px;
+    border: 1px solid var(--crm-line);
+    border-radius: 10px;
+    background-color: #fff;
+    color: var(--crm-ink);
+    box-shadow: none;
+  }
+  .admin-app .admin-topbar .lucide-bell { width: 27px; height: 27px; color: var(--crm-gold); }
+
+  .admin-app .crm-content { color: var(--crm-ink); }
+  .admin-app .crm-content .bg-white:is(.rounded-xl, .rounded-2xl, .rounded-3xl),
+  .admin-app .crm-content :is(section, article).bg-white:is(.rounded-xl, .rounded-2xl, .rounded-3xl) {
+    border-color: var(--crm-line);
+    box-shadow: 0 5px 18px #122b4008;
+  }
+  .admin-app .crm-content input:not([type="checkbox"]):not([type="radio"]),
+  .admin-app .crm-content select,
+  .admin-app .crm-content textarea {
+    border-color: var(--crm-line);
+    border-radius: 9px;
+  }
+  .admin-app .crm-content :is(button, a).btn-responsive { border-radius: 10px; }
+
+  /* Give superadmin controls one shape and depth system, guided by contractor buttons. */
+  .admin-app .crm-content button,
+  .admin-app .crm-content a.btn-responsive {
+    border-radius: 10px;
+    transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, color 150ms ease, transform 150ms ease;
+  }
+  .admin-app .crm-content button:focus-visible,
+  .admin-app .crm-content a.btn-responsive:focus-visible {
+    outline: 2px solid #b89a50;
+    outline-offset: 2px;
+  }
+  .admin-app .crm-content button:not(:disabled):active,
+  .admin-app .crm-content a.btn-responsive:active { transform: translateY(1px); }
+  .admin-app .crm-content button > .lucide,
+  .admin-app .crm-content a.btn-responsive > .lucide { flex: 0 0 auto; }
+
+  .admin-app .crm-content button.btn-gold-3d,
+  .admin-app .crm-content button.admin-primary-3d,
+  .admin-app .crm-content a.btn-gold-3d,
+  .admin-app .crm-content a.admin-primary-3d {
+    min-height: 38px;
+    border: 1px solid #75571b !important;
+    border-radius: 10px !important;
+    background: linear-gradient(160deg, #96732b 0%, #785819 100%) !important;
+    color: #fff !important;
+    box-shadow: inset 0 1px 0 #ffffff30, 0 3px 7px #75561326 !important;
+    font-weight: 600;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .admin-app .crm-content button.btn-gold-3d:hover,
+  .admin-app .crm-content button.admin-primary-3d:hover,
+  .admin-app .crm-content a.btn-gold-3d:hover,
+  .admin-app .crm-content a.admin-primary-3d:hover {
+    background: linear-gradient(160deg, #84671f 0%, #664a14 100%) !important;
+    box-shadow: inset 0 1px 0 #ffffff24, 0 5px 11px #75561335 !important;
+  }
+  .admin-app .crm-content button:is([class*="bg-[#102A46]"], [class*="bg-[#173449]"], [class*="bg-[#193856]"]),
+  .admin-app .crm-content a:is([class*="bg-[#102A46]"], [class*="bg-[#173449]"], [class*="bg-[#193856]"]) {
+    min-height: 38px;
+    border: 1px solid #0d2232;
+    border-radius: 10px;
+    background: linear-gradient(160deg, #193856 0%, #102a46 100%);
+    color: #fff;
+    box-shadow: inset 0 1px 0 #ffffff18, 0 3px 7px #102a461c;
+    font-weight: 600;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .admin-app .crm-content button:is([class*="bg-[#102A46]"], [class*="bg-[#173449]"], [class*="bg-[#193856]"]):hover:not(:disabled),
+  .admin-app .crm-content a:is([class*="bg-[#102A46]"], [class*="bg-[#173449]"], [class*="bg-[#193856]"]):hover {
+    background: linear-gradient(160deg, #244761 0%, #173449 100%);
+    box-shadow: inset 0 1px 0 #ffffff20, 0 5px 11px #102a4625;
+  }
+  .admin-app .crm-content button[class*="border"]:not(.btn-gold-3d):not(.admin-primary-3d):not([class*="rose-"]):not([class*="red-"]):not([class*="emerald-"]):not([class*="bg-[#102A46]"]):not([class*="bg-[#173449]"]):not([class*="bg-[#193856]"]),
+  .admin-app .crm-content a.btn-responsive:not(.btn-gold-3d):not(.admin-primary-3d):not([class*="bg-[#102A46]"]) {
+    border-color: #dce2df;
+    box-shadow: 0 2px 5px #122b4008;
+  }
+  .admin-app .crm-content button[class*="border"]:not(.btn-gold-3d):not(.admin-primary-3d):not([class*="rose-"]):not([class*="red-"]):not([class*="emerald-"]):not([class*="bg-[#102A46]"]):not([class*="bg-[#173449]"]):not([class*="bg-[#193856]"]):hover:not(:disabled),
+  .admin-app .crm-content a.btn-responsive:not(.btn-gold-3d):not(.admin-primary-3d):hover {
+    border-color: #c8bea0;
+    box-shadow: 0 3px 8px #122b4010;
+  }
+  .admin-app .crm-content button:has(> .lucide:only-child):not([class*="rose-"]):not([class*="red-"]):not([class*="emerald-"]):not([class*="bg-[#102A46]"]):not(.btn-gold-3d) {
+    border-radius: 10px;
+  }
+  .admin-app .crm-content button:has(> .lucide:only-child) > .lucide { width: 16px; height: 16px; }
+  .admin-app .crm-content :is(span, div)[class*="w-8"]:has(> .lucide),
+  .admin-app .crm-content :is(span, div)[class*="w-9"]:has(> .lucide),
+  .admin-app .crm-content :is(span, div)[class*="w-10"]:has(> .lucide),
+  .admin-app .crm-content :is(span, div)[class*="w-12"]:has(> .lucide) { border-radius: 10px; }
+
+  /* The admin overview uses the same compact limestone and brass treatment as the contractor home. */
+  .admin-app .admin-dashboard-hero {
+    padding: 11px 18px;
+    border: 1px solid #e3ddc9;
+    border-radius: 18px;
+    background: linear-gradient(115deg, #fcfcf7 0%, #f4f0e3 100%) !important;
+    color: var(--crm-ink) !important;
+    box-shadow: 0 8px 22px #122b4009 !important;
+  }
+  .admin-app .admin-dashboard-hero > .pointer-events-none { display: none; }
+  .admin-app .admin-dashboard-hero > div.relative.flex > div.max-w-2xl { color: var(--crm-gold); }
+  .admin-app .admin-dashboard-hero > div.relative.flex > div.max-w-2xl :is(h1, h2, h3) { color: var(--crm-ink) !important; }
+  .admin-app .admin-dashboard-hero > div.relative.flex > div.max-w-2xl .lucide { color: var(--crm-gold); }
+  .admin-app .admin-dashboard-actions { gap: 9px; }
+  .admin-app .admin-dashboard-composer { gap: 7px; }
+  .admin-app .admin-dashboard-composer > div { display: contents; }
+  .admin-app .admin-dashboard-composer button:first-child {
+    min-height: 38px;
+    border: 1px solid #755613;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #947329 0%, #755613 100%);
+    color: #fff;
+    box-shadow: inset 0 1px 0 #ffffff35, 0 3px 7px #7556132b;
+  }
+  .admin-app .admin-dashboard-composer button:first-child:hover { background: linear-gradient(180deg, #84671f, #664a14); }
+  .admin-app .admin-dashboard-composer button:last-child {
+    min-height: 38px;
+    border: 1px solid #d9d8ce;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--crm-ink);
+    box-shadow: 0 2px 6px #122b4009;
+  }
+  .admin-app .admin-dashboard-composer button:last-child:hover { background: #f7f5ee; }
+  .admin-app .admin-priority-summary {
+    border-color: #e3ddc9;
+    border-radius: 11px;
+    background: #fbfaf6;
+    color: var(--crm-ink);
+    backdrop-filter: none;
+  }
+  .admin-app .admin-priority-summary > p { color: var(--crm-ink) !important; }
+  .admin-app .admin-priority-label { color: #6c6a60; }
+  .admin-app .admin-priority-icon { background: #efe8d6; color: #755613; }
+  .admin-app .admin-priority-icon .lucide { width: 13px; height: 13px; color: #755613; }
+  .admin-app .admin-metric-card {
+    border-color: var(--crm-line);
+    border-radius: 14px;
+    box-shadow: 0 4px 14px #122b4007;
+  }
+  .admin-app .admin-metric-card:hover { border-color: #c9c0a7; box-shadow: 0 9px 22px #122b4010; }
+  .admin-app .admin-metric-card > span:first-child { background: var(--crm-gold) !important; }
+  .admin-app .admin-metric-card > span:nth-child(2) {
+    border: 1px solid #e8dfc9;
+    border-radius: 10px !important;
+    background: linear-gradient(145deg, #f7f4e9, #eee7d4) !important;
+    color: #755613 !important;
+    box-shadow: inset 0 1px 0 #ffffffa8;
+  }
+  .admin-app .admin-metric-card > span:nth-child(2) .lucide { color: currentColor !important; stroke-width: 1.8; }
+
+  .admin-app .admin-icon-well {
+    border-color: transparent;
+    background: transparent !important;
+    color: #d8c68a !important;
+    box-shadow: none !important;
+  }
+  .admin-app .admin-icon-well .lucide { color: currentColor !important; stroke-width: 1.75; }
+  .admin-app .admin-icon-well-light {
+    border-color: #e8dfc9;
+    background: #f4f0e4 !important;
+    color: #755613 !important;
+  }
+  .admin-app .admin-claim-heading-icon {
+    border: 1px solid #e8dfc9;
+    border-radius: 12px !important;
+    background: linear-gradient(145deg, #f4f0e4, #eae1cb) !important;
+    color: #755613 !important;
+    box-shadow: inset 0 1px 0 #ffffffa8, 0 3px 8px #75561316 !important;
+  }
+  .admin-app .admin-claim-heading-icon .lucide { width: 22px; height: 22px; color: currentColor !important; }
+  .admin-app .admin-primary-3d {
+    border-color: #755613 !important;
+    border-radius: 10px !important;
+    background: linear-gradient(180deg, #947329 0%, #755613 100%) !important;
+    color: #fff !important;
+    box-shadow: inset 0 1px 0 #ffffff35, 0 3px 7px #7556132b !important;
+  }
+  .admin-app .admin-primary-3d:hover {
+    background: linear-gradient(180deg, #84671f, #664a14) !important;
+    box-shadow: inset 0 1px 0 #ffffff2b, 0 5px 11px #75561338 !important;
+  }
+
+  .admin-app .lucide {
+    min-width: 0;
+    min-height: 0;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none;
+    color: currentColor;
+    stroke-width: 1.8;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .admin-app .admin-dashboard-actions { flex-direction: row; align-items: center; }
+}
+
+@media screen and (max-width: 1199px) {
+  .admin-app .admin-dashboard-hero > div.relative.flex { align-items: stretch; }
+  .admin-app .admin-dashboard-actions { justify-content: space-between; }
+}
+
+@media screen and (max-width: 767px) {
+  .admin-app .admin-topbar { padding: 14px 16px; gap: 12px; }
+  .admin-app .admin-topbar > div:first-child { width: 100%; }
+  .admin-app .admin-topbar > div.flex-1 { max-width: none; margin-inline: 0; padding-inline: 0; }
+  .admin-app .crm-sidebar { width: 248px !important; }
+  .admin-app .admin-dashboard-composer { justify-content: flex-start; }
+  .admin-app .admin-dashboard-actions > .grid { width: 100%; }
+}

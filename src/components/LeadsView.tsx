@@ -425,7 +425,7 @@ export default function LeadsView({
         <div className={`insurance-list-heading flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b pb-5 ${isInsuranceView ? "border-[#DCE4EB]" : "border-[#DCE4EB]/30"}`}>
           <div className="flex items-center gap-4">
             {isInsuranceView && (
-              <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-gradient-to-br from-[#102A46] to-[#193856] shadow-md items-center justify-center shrink-0">
+              <div className="admin-claim-heading-icon hidden sm:flex w-12 h-12 rounded-2xl bg-gradient-to-br from-[#102A46] to-[#193856] shadow-md items-center justify-center shrink-0">
                 <ShieldCheck className="w-6 h-6 text-[#D5BF7A]" strokeWidth={1.7} />
               </div>
             )}
@@ -434,7 +434,7 @@ export default function LeadsView({
             <h1 className={`font-sans font-bold tracking-tight ${isInsuranceView ? "text-[28px] text-[#102A46]" : "text-[26px] text-[#102A46]"}`}>
               {viewTitle || "Carpeta de Leads & Clientes"}
             </h1>
-            {!(isInsuranceView && userRole === "contractor") && <p className="font-sans text-xs text-[#53677B] mt-1 font-medium">
+            {!(isInsuranceView && userRole === "admin") && <p className="font-sans text-xs text-[#53677B] mt-1 font-medium">
               {viewSubtitle || "Cronologías de reclamos de seguros, visitas de peritos y archivos técnicos de propiedad."}
             </p>}
             </div>
@@ -779,7 +779,7 @@ export default function LeadsView({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#DCE4EB]/30 pb-4">
         <div>
           <h1 className="font-sans text-[26px] font-bold text-[#102A46] tracking-tight">{viewTitle || "Carpeta de Leads & Clientes"}</h1>
-          <p className="font-sans text-xs text-[#566A7E] mt-1 font-medium">{viewSubtitle || "Cronologías de reclamos de seguros, visitas de peritos y archivos técnicos de propiedad."}</p>
+          {!(isInsuranceView && userRole === "admin") && <p className="font-sans text-xs text-[#566A7E] mt-1 font-medium">{viewSubtitle || "Cronologías de reclamos de seguros, visitas de peritos y archivos técnicos de propiedad."}</p>}
         </div>
         <button
           onClick={() => setIsAddingLead(!isAddingLead)}
@@ -1670,7 +1670,7 @@ export default function LeadsView({
                               <span className="font-sans text-xs font-bold text-[#102A46]">{ev.type === "note" ? (ev.author || ev.title) : ev.title}</span>
                               <div className="flex items-center gap-2">
                                 <span className="text-[9px] text-[#566A7E]">{formatTimelineDate(ev)}</span>
-                                {onDeleteTimelineEvent && (ev.type === "note" || ev.id.startsWith("timeline-")) && (
+                                {onDeleteTimelineEvent && ev.type !== "status_change" && (ev.type === "note" || ev.id.startsWith("timeline-")) && (
                                   <button
                                     onClick={() => {
                                       if (confirm("¿Seguro que deseas eliminar este comentario?")) {
