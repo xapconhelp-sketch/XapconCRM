@@ -82,9 +82,31 @@ test('PostgreSQL account, company, task and notification integration', async t =
       await assert.rejects(signup(invalid, 'invalid@test.invalid', { full_name: 'Invalid', companyCode: 'XAP-INVALID' }), /código/i);
       assert.equal((await sql('SELECT id FROM auth.users WHERE id=$1', [invalid])).length, 0);
     });
+    await t.test('company employee signup requires a code and one of the approved roles', async () => {
+      const missingCode = '00000000-0000-4000-8000-000000000098';
+      await assert.rejects(signup(missingCode, 'missing-code@test.invalid', { full_name: 'No Code', jobTitle: 'Vendedor' }), /invitación|código/i);
+      assert.equal((await sql('SELECT id FROM auth.users WHERE id=$1', [missingCode])).length, 0);
+      const invalidRole = '00000000-0000-4000-8000-000000000097';
+      await assert.rejects(signup(invalidRole, 'invalid-role@test.invalid', {
+        full_name: 'Invalid Role', companyCode: code, jobTitle: 'Colaborador'
+      }), /rol válido/i);
+      assert.equal((await sql('SELECT id FROM auth.users WHERE id=$1', [invalidRole])).length, 0);
+      const allowedRoles = [
+        'Supervisor de Construcción', 'Gerente de ventas', 'Gerente de cuadrilla', 'Vendedor',
+        'Suplementador', 'Gerente Servicio al Cliente', 'Inspector', 'Contador'
+      ];
+      for (const [index, jobTitle] of allowedRoles.entries()) {
+        const id = `20000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`;
+        await signup(id, `role-${index}@test.invalid`, { full_name: `Role ${index}`, companyCode: code, jobTitle });
+        const [profile] = await sql('SELECT role, job_title, organization_id FROM profiles WHERE id=$1', [id]);
+        assert.equal(profile.role, 'employee');
+        assert.equal(profile.job_title, jobTitle);
+        assert.equal(profile.organization_id, company);
+      }
+    });
     await t.test('employees join the exact company and cannot promote or move themselves', async () => {
-      await signup(jonathan, 'jonathan@test.invalid', { full_name: 'Jonathan', companyCode: ` ${code.toLowerCase()} `, role: 'super_admin', jobTitle: 'Project Manager' });
-      await signup(coworker, 'coworker@test.invalid', { full_name: 'Jonathan', companyCode: code });
+      await signup(jonathan, 'jonathan@test.invalid', { full_name: 'Jonathan', companyCode: ` ${code.toLowerCase()} `, role: 'super_admin', jobTitle: 'Vendedor' });
+      await signup(coworker, 'coworker@test.invalid', { full_name: 'Jonathan', companyCode: code, jobTitle: 'Vendedor' });
       await signup(outsider, 'other@test.invalid', { full_name: 'Other Owner', role: 'Dueño', companyName: 'Other Company' });
       const [p] = await sql('SELECT role,organization_id FROM profiles WHERE id=$1', [jonathan]);
       assert.equal(p.role, 'employee'); assert.equal(p.organization_id, company);
@@ -132,7 +154,9 @@ test('PostgreSQL account, company, task and notification integration', async t =
     await t.test('owner email invitations claim membership only after email confirmation', async () => {
       const invited = '00000000-0000-4000-8000-000000000007';
       await actor(saul, () => sql('SELECT save_xapcon_invitation($1,$2,$3,$4)', ['invited@test.invalid', 'Invited Employee', 'employee', company]));
-      await signup(invited, 'invited@test.invalid', {}, false);
+      await assert.rejects(signup(invited, 'invited@test.invalid', {}, false), /código/i);
+      assert.equal((await sql('SELECT id FROM auth.users WHERE id=$1', [invited])).length, 0);
+      await signup(invited, 'invited@test.invalid', { companyCode: code }, false);
       assert.equal((await sql('SELECT * FROM user_organizations WHERE user_id=$1', [invited])).length, 0);
       await sql('UPDATE auth.users SET email_confirmed_at=now() WHERE id=$1', [invited]);
       await actor(invited, () => sql('SELECT bootstrap_xapcon_account()'));

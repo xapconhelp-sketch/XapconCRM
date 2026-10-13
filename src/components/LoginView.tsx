@@ -434,14 +434,19 @@ export default function LoginView() {
                       Rol / Cargo
                     </label>
                     <select
+                      required
                       value={regRole}
                       onChange={(e) => setRegRole(e.target.value)}
                       className="w-full bg-transparent border-none text-xs text-[#191c1e] focus:outline-none py-0.5 cursor-pointer font-semibold"
                     >
+                      <option value="Supervisor de Construcción">Supervisor de Construcción</option>
+                      <option value="Gerente de ventas">Gerente de ventas</option>
+                      <option value="Gerente de cuadrilla">Gerente de cuadrilla</option>
                       <option value="Vendedor">Vendedor</option>
-                      <option value="Gerente de Ventas">Gerente de Ventas</option>
+                      <option value="Suplementador">Suplementador</option>
+                      <option value="Gerente Servicio al Cliente">Gerente Servicio al Cliente</option>
+                      <option value="Inspector">Inspector</option>
                       <option value="Contador">Contador</option>
-                      <option value="Colaborador">Colaborador</option>
                     </select>
                   </div>
 

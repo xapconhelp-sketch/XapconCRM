@@ -570,6 +570,13 @@ BEGIN
   SELECT * INTO invitation FROM public.user_invitations WHERE lower(email) = lower(NEW.email);
   IF FOUND THEN
     IF invitation.expires_at <= now() THEN RAISE EXCEPTION 'La invitación venció. Solicita una nueva.'; END IF;
+    IF invitation.role = 'employee' THEN
+      SELECT id INTO target_org FROM public.organizations
+      WHERE upper(trim(invite_code)) = upper(trim(metadata ->> 'companyCode')) AND NOT is_internal;
+      IF target_org IS NULL OR target_org IS DISTINCT FROM invitation.organization_id THEN
+        RAISE EXCEPTION 'El registro requiere el código de invitación de la empresa.';
+      END IF;
+    END IF;
     NEW.role := invitation.role; NEW.job_title := invitation.job_title;
     NEW.full_name := invitation.full_name;
     NEW.organization_id := NULL;
@@ -580,6 +587,10 @@ BEGIN
     SELECT id INTO target_org FROM public.organizations
     WHERE upper(trim(invite_code)) = upper(trim(metadata ->> 'companyCode')) AND NOT is_internal;
     IF target_org IS NULL THEN RAISE EXCEPTION 'El código de empresa no es válido.'; END IF;
+    IF coalesce(trim(metadata ->> 'jobTitle'), '') NOT IN (
+      'Supervisor de Construcción', 'Gerente de ventas', 'Gerente de cuadrilla', 'Vendedor',
+      'Suplementador', 'Gerente Servicio al Cliente', 'Inspector', 'Contador'
+    ) THEN RAISE EXCEPTION 'Selecciona un rol válido para tu empresa.'; END IF;
     NEW.role := 'employee'; NEW.organization_id := target_org;
     NEW.job_title := nullif(trim(metadata ->> 'jobTitle'), '');
   ELSIF metadata ->> 'role' = 'Dueño' THEN

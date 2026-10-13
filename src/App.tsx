@@ -554,6 +554,13 @@ export default function App() {
       ? 'platform_staff' : newMember.roleCategory === 'contractor' ? 'owner' : 'employee';
     const organizationId = ['super_admin', 'platform_staff'].includes(dbRole) ? null
       : userRole === 'contractor' ? activeOrganization?.id : newMember.organizationId;
+    let signupData: Record<string, string> | undefined;
+    if (dbRole === 'employee') {
+      const { data: organization, error: organizationError } = await supabase
+        .from('organizations').select('invite_code').eq('id', organizationId).single();
+      if (organizationError || !organization?.invite_code) throw new Error('No se pudo verificar el código de invitación de la empresa.');
+      signupData = { companyCode: organization.invite_code, jobTitle: newMember.role };
+    }
     const { error } = await supabase.rpc('save_xapcon_invitation', {
       p_email: newMember.email?.trim().toLowerCase(), p_full_name: newMember.name.trim(), p_role: dbRole,
       p_organization_id: organizationId || null, p_job_title: newMember.role,
@@ -562,7 +569,9 @@ export default function App() {
     });
     if (error) throw new Error(error.message);
     const { error: inviteError } = await supabase.auth.signInWithOtp({
-      email: newMember.email!.trim(), options: { shouldCreateUser: true, emailRedirectTo: window.location.origin }
+      email: newMember.email!.trim(), options: {
+        shouldCreateUser: true, emailRedirectTo: window.location.origin, data: signupData
+      }
     });
     // Preserve the pending invitation on an email failure so the owner can retry.
     if (inviteError) throw new Error(`La invitación quedó pendiente, pero no se pudo enviar el correo: ${inviteError.message}. Puedes reenviarla desde este formulario.`);
