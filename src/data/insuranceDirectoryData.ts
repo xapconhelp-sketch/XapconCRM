@@ -522,7 +522,12 @@ export function getAggregatedInsuranceDirectory(claims: Lead[] = []): InsuranceC
   MASTER_INSURANCE_COMPANIES.forEach(master => {
     const custom = customContacts[master.id] || customContacts[master.name.toLowerCase().trim()] || { emails: [], phones: [], notes: "" };
     
-    const initialEmails = Array.from(new Set([...master.defaultEmails, ...(custom.emails || [])]));
+    // Una edición del directorio reemplaza los correos predeterminados. Si se
+    // vuelven a combinar aquí, el formulario puede seguir autocompletando el
+    // correo anterior antes que el que acaba de editar el administrador.
+    const initialEmails = custom.emailsOverridden
+      ? Array.from(new Set(custom.emails || []))
+      : Array.from(new Set([...master.defaultEmails, ...(custom.emails || [])]));
     const initialPhones = Array.from(new Set([...master.defaultPhones, ...(custom.phones || [])]));
 
     resultMap.set(master.id, {

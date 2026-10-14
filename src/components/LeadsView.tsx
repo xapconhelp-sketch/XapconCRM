@@ -173,7 +173,7 @@ export default function LeadsView({
   // Smart Known Contacts for New Claim
   const newClaimKnownContacts = React.useMemo(() => {
     return getKnownContactsForInsurance(leadInsurance, leads);
-  }, [leadInsurance, leads]);
+  }, [leadInsurance, leads, insuranceCompanies]);
 
   const handleAutofillNewClaim = () => {
     if (newClaimKnownContacts.phones[0] && !insPhone1) setInsPhone1(newClaimKnownContacts.phones[0]);
@@ -183,7 +183,7 @@ export default function LeadsView({
   // Smart Known Contacts for Edit Claim
   const editKnownContacts = React.useMemo(() => {
     return getKnownContactsForInsurance(editInsuranceProvider, leads);
-  }, [editInsuranceProvider, leads]);
+  }, [editInsuranceProvider, leads, insuranceCompanies]);
 
   const handleAutofillEditClaim = () => {
     if (editKnownContacts.phones[0] && !editInsurancePhone1) setEditInsurancePhone1(editKnownContacts.phones[0]);
