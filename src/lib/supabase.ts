@@ -7,7 +7,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn("Faltan las variables de entorno de Supabase. Revisa el archivo .env.local");
 }
 
+// Mantener la sesión durante recargas de esta pestaña, pero no en localStorage.
+// Así, al cerrar la pestaña o el navegador, se solicitará iniciar sesión de nuevo.
+const clientOptions = typeof window !== 'undefined'
+  ? { auth: { storage: window.sessionStorage } }
+  : undefined;
+
 export const supabase = createClient(
   supabaseUrl || '',
-  supabaseAnonKey || ''
+  supabaseAnonKey || '',
+  clientOptions
 );

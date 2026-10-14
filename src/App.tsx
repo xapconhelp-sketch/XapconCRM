@@ -23,6 +23,43 @@ import ContractorWeather from "./components/ContractorWeather";
 
 import { Menu, X } from "lucide-react";
 
+type AppRole = "admin" | "contractor";
+
+interface AppRoute {
+  role: AppRole | null;
+  organizationId: string | null;
+  hasOrganizationSegment: boolean;
+  view: ViewType | null;
+}
+
+function parseAppRoute(pathname: string): AppRoute {
+  const segments = pathname.split("/").filter(Boolean);
+  const role = segments[0] === "admin" || segments[0] === "contractor" ? segments[0] : null;
+  const routeSegments = role ? segments.slice(1) : [];
+  const viewSegment = routeSegments.at(-1);
+  const view = Object.values(ViewType).find((candidate) => candidate === viewSegment) || null;
+  const hasOrganizationSegment = routeSegments.length >= 2;
+
+  return {
+    role,
+    organizationId: hasOrganizationSegment ? routeSegments[0] : null,
+    hasOrganizationSegment,
+    view,
+  };
+}
+
+function normalizeViewForRole(view: ViewType | null, role: AppRole): ViewType {
+  if (!view) return ViewType.DASHBOARD;
+  if (role === "contractor" && view === ViewType.VALORES_INSURANCE) return ViewType.DASHBOARD;
+  if (role === "admin" && view === ViewType.CLAIMS) return ViewType.DASHBOARD;
+  return view;
+}
+
+function buildAppPath(view: ViewType, role: AppRole, organizationId?: string | null): string {
+  const base = `/${role}`;
+  return `${base}${organizationId ? `/${encodeURIComponent(organizationId)}` : ""}/${view}`;
+}
+
 class ErrorBoundary extends React.Component<any, any> {
   constructor(props: any) {
     super(props);
@@ -91,40 +128,82 @@ export default function App() {
   const contractorCompany = activeOrganization?.name || "Desconocida";
   const selectedCompanyFilter = activeOrganization?.name || "Todas";
 
-  const handleSetCompanyFilter = (val: string) => {
-    if (val === "Todas") {
-      setActiveOrganization(null);
-      window.history.pushState({}, '', '/admin/dashboard');
-    } else {
-      const org = organizations.find(o => o.id === val) || null;
-      setActiveOrganization(org);
-      if (org) {
-        window.history.pushState({}, '', `/${userRole}/${org.id}/dashboard`);
-      }
-    }
+  // La vista vive en la URL: sobrevive a una recarga y permite usar Atrás/Adelante.
+  const [currentView, setCurrentView] = useState<ViewType>(() =>
+    parseAppRoute(window.location.pathname).view || ViewType.DASHBOARD
+  );
+  const navigateToView = (requestedView: ViewType, organizationId: string | null | undefined = activeOrganization?.id) => {
+    const nextView = normalizeViewForRole(requestedView, userRole);
+    const nextPath = buildAppPath(nextView, userRole, organizationId);
+    if (window.location.pathname !== nextPath) window.history.pushState({ xapconApp: true }, "", nextPath);
+    setCurrentView(nextView);
   };
 
-  // Sincronizar URL simulada al cambiar el contexto inicial
+  const handleSetCompanyFilter = (val: string) => {
+    const org = val === "Todas" ? null : organizations.find(o => o.id === val) || null;
+    setActiveOrganization(org);
+    const nextPath = buildAppPath(currentView, userRole, org?.id);
+    if (window.location.pathname !== nextPath) window.history.pushState({ xapconApp: true }, "", nextPath);
+  };
+
+  // Rehidratar la organización indicada en la URL y corregir rutas que no
+  // correspondan al rol autenticado, sin reiniciar la sección actual.
   useEffect(() => {
-    if (session) {
-      if (activeOrganization) {
-        window.history.replaceState({}, '', `/${userRole}/${activeOrganization.id}/dashboard`);
-      } else {
-        window.history.replaceState({}, '', `/${userRole}/dashboard`);
-      }
+    if (!session || !profile || loading) return;
+    const route = parseAppRoute(window.location.pathname);
+    const routeView = normalizeViewForRole(route.view, userRole);
+
+    if (route.role && route.role !== userRole) {
+      const path = buildAppPath(ViewType.DASHBOARD, userRole, activeOrganization?.id);
+      window.history.replaceState({ xapconApp: true }, "", path);
+      setCurrentView(ViewType.DASHBOARD);
+      return;
     }
-  }, [session, activeOrganization, userRole]);
+
+    if (route.role === userRole && route.hasOrganizationSegment && route.organizationId) {
+      const routeOrganization = organizations.find((organization) => organization.id === route.organizationId) || null;
+      if (routeOrganization && routeOrganization.id !== activeOrganization?.id) setActiveOrganization(routeOrganization);
+    } else if (route.role === userRole && !route.hasOrganizationSegment && userRole === "admin" && activeOrganization) {
+      setActiveOrganization(null);
+    }
+
+    if (route.view && routeView !== currentView) setCurrentView(routeView);
+    const orgId = route.hasOrganizationSegment
+      ? organizations.find((organization) => organization.id === route.organizationId)?.id || activeOrganization?.id
+      : activeOrganization?.id;
+    const normalizedPath = buildAppPath(routeView, userRole, orgId);
+    if (window.location.pathname !== normalizedPath) window.history.replaceState({ xapconApp: true }, "", normalizedPath);
+  }, [session?.user.id, profile?.id, loading, organizations, activeOrganization, userRole, currentView, setActiveOrganization]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const route = parseAppRoute(window.location.pathname);
+      if (route.role && route.role !== userRole) {
+        window.history.replaceState({ xapconApp: true }, "", buildAppPath(ViewType.DASHBOARD, userRole, activeOrganization?.id));
+        setCurrentView(ViewType.DASHBOARD);
+        return;
+      }
+
+      const nextView = normalizeViewForRole(route.view, userRole);
+      setCurrentView(nextView);
+      if (route.role === userRole && route.hasOrganizationSegment) {
+        const organization = organizations.find((item) => item.id === route.organizationId) || null;
+        if (organization) setActiveOrganization(organization);
+      } else if (route.role === userRole && userRole === "admin") {
+        setActiveOrganization(null);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [userRole, organizations, activeOrganization?.id, setActiveOrganization]);
 
   // Views and collapsible menus
-  // Never restore a view from browser storage: it may have been saved by a
-  // different account (for example, a superadmin using a shared workstation).
-  const [currentView, setCurrentView] = useState<ViewType>(ViewType.DASHBOARD);
   const [openClaimFormOnEnter, setOpenClaimFormOnEnter] = useState(false);
   useEffect(() => {
     if (userRole === "contractor" && currentView === ViewType.VALORES_INSURANCE) {
-      setCurrentView(ViewType.DASHBOARD);
+      navigateToView(ViewType.DASHBOARD);
     } else if (userRole === "admin" && currentView === ViewType.CLAIMS) {
-      setCurrentView(ViewType.DASHBOARD);
+      navigateToView(ViewType.DASHBOARD);
     }
   }, [currentView, userRole]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -652,10 +731,10 @@ export default function App() {
     setSelectedInsuranceClaimId(claimId);
   };
 
-  const handleNavigateToInsuranceClaim = (claimId: string) => {
+  const handleNavigateToInsuranceClaim = (claimId: string, organizationId?: string) => {
     if (userRole === "contractor" && !insuranceClaims.some((claim) => claim.id === claimId && claim.organizationId === activeOrganization?.id)) return;
     setSelectedInsuranceClaimId(claimId);
-    setCurrentView(ViewType.INSURANCE_CLAIM);
+    navigateToView(ViewType.INSURANCE_CLAIM, organizationId || insuranceClaims.find((claim) => claim.id === claimId)?.organizationId);
   };
 
   const handleAddInsuranceClaimTimelineEvent = async (claimId: string, event: Omit<TimelineEvent, "id" | "timestamp">) => {
@@ -705,9 +784,9 @@ export default function App() {
       const org = organizations.find(o => o.id === data.organization_id);
       if (org) setActiveOrganization(org);
     }
-    if (data.is_insurance_claim) handleNavigateToInsuranceClaim(data.id);
-    else if (userRole === "contractor") setCurrentView(ViewType.CLAIMS);
-    else setCurrentView(ViewType.DASHBOARD);
+    if (data.is_insurance_claim) handleNavigateToInsuranceClaim(data.id, data.organization_id);
+    else if (userRole === "contractor") navigateToView(ViewType.CLAIMS);
+    else navigateToView(ViewType.DASHBOARD);
   };
 
   const handleAddInsuranceClaim = async (newClaimData: Omit<Lead, "id" | "timeline" | "documents" | "tasks" | "createdAt">) => {
@@ -1065,7 +1144,7 @@ export default function App() {
       <Sidebar
         currentView={currentView}
         onViewChange={(view) => {
-          setCurrentView(view);
+          navigateToView(view);
           setMobileMenuOpen(false);
           setSelectedInsuranceClaimId("");
           setSearchTerm("");
@@ -1114,7 +1193,7 @@ export default function App() {
             <button
               key={item.id}
               onClick={() => {
-                setCurrentView(item.id);
+                navigateToView(item.id);
                 setMobileMenuOpen(false);
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-150 ${
@@ -1366,12 +1445,12 @@ export default function App() {
                 teamMembers={teamMembers}
                 currentUserId={session.user.id}
                 defaultTaskScope={canManageTeam ? "all" : "mine"}
-                onNavigateToView={setCurrentView}
+                onNavigateToView={navigateToView}
                 onNavigateToLead={handleNavigateToInsuranceClaim}
                 onCreateClaim={() => {
                   setSelectedInsuranceClaimId("");
                   setOpenClaimFormOnEnter(true);
-                  setCurrentView(ViewType.INSURANCE_CLAIM);
+                  navigateToView(ViewType.INSURANCE_CLAIM);
                 }}
                 onToggleTask={handleToggleInsuranceClaimTask}
                 onAddTask={handleAddTask}
@@ -1385,13 +1464,13 @@ export default function App() {
                   { title: "Esp. Depreciación", value: `${esperandoDepreciacionCount}`, trend: "", trendDirection: "up", subtitle: "Falta recuperar fondos", icon: "clock" },
                   { title: "Finalizados", value: `${finalizadoCount}`, trend: "", trendDirection: "up", subtitle: "Casos cerrados", icon: "flag" }
                 ]}
-                onNavigateToView={setCurrentView}
+                onNavigateToView={navigateToView}
                 onNavigateToLead={handleNavigateToInsuranceClaim}
                 claims={filteredInsuranceClaims}
                 onToggleTask={handleToggleInsuranceClaimTask}
                 taskComposer={<ContractorDashboard composerOnly claims={filteredInsuranceClaims} teamMembers={teamMembers}
-                  currentUserId={session.user.id} onNavigateToView={setCurrentView} onNavigateToLead={handleNavigateToInsuranceClaim}
-                  onCreateClaim={() => setCurrentView(ViewType.INSURANCE_CLAIM)} onToggleTask={handleToggleInsuranceClaimTask} onAddTask={handleAddTask} />}
+                  currentUserId={session.user.id} onNavigateToView={navigateToView} onNavigateToLead={handleNavigateToInsuranceClaim}
+                  onCreateClaim={() => navigateToView(ViewType.INSURANCE_CLAIM)} onToggleTask={handleToggleInsuranceClaimTask} onAddTask={handleAddTask} />}
               />
             )
           )}
