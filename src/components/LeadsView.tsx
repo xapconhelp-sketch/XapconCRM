@@ -175,7 +175,7 @@ function HomeownerServicePanel({
       <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
         {message && <span role="status" className={`text-[11px] ${message === "Contacto registrado" ? "text-emerald-700" : "text-amber-700"}`}>{message}</span>}
         <button type="button" onClick={saveContact} disabled={isSaving} className="rounded-lg bg-[#102A46] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-[#183B60] disabled:cursor-wait disabled:opacity-60">
-          {isSaving ? "Guardando…" : "Registrar contacto"}
+          {isSaving ? "Guardando…" : "Guardar Registro"}
         </button>
       </div>
 
