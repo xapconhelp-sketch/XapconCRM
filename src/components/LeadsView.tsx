@@ -94,7 +94,7 @@ function HomeownerServicePanel({
     setChannels([]);
     setNote("");
     setMessage("");
-  }, [lead.id, contacts.length]);
+  }, [lead.id]);
 
   const toggleChannel = (channel: AdminHomeownerContact["channels"][number]) => {
     setChannels(current => current.includes(channel)
@@ -113,6 +113,11 @@ function HomeownerServicePanel({
     try {
       const saved = await onAddContact(lead.id, { contactedAt, channels, note: note.trim() });
       setMessage(saved ? "Contacto registrado" : "No se pudo guardar el contacto");
+      if (saved) {
+        setContactedAt(localDateInputValue());
+        setChannels([]);
+        setNote("");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -216,7 +221,7 @@ function AdminDocumentsSentPanel({
     setSentDocumentTypes(lead.adminActivity?.sentDocumentTypes || []);
     setNote("");
     setSaveMessage("");
-  }, [lead.id, lead.adminActivity]);
+  }, [lead.id]);
 
   const toggleDocumentType = (value: string) => {
     setSentDocumentTypes(current => current.includes(value)
@@ -329,7 +334,7 @@ function InsuranceResponsePanel({
     setRespondedAt(lead.adminActivity?.lastInsuranceResponseAt || "");
     setNote("");
     setMessage("");
-  }, [lead.id, lead.adminActivity]);
+  }, [lead.id]);
 
   const saveResponse = async () => {
     if (!respondedAt) {
