@@ -81,6 +81,32 @@ export interface Lead {
   organizationId?: string;
   is_insurance_claim?: boolean;
   estimate?: Estimate;
+  adminActivity?: AdminClaimActivity;
+  adminClaimRecords?: AdminClaimRecord[];
+  adminHomeownerContacts?: AdminHomeownerContact[];
+}
+
+export interface AdminClaimActivity {
+  lastInsuranceResponseAt: string;
+  lastDocumentsSentAt: string;
+  sentDocumentTypes: string[];
+}
+
+export interface AdminClaimRecord {
+  id: string;
+  type: "documents_sent" | "insurance_response" | "insurance_call";
+  date: string;
+  note: string;
+  documentTypes: string[];
+  createdAt: string;
+}
+
+export interface AdminHomeownerContact {
+  id: string;
+  contactedAt: string;
+  channels: ("call" | "email" | "sms")[];
+  note: string;
+  createdAt: string;
 }
 
 export interface TimelineEvent {

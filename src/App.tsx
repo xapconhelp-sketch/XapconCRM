@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useState, useEffect, useMemo, useRef } from "react";
 import logo from "../LogoNegativo-copia.png";
-import { ViewType, Lead, Estimate, TeamMember, TimelineEvent, TaskItem } from "./types";
+import { ViewType, Lead, Estimate, TeamMember, TimelineEvent, TaskItem, AdminClaimActivity, AdminClaimRecord, AdminHomeownerContact } from "./types";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
 
@@ -284,6 +284,71 @@ export default function App() {
     }
 
     if (data) {
+      const adminActivityByLead = new Map<string, AdminClaimActivity>();
+      const adminClaimRecordsByLead = new Map<string, AdminClaimRecord[]>();
+      const adminHomeownerContactsByLead = new Map<string, AdminHomeownerContact[]>();
+      const insuranceClaimIds = data.filter((item: any) => item.is_insurance_claim).map((item: any) => item.id);
+      if (userRole === "admin" && insuranceClaimIds.length > 0) {
+        const { data: activityRows, error: activityError } = await supabase
+          .from("admin_claim_activity")
+          .select("lead_id, last_insurance_response_at, last_documents_sent_at, sent_document_types")
+          .in("lead_id", insuranceClaimIds);
+        if (activityError) {
+          console.error("Error al obtener el seguimiento interno de casos:", activityError.message);
+        } else {
+          (activityRows || []).forEach((row: any) => adminActivityByLead.set(row.lead_id, {
+            lastInsuranceResponseAt: row.last_insurance_response_at || "",
+            lastDocumentsSentAt: row.last_documents_sent_at || "",
+            sentDocumentTypes: Array.isArray(row.sent_document_types) ? row.sent_document_types : [],
+          }));
+        }
+
+        const { data: claimRecordRows, error: claimRecordError } = await supabase
+          .from("admin_claim_records")
+          .select("id, lead_id, record_type, recorded_at, note, document_types, created_at")
+          .in("lead_id", insuranceClaimIds)
+          .order("recorded_at", { ascending: false })
+          .order("created_at", { ascending: false });
+        if (claimRecordError) {
+          console.error("Error al obtener el historial de registros del caso:", claimRecordError.message);
+        } else {
+          (claimRecordRows || []).forEach((row: any) => {
+            const records = adminClaimRecordsByLead.get(row.lead_id) || [];
+            records.push({
+              id: row.id,
+              type: row.record_type,
+              date: row.recorded_at || "",
+              note: row.note || "",
+              documentTypes: Array.isArray(row.document_types) ? row.document_types : [],
+              createdAt: row.created_at || "",
+            });
+            adminClaimRecordsByLead.set(row.lead_id, records);
+          });
+        }
+
+        const { data: contactRows, error: contactError } = await supabase
+          .from("admin_homeowner_contacts")
+          .select("id, lead_id, contacted_at, channels, note, created_at")
+          .in("lead_id", insuranceClaimIds)
+          .order("contacted_at", { ascending: false })
+          .order("created_at", { ascending: false });
+        if (contactError) {
+          console.error("Error al obtener el historial de servicio al homeowner:", contactError.message);
+        } else {
+          (contactRows || []).forEach((row: any) => {
+            const contacts = adminHomeownerContactsByLead.get(row.lead_id) || [];
+            contacts.push({
+              id: row.id,
+              contactedAt: row.contacted_at || "",
+              channels: Array.isArray(row.channels) ? row.channels : [],
+              note: row.note || "",
+              createdAt: row.created_at || "",
+            });
+            adminHomeownerContactsByLead.set(row.lead_id, contacts);
+          });
+        }
+      }
+
       const mappedLeads: Lead[] = await Promise.all(data.map(async (item: any) => {
         const caseTasks = item.tasks || [];
 
@@ -320,7 +385,12 @@ export default function App() {
           company: item.organizations?.name || "Desconocida",
           organizationId: item.organization_id,
           is_insurance_claim: item.is_insurance_claim,
-          estimate: item.estimate || null
+          estimate: item.estimate || null,
+          ...(userRole === "admin" && item.is_insurance_claim ? {
+            adminActivity: adminActivityByLead.get(item.id),
+            adminClaimRecords: adminClaimRecordsByLead.get(item.id) || [],
+            adminHomeownerContacts: adminHomeownerContactsByLead.get(item.id) || [],
+          } : {})
         };
       }));
 
@@ -331,6 +401,118 @@ export default function App() {
       setLeads(normalLeads);
       setInsuranceClaims(claims);
     }
+  };
+
+  const handleSaveAdminClaimRecord = async (
+    leadId: string,
+    record: Omit<AdminClaimRecord, "id" | "createdAt">
+  ): Promise<boolean> => {
+    if (!session || userRole !== "admin") return false;
+    const targetClaim = insuranceClaims.find(claim => claim.id === leadId && claim.is_insurance_claim);
+    if (!targetClaim?.organizationId) return false;
+
+    const { data, error } = await supabase.from("admin_claim_records").insert({
+      lead_id: leadId,
+      organization_id: targetClaim.organizationId,
+      record_type: record.type,
+      recorded_at: record.date,
+      note: record.note,
+      document_types: record.documentTypes,
+      created_by: session.user.id,
+    }).select("id, record_type, recorded_at, note, document_types, created_at").single();
+
+    if (error || !data) {
+      console.error("Error al guardar el registro del caso:", error?.message);
+      alert("No se pudo guardar el registro. Verifica que schema_admin_claim_records.sql esté aplicado en Supabase. " + (error?.message || ""));
+      return false;
+    }
+
+    const savedRecord: AdminClaimRecord = {
+      id: data.id,
+      type: data.record_type,
+      date: data.recorded_at || record.date,
+      note: data.note || "",
+      documentTypes: Array.isArray(data.document_types) ? data.document_types : [],
+      createdAt: data.created_at || new Date().toISOString(),
+    };
+    const currentActivity = targetClaim.adminActivity || {
+      lastInsuranceResponseAt: "",
+      lastDocumentsSentAt: "",
+      sentDocumentTypes: [],
+    };
+    const isCurrentOrNewer = (date: string, existingDate: string) => !existingDate || date >= existingDate;
+    const updatedActivity: AdminClaimActivity = record.type === "documents_sent"
+      ? (isCurrentOrNewer(record.date, currentActivity.lastDocumentsSentAt)
+        ? { ...currentActivity, lastDocumentsSentAt: record.date, sentDocumentTypes: record.documentTypes }
+        : currentActivity)
+      : record.type === "insurance_response"
+        ? (isCurrentOrNewer(record.date, currentActivity.lastInsuranceResponseAt)
+        ? { ...currentActivity, lastInsuranceResponseAt: record.date }
+        : currentActivity)
+        : currentActivity;
+
+    if (record.type !== "insurance_call") {
+      const { error: activityError } = await supabase.from("admin_claim_activity").upsert({
+        lead_id: leadId,
+        organization_id: targetClaim.organizationId,
+        last_insurance_response_at: updatedActivity.lastInsuranceResponseAt || null,
+        last_documents_sent_at: updatedActivity.lastDocumentsSentAt || null,
+        sent_document_types: updatedActivity.sentDocumentTypes,
+      }, { onConflict: "lead_id" });
+      if (activityError) {
+        console.error("Error al actualizar el resumen de actividad del caso:", activityError.message);
+        alert("El registro se guardó, pero no se pudo actualizar la fecha de seguimiento para las alertas. " + activityError.message);
+      }
+    }
+
+    const updatedLead = {
+      ...targetClaim,
+      adminActivity: updatedActivity,
+      adminClaimRecords: [savedRecord, ...(targetClaim.adminClaimRecords || [])]
+        .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)),
+    };
+    setInsuranceClaims(prev => prev.map(claim => claim.id === leadId ? updatedLead : claim));
+    setLeads(prev => prev.map(lead => lead.id === leadId ? updatedLead : lead));
+    return true;
+  };
+
+  const handleAddAdminHomeownerContact = async (
+    leadId: string,
+    contact: Omit<AdminHomeownerContact, "id" | "createdAt">
+  ): Promise<boolean> => {
+    if (!session || userRole !== "admin") return false;
+    const targetClaim = insuranceClaims.find(claim => claim.id === leadId && claim.is_insurance_claim);
+    if (!targetClaim?.organizationId) return false;
+
+    const { data, error } = await supabase.from("admin_homeowner_contacts").insert({
+      lead_id: leadId,
+      organization_id: targetClaim.organizationId,
+      contacted_at: contact.contactedAt,
+      channels: contact.channels,
+      note: contact.note,
+      created_by: session.user.id,
+    }).select("id, contacted_at, channels, note, created_at").single();
+
+    if (error || !data) {
+      console.error("Error al guardar el contacto con homeowner:", error?.message);
+      alert("No se pudo guardar el contacto con el homeowner. Verifica que schema_admin_homeowner_contacts.sql esté aplicado en Supabase. " + (error?.message || ""));
+      return false;
+    }
+
+    const savedContact: AdminHomeownerContact = {
+      id: data.id,
+      contactedAt: data.contacted_at || contact.contactedAt,
+      channels: Array.isArray(data.channels) ? data.channels : contact.channels,
+      note: data.note || "",
+      createdAt: data.created_at || new Date().toISOString(),
+    };
+    setInsuranceClaims(prev => prev.map(claim => claim.id === leadId
+      ? { ...claim, adminHomeownerContacts: [savedContact, ...(claim.adminHomeownerContacts || [])] }
+      : claim));
+    setLeads(prev => prev.map(lead => lead.id === leadId
+      ? { ...lead, adminHomeownerContacts: [savedContact, ...(lead.adminHomeownerContacts || [])] }
+      : lead));
+    return true;
   };
 
   const fetchTeamMembers = async () => {
@@ -1322,7 +1504,17 @@ export default function App() {
                 Super Admin
               </span>
               <div className="border-l border-gray-200 pl-3">
-                <NotificationBell userId={session.user.id} organizationId={activeOrganization?.id} onNotificationClick={handleNotificationClick} />
+                <NotificationBell
+                  userId={session.user.id}
+                  organizationId={activeOrganization?.id}
+                  onNotificationClick={handleNotificationClick}
+                  callReminderLeads={insuranceClaims}
+                  onCallReminderClick={handleNavigateToInsuranceClaim}
+                  callAlertsEnabled
+                  homeownerReminderLeads={insuranceClaims}
+                  onHomeownerReminderClick={handleNavigateToInsuranceClaim}
+                  homeownerAlertsEnabled
+                />
               </div>
             </div>
           </div>
@@ -1429,7 +1621,12 @@ export default function App() {
                 </select>
               </label>}
               <div className="border-l border-gray-200 pl-4">
-                <NotificationBell userId={session.user.id} organizationId={activeOrganization?.id} onNotificationClick={handleNotificationClick} />
+                <NotificationBell
+                  userId={session.user.id}
+                  organizationId={activeOrganization?.id}
+                  onNotificationClick={handleNotificationClick}
+                  callReminderLeads={[]}
+                />
               </div>
             </div>
           </div>
@@ -1504,6 +1701,8 @@ export default function App() {
                 onCreateFormOpened={() => setOpenClaimFormOnEnter(false)}
                 onMoveProject={handleMoveProject}
                 insuranceCompanies={availableInsuranceCompanies}
+                onSaveAdminClaimRecord={handleSaveAdminClaimRecord}
+                onAddAdminHomeownerContact={handleAddAdminHomeownerContact}
               />
             </ErrorBoundary>
           )}

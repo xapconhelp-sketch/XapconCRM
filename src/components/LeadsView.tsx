@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { eligibleCaseMembers } from "../lib/teamAccess.js";
 import { formatTimelineDate, getDaysSinceLastUpdate } from "../lib/caseActivity";
-import { Lead, TimelineEvent, DocumentItem, TeamMember } from "../types";
+import { AdminClaimRecord, AdminHomeownerContact, Lead, TimelineEvent, DocumentItem, TeamMember } from "../types";
 import { 
   Users, 
   MapPin, 
@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Sparkles,
   BookOpen,
   ShieldCheck,
@@ -44,6 +45,416 @@ const DAMAGE_TYPES = [
   "Hurricane Damage"
 ];
 
+const SENT_DOCUMENT_OPTIONS = [
+  "Suplemento",
+  "Estimado",
+  "LOR",
+  "Cont. Paneles",
+  "Foto Reporte",
+  "Inv. Final",
+  "COC",
+  "W9",
+];
+const HOMEOWNER_CONTACT_CHANNELS: { value: AdminHomeownerContact["channels"][number]; label: string }[] = [
+  { value: "call", label: "Llamada" },
+  { value: "email", label: "Correo electrónico" },
+  { value: "sms", label: "Mensaje de texto (SMS)" },
+];
+
+function localDateInputValue() {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${today.getFullYear()}-${month}-${day}`;
+}
+
+function formatAdminDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return "Fecha no disponible";
+  return new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "short", year: "numeric" })
+    .format(new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12));
+}
+
+function HomeownerServicePanel({
+  lead,
+  onAddContact,
+}: {
+  lead: Lead;
+  onAddContact: (leadId: string, contact: Omit<AdminHomeownerContact, "id" | "createdAt">) => Promise<boolean>;
+}) {
+  const [contactedAt, setContactedAt] = useState(localDateInputValue);
+  const [channels, setChannels] = useState<AdminHomeownerContact["channels"]>([]);
+  const [note, setNote] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const contacts = lead.adminHomeownerContacts || [];
+
+  useEffect(() => {
+    setContactedAt(localDateInputValue());
+    setChannels([]);
+    setNote("");
+    setMessage("");
+  }, [lead.id, contacts.length]);
+
+  const toggleChannel = (channel: AdminHomeownerContact["channels"][number]) => {
+    setChannels(current => current.includes(channel)
+      ? current.filter(item => item !== channel)
+      : [...current, channel]);
+    setMessage("");
+  };
+
+  const saveContact = async () => {
+    if (!contactedAt || channels.length === 0) {
+      setMessage("Indica la fecha y al menos un canal de contacto.");
+      return;
+    }
+    setIsSaving(true);
+    setMessage("");
+    try {
+      const saved = await onAddContact(lead.id, { contactedAt, channels, note: note.trim() });
+      setMessage(saved ? "Contacto registrado" : "No se pudo guardar el contacto");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <section className="rounded-xl border border-[#DCE4EB] bg-white p-3.5 sm:p-4" aria-label="Contacto HO">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-bold text-[#102A46]">Contacto HO</h3>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-[minmax(150px,0.7fr)_minmax(220px,1.3fr)]">
+        <label className="block">
+          <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Fecha del contacto</span>
+          <input
+            type="date"
+            value={contactedAt}
+            max={localDateInputValue()}
+            onChange={event => { setContactedAt(event.target.value); setMessage(""); }}
+            className="w-full rounded-lg border border-[#DCE4EB] bg-white px-3 py-2 text-xs text-[#102A46] outline-none focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15"
+          />
+        </label>
+        <div>
+          <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Canal utilizado</span>
+          <div className="flex flex-wrap gap-2">
+            {HOMEOWNER_CONTACT_CHANNELS.map(channel => (
+              <label key={channel.value} className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] transition-colors ${channels.includes(channel.value) ? "border-[#B9A16B] bg-[#F8F3E7] text-[#664A14]" : "border-[#DCE4EB] bg-white text-[#465D70] hover:bg-[#F4F6F8]"}`}>
+                <input
+                  type="checkbox"
+                  checked={channels.includes(channel.value)}
+                  onChange={() => toggleChannel(channel.value)}
+                  className="h-3.5 w-3.5 accent-[#8C6A22]"
+                />
+                {channel.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <label className="mt-3 block">
+        <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Nota del contacto <span className="font-normal text-slate-400">(opcional)</span></span>
+        <textarea
+          value={note}
+          onChange={event => { setNote(event.target.value); setMessage(""); }}
+          rows={2}
+          maxLength={2000}
+          placeholder="Resumen de la llamada, correo o mensaje…"
+          className="w-full resize-y rounded-lg border border-[#DCE4EB] px-3 py-2 text-xs text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15"
+        />
+      </label>
+
+      <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+        {message && <span role="status" className={`text-[11px] ${message === "Contacto registrado" ? "text-emerald-700" : "text-amber-700"}`}>{message}</span>}
+        <button type="button" onClick={saveContact} disabled={isSaving} className="rounded-lg bg-[#102A46] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-[#183B60] disabled:cursor-wait disabled:opacity-60">
+          {isSaving ? "Guardando…" : "Registrar contacto"}
+        </button>
+      </div>
+
+      {contacts.length > 0 && (
+        <div className="mt-3 border-t border-[#E6ECF1] pt-3">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#566A7E]">Registros guardados</p>
+          <ul className="space-y-2">
+            {contacts.map(contact => (
+              <li key={contact.id} className="rounded-lg bg-[#F7F8FA] px-3 py-2">
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <span className="text-[11px] font-bold text-[#102A46]">{formatAdminDate(contact.contactedAt)}</span>
+                  <span className="text-[10px] font-medium text-[#8C6A22]">
+                    {HOMEOWNER_CONTACT_CHANNELS.filter(channel => contact.channels.includes(channel.value)).map(channel => channel.label.replace("Mensaje de texto (SMS)", "SMS")).join(" · ")}
+                  </span>
+                </div>
+                {contact.note && <p className="mt-1 whitespace-pre-wrap text-[11px] leading-relaxed text-[#566A7E]">{contact.note}</p>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AdminDocumentsSentPanel({
+  lead,
+  records,
+  onSave,
+}: {
+  lead: Lead;
+  records: AdminClaimRecord[];
+  onSave: (leadId: string, record: Omit<AdminClaimRecord, "id" | "createdAt">) => Promise<boolean>;
+}) {
+  const [lastDocumentsSentAt, setLastDocumentsSentAt] = useState(lead.adminActivity?.lastDocumentsSentAt || "");
+  const [sentDocumentTypes, setSentDocumentTypes] = useState<string[]>(lead.adminActivity?.sentDocumentTypes || []);
+  const [note, setNote] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+
+  useEffect(() => {
+    setLastDocumentsSentAt(lead.adminActivity?.lastDocumentsSentAt || "");
+    setSentDocumentTypes(lead.adminActivity?.sentDocumentTypes || []);
+    setNote("");
+    setSaveMessage("");
+  }, [lead.id, lead.adminActivity]);
+
+  const toggleDocumentType = (value: string) => {
+    setSentDocumentTypes(current => current.includes(value)
+      ? current.filter(item => item !== value)
+      : [...current, value]);
+    setSaveMessage("");
+  };
+
+  const saveActivity = async () => {
+    setIsSaving(true);
+    setSaveMessage("");
+    try {
+      if (!lastDocumentsSentAt || sentDocumentTypes.length === 0) {
+        setSaveMessage("Indica la fecha y al menos un tipo de documento.");
+        return;
+      }
+      const saved = await onSave(lead.id, {
+        type: "documents_sent",
+        date: lastDocumentsSentAt,
+        note: note.trim(),
+        documentTypes: sentDocumentTypes,
+      });
+      setSaveMessage(saved ? "Registro guardado" : "No se pudo guardar el registro");
+      if (saved) setNote("");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <section className="rounded-xl border border-[#DCE4EB] bg-[#FBFCFD] p-3.5 sm:p-4" aria-label="Registro de documentos enviados">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <h3 className="text-sm font-bold text-[#102A46]">Documentos Enviados</h3>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block sm:col-span-2">
+          <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Fecha del envío</span>
+          <input
+            type="date"
+            value={lastDocumentsSentAt}
+            max={localDateInputValue()}
+            onChange={event => { setLastDocumentsSentAt(event.target.value); setSaveMessage(""); }}
+            className="w-full rounded-lg border border-[#DCE4EB] bg-white px-3 py-2 text-xs text-[#102A46] outline-none focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15"
+          />
+        </label>
+      </div>
+
+      <details className="group relative mt-3">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg border border-[#DCE4EB] bg-white px-3 py-2.5 text-xs text-[#102A46] hover:border-[#B9A16B] [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 truncate">
+            <span className="font-semibold">Tipos incluidos en el último envío</span>
+            <span className="ml-2 text-[#718096]">{sentDocumentTypes.length ? `${sentDocumentTypes.length} seleccionados` : "Seleccionar uno o varios"}</span>
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-[#664A14] transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="absolute left-0 right-0 z-20 mt-1 grid grid-cols-2 gap-1 rounded-lg border border-[#DCE4EB] bg-white p-2 shadow-lg sm:grid-cols-4">
+          {SENT_DOCUMENT_OPTIONS.map(option => (
+            <label key={option} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs text-[#33485B] hover:bg-[#F4F6F8]">
+              <input
+                type="checkbox"
+                checked={sentDocumentTypes.includes(option)}
+                onChange={() => toggleDocumentType(option)}
+                className="h-3.5 w-3.5 accent-[#8C6A22]"
+              />
+              {option}
+            </label>
+          ))}
+        </div>
+      </details>
+
+      {sentDocumentTypes.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Tipos seleccionados">
+          {sentDocumentTypes.map(type => <span key={type} className="rounded-full border border-[#E6D8B3] bg-[#F8F3E7] px-2 py-0.5 text-[10px] font-medium text-[#664A14]">{type}</span>)}
+        </div>
+      )}
+
+      <label className="mt-3 block">
+        <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Nota del envío <span className="font-normal text-slate-400">(opcional)</span></span>
+        <textarea value={note} onChange={event => { setNote(event.target.value); setSaveMessage(""); }} rows={2} maxLength={2000} placeholder="Destinatario, confirmación de envío u otros detalles…" className="w-full resize-y rounded-lg border border-[#DCE4EB] px-3 py-2 text-xs text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15" />
+      </label>
+
+      <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+        {saveMessage && <span role="status" className={`text-[11px] ${saveMessage === "Registro guardado" ? "text-emerald-700" : "text-amber-700"}`}>{saveMessage}</span>}
+        <button type="button" onClick={saveActivity} disabled={isSaving} className="rounded-lg bg-[#102A46] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-[#183B60] disabled:cursor-wait disabled:opacity-60">
+          {isSaving ? "Guardando…" : "Guardar registro"}
+        </button>
+      </div>
+
+      <AdminClaimRecordsList records={records} type="documents_sent" />
+    </section>
+  );
+}
+
+function InsuranceResponsePanel({
+  lead,
+  records,
+  onSave,
+}: {
+  lead: Lead;
+  records: AdminClaimRecord[];
+  onSave: (leadId: string, record: Omit<AdminClaimRecord, "id" | "createdAt">) => Promise<boolean>;
+}) {
+  const [respondedAt, setRespondedAt] = useState(lead.adminActivity?.lastInsuranceResponseAt || "");
+  const [note, setNote] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setRespondedAt(lead.adminActivity?.lastInsuranceResponseAt || "");
+    setNote("");
+    setMessage("");
+  }, [lead.id, lead.adminActivity]);
+
+  const saveResponse = async () => {
+    if (!respondedAt) {
+      setMessage("Indica la fecha de respuesta.");
+      return;
+    }
+    setIsSaving(true);
+    setMessage("");
+    try {
+      const saved = await onSave(lead.id, {
+        type: "insurance_response",
+        date: respondedAt,
+        note: note.trim(),
+        documentTypes: [],
+      });
+      setMessage(saved ? "Registro guardado" : "No se pudo guardar el registro");
+      if (saved) setNote("");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <section className="rounded-xl border border-[#DCE4EB] bg-[#FBFCFD] p-3.5 sm:p-4" aria-label="Última Respuesta Aseguranza o Ajustador">
+      <h3 className="mb-3 text-sm font-bold text-[#102A46]">Última Respuesta Aseguranza o Ajustador</h3>
+      <label className="block">
+        <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Fecha de la respuesta</span>
+        <input type="date" value={respondedAt} max={localDateInputValue()} onChange={event => { setRespondedAt(event.target.value); setMessage(""); }} className="w-full rounded-lg border border-[#DCE4EB] bg-white px-3 py-2 text-xs text-[#102A46] outline-none focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15 sm:max-w-sm" />
+      </label>
+      <label className="mt-3 block">
+        <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Detalle de la respuesta <span className="font-normal text-slate-400">(opcional)</span></span>
+        <textarea value={note} onChange={event => { setNote(event.target.value); setMessage(""); }} rows={3} maxLength={2000} placeholder="Resumen de la respuesta del seguro o ajustador…" className="w-full resize-y rounded-lg border border-[#DCE4EB] px-3 py-2 text-xs text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15" />
+      </label>
+      <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+        {message && <span role="status" className={`text-[11px] ${message === "Registro guardado" ? "text-emerald-700" : "text-amber-700"}`}>{message}</span>}
+        <button type="button" onClick={saveResponse} disabled={isSaving} className="rounded-lg bg-[#102A46] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-[#183B60] disabled:cursor-wait disabled:opacity-60">{isSaving ? "Guardando…" : "Guardar registro"}</button>
+      </div>
+      <AdminClaimRecordsList records={records} type="insurance_response" />
+    </section>
+  );
+}
+
+function AdminClaimRecordsList({ records, type }: { records: AdminClaimRecord[]; type: AdminClaimRecord["type"] }) {
+  const filteredRecords = records.filter(record => record.type === type);
+  if (filteredRecords.length === 0) return null;
+  return (
+    <div className="mt-4 border-t border-[#E6ECF1] pt-3">
+      <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#566A7E]">Registros guardados</p>
+      <ul className="space-y-2">
+        {filteredRecords.map(record => (
+          <li key={record.id} className="rounded-lg bg-white px-3 py-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-1">
+              <span className="text-[11px] font-bold text-[#102A46]">{formatAdminDate(record.date)}</span>
+              <span className="text-[10px] text-[#718096]">Guardado {formatAdminDate(record.createdAt.slice(0, 10))}</span>
+            </div>
+            {record.documentTypes.length > 0 && <div className="mt-1.5 flex flex-wrap gap-1">{record.documentTypes.map(documentType => <span key={documentType} className="rounded-full border border-[#E6D8B3] bg-[#F8F3E7] px-2 py-0.5 text-[10px] font-medium text-[#664A14]">{documentType}</span>)}</div>}
+            {record.note && <p className="mt-1 whitespace-pre-wrap text-[11px] leading-relaxed text-[#566A7E]">{record.note}</p>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function InsuranceCallsPanel({
+  lead,
+  records,
+  onSave,
+}: {
+  lead: Lead;
+  records: AdminClaimRecord[];
+  onSave: (leadId: string, record: Omit<AdminClaimRecord, "id" | "createdAt">) => Promise<boolean>;
+}) {
+  const [calledAt, setCalledAt] = useState(localDateInputValue);
+  const [note, setNote] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setCalledAt(localDateInputValue());
+    setNote("");
+    setMessage("");
+  }, [lead.id]);
+
+  const saveCall = async () => {
+    if (!calledAt) {
+      setMessage("Indica la fecha de la llamada.");
+      return;
+    }
+    setIsSaving(true);
+    setMessage("");
+    try {
+      const saved = await onSave(lead.id, {
+        type: "insurance_call",
+        date: calledAt,
+        note: note.trim(),
+        documentTypes: [],
+      });
+      setMessage(saved ? "Llamada guardada" : "No se pudo guardar la llamada");
+      if (saved) setNote("");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <section className="rounded-xl border border-[#DCE4EB] bg-[#FBFCFD] p-3.5 sm:p-4" aria-label="Registro de llamadas a la aseguradora">
+      <h3 className="mb-3 text-sm font-bold text-[#102A46]">Llamadas a aseguradoras o ajustadores</h3>
+      <label className="block">
+        <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Fecha de la llamada</span>
+        <input type="date" value={calledAt} max={localDateInputValue()} onChange={event => { setCalledAt(event.target.value); setMessage(""); }} className="w-full rounded-lg border border-[#DCE4EB] bg-white px-3 py-2 text-xs text-[#102A46] outline-none focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15 sm:max-w-sm" />
+      </label>
+      <label className="mt-3 block">
+        <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Nota de la llamada</span>
+        <textarea value={note} onChange={event => { setNote(event.target.value); setMessage(""); }} rows={3} maxLength={2000} placeholder="Con quién hablaste y qué se conversó…" className="w-full resize-y rounded-lg border border-[#DCE4EB] px-3 py-2 text-xs text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15" />
+      </label>
+      <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+        {message && <span role="status" className={`text-[11px] ${message === "Llamada guardada" ? "text-emerald-700" : "text-amber-700"}`}>{message}</span>}
+        <button type="button" onClick={saveCall} disabled={isSaving} className="rounded-lg bg-[#102A46] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-[#183B60] disabled:cursor-wait disabled:opacity-60">{isSaving ? "Guardando…" : "Guardar llamada"}</button>
+      </div>
+      <AdminClaimRecordsList records={records} type="insurance_call" />
+    </section>
+  );
+}
+
 interface LeadsViewProps {
   leads: Lead[];
   selectedLeadId: string;
@@ -65,6 +476,8 @@ interface LeadsViewProps {
   teamMembers?: TeamMember[];
   searchTerm?: string;
   onUpdateLead?: (leadId: string, updatedFields: Partial<Lead>) => Promise<void> | void;
+  onSaveAdminClaimRecord?: (leadId: string, record: Omit<AdminClaimRecord, "id" | "createdAt">) => Promise<boolean>;
+  onAddAdminHomeownerContact?: (leadId: string, contact: Omit<AdminHomeownerContact, "id" | "createdAt">) => Promise<boolean>;
   activeOrganizationId?: string;
   openCreateFormOnEnter?: boolean;
   onCreateFormOpened?: () => void;
@@ -93,6 +506,8 @@ export default function LeadsView({
   teamMembers = [],
   searchTerm = "",
   onUpdateLead,
+  onSaveAdminClaimRecord,
+  onAddAdminHomeownerContact,
   activeOrganizationId,
   openCreateFormOnEnter = false,
   onCreateFormOpened,
@@ -108,7 +523,8 @@ export default function LeadsView({
     return getAllInsuranceCompanyNames(leads);
   }, [insuranceCompanies, leads]);
 
-  const [activeTab, setActiveTab] = useState<"timeline" | "documents" | "finances">("timeline");
+  const [activeTab, setActiveTab] = useState<"timeline" | "documents" | "finances" | "records">("timeline");
+  const [activeRecordTab, setActiveRecordTab] = useState<"nosotros" | "homeowner" | "aseguranza">("nosotros");
 
   useEffect(() => {
     if (userRole === "admin" && activeTab === "finances") setActiveTab("timeline");
@@ -1558,7 +1974,7 @@ export default function LeadsView({
 
           {/* Tab Control */}
           <div className="claim-tabs flex border-b border-[#E6ECF1] pb-1.5 gap-4">
-            {["timeline", "documents", ...(userRole === "contractor" ? ["finances"] : [])].map((tab) => (
+            {["timeline", "documents", ...(isAdminInsuranceView ? ["records"] : []), ...(userRole === "contractor" ? ["finances"] : [])].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
@@ -1569,14 +1985,63 @@ export default function LeadsView({
                     : "border-transparent text-[#566A7E] hover:text-[#102A46]"
                 }`}
               >
-                {tab === "timeline" ? "Línea de Tiempo" : tab === "documents" ? "Documentos" : "Finanzas"}
+                {tab === "timeline" ? "Línea de Tiempo" : tab === "documents" ? "Documentos" : tab === "records" ? "Registros" : "Finanzas"}
               </button>
             ))}
           </div>
 
           {/* Tab content panel */}
           <div className="claim-tab-content w-full space-y-4">
-              
+              {activeTab === "records" && isAdminInsuranceView && selectedLead && (
+                <div className="space-y-4">
+                  <div className="claim-record-tabs flex flex-wrap gap-2 border-b border-[#E6ECF1] pb-2" role="tablist" aria-label="Categorías de registros">
+                    {([
+                      ["nosotros", "Nosotros"],
+                      ["homeowner", "Homeowner"],
+                      ["aseguranza", "Aseguranza"],
+                    ] as const).map(([tab, label]) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeRecordTab === tab}
+                        onClick={() => setActiveRecordTab(tab)}
+                        className={`rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors ${activeRecordTab === tab ? "bg-[#102A46] text-white shadow-sm" : "bg-[#F4F6F8] text-[#566A7E] hover:bg-[#E9EEF2] hover:text-[#102A46]"}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {activeRecordTab === "nosotros" && onSaveAdminClaimRecord && (
+                    <div className="space-y-4">
+                      <AdminDocumentsSentPanel
+                        lead={selectedLead}
+                        records={selectedLead.adminClaimRecords || []}
+                        onSave={onSaveAdminClaimRecord}
+                      />
+                      <InsuranceResponsePanel
+                        lead={selectedLead}
+                        records={selectedLead.adminClaimRecords || []}
+                        onSave={onSaveAdminClaimRecord}
+                      />
+                    </div>
+                  )}
+                  {activeRecordTab === "homeowner" && onAddAdminHomeownerContact && (
+                    <HomeownerServicePanel
+                      lead={selectedLead}
+                      onAddContact={onAddAdminHomeownerContact}
+                    />
+                  )}
+                  {activeRecordTab === "aseguranza" && onSaveAdminClaimRecord && (
+                    <InsuranceCallsPanel
+                      lead={selectedLead}
+                      records={selectedLead.adminClaimRecords || []}
+                      onSave={onSaveAdminClaimRecord}
+                    />
+                  )}
+                </div>
+              )}
+
               {activeTab === "timeline" && (
                 <div className="space-y-4">
                   
