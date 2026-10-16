@@ -1,3 +1,6 @@
+import { RoleSectionIcon } from "./contractor/DesignSystem";
+import { RoleModal } from "./contractor/DesignSystem";
+import { RoleInput, RoleSelect, RoleTextarea } from "./contractor/DesignSystem";
 import React, { useState, useEffect } from "react";
 import { Estimate, EstimateItem, Lead, MaterialItem } from "../types";
 import { useAuth } from "../contexts/AuthContext";
@@ -575,7 +578,7 @@ export default function EstimatorView({
           </div>
 
           <div className="relative">
-            <input
+            <RoleInput
               type="text"
               placeholder="Buscar cotización..."
               value={searchQuery}
@@ -670,7 +673,7 @@ export default function EstimatorView({
             {/* Header / Actions */}
             <div className="no-print flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#DCE4EB]/30 pb-4">
               <div>
-                <h1 className="font-sans text-[26px] font-bold text-[#102A46] tracking-tight">Estimador Retail</h1>
+                <h1 className="font-sans text-[26px] font-bold text-[#102A46] tracking-tight"><RoleSectionIcon name="estimate" />Estimador Retail</h1>
                 <p className="font-sans text-xs text-[#566A7E] mt-1 font-medium">{userRole === 'admin' ? 'Borrador de presupuestos de venta directa (Retail) con validación de márgenes de ganancia.' : 'Cotizaciones de venta directa con los datos y la identidad de tu empresa.'}</p>
               </div>
               <div className="flex gap-2 shrink-0">
@@ -878,7 +881,7 @@ export default function EstimatorView({
                   </div>
                   <div className="flex items-center gap-2 no-print">
                     <span className="font-sans text-xs text-[#566A7E] font-medium">Estado:</span>
-                    <select
+                    <RoleSelect
                       value={activeEstimate.status}
                       onChange={(e) => handleUpdateStatus(e.target.value as any)}
                       className="bg-gray-50 border border-gray-300 rounded-lg py-1 px-2 text-[10px] font-bold text-[#102A46] outline-none cursor-pointer"
@@ -886,7 +889,7 @@ export default function EstimatorView({
                       <option value="Draft">Borrador (Draft)</option>
                       <option value="Sent">Enviado (Sent)</option>
                       <option value="Approved">Aprobado (Approved)</option>
-                    </select>
+                    </RoleSelect>
                   </div>
                 </div>
 
@@ -897,7 +900,7 @@ export default function EstimatorView({
                       <span className="print:hidden">Nombre</span>
                       <span className="hidden print:inline">Name</span>
                     </label>
-                    <input
+                    <RoleInput
                       type="text"
                       value={activeEstimate.clientName}
                       onChange={(e) => handleUpdateHomeownerDetails("clientName", e.target.value)}
@@ -910,7 +913,7 @@ export default function EstimatorView({
                       <span className="print:hidden">Dirección de la Obra</span>
                       <span className="hidden print:inline">Job Address</span>
                     </label>
-                    <input
+                    <RoleInput
                       type="text"
                       value={activeEstimate.address}
                       onChange={(e) => handleUpdateHomeownerDetails("address", e.target.value)}
@@ -923,7 +926,7 @@ export default function EstimatorView({
                       <span className="print:hidden">Teléfono</span>
                       <span className="hidden print:inline">Phone</span>
                     </label>
-                    <input
+                    <RoleInput
                       type="text"
                       value={activeEstimate.clientPhone || ""}
                       onChange={(e) => handleUpdateHomeownerDetails("clientPhone", e.target.value)}
@@ -936,7 +939,7 @@ export default function EstimatorView({
                       <span className="print:hidden">Correo Electrónico</span>
                       <span className="hidden print:inline">Email</span>
                     </label>
-                    <input
+                    <RoleInput
                       type="email"
                       value={activeEstimate.clientEmail || ""}
                       onChange={(e) => handleUpdateHomeownerDetails("clientEmail", e.target.value)}
@@ -974,7 +977,7 @@ export default function EstimatorView({
                   <form onSubmit={handleAddItem} className="no-print p-4 bg-[#F4F6F8] border-b border-[#E6ECF1] grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                     <div className="md:col-span-4 relative">
                       <label className="block text-[10px] font-bold text-[#566A7E] mb-1">Descripción</label>
-                      <input
+                      <RoleInput
                         type="text"
                         value={newDesc}
                         onChange={(e) => {
@@ -1026,7 +1029,7 @@ export default function EstimatorView({
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-[10px] font-bold text-[#566A7E] mb-1">Categoría</label>
-                      <select
+                      <RoleSelect
                         value={newCategory}
                         onChange={(e) => setNewCategory(e.target.value as any)}
                         className="w-full bg-white border border-[#DCE4EB] rounded-lg p-1.5 text-xs text-[#191c1e]"
@@ -1034,11 +1037,11 @@ export default function EstimatorView({
                         <option value="material">Material</option>
                         <option value="labor">Mano de Obra</option>
                         <option value="fee">Tasa / Permiso</option>
-                      </select>
+                      </RoleSelect>
                     </div>
                     <div className="md:col-span-1">
                       <label className="block text-[10px] font-bold text-[#566A7E] mb-1">Cant.</label>
-                      <input
+                      <RoleInput
                         type="text"
                         inputMode="decimal"
                         value={newQty}
@@ -1048,7 +1051,7 @@ export default function EstimatorView({
                     </div>
                     <div className="md:col-span-1">
                       <label className="block text-[10px] font-bold text-[#566A7E] mb-1">Unidad</label>
-                      <input
+                      <RoleInput
                         type="text"
                         value={newUnit}
                         onChange={(e) => setNewUnit(e.target.value)}
@@ -1057,7 +1060,7 @@ export default function EstimatorView({
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-[10px] font-bold text-[#566A7E] mb-1">P. Unitario</label>
-                      <input
+                      <RoleInput
                         type="text"
                         inputMode="decimal"
                         value={newPrice}
@@ -1118,7 +1121,7 @@ export default function EstimatorView({
                           </td>
                           <td className="py-4 px-4 text-center font-semibold">
                             <span className="hidden print:inline">{item.qty}</span>
-                            <input
+                            <RoleInput
                               type="text"
                               inputMode="decimal"
                               value={itemNumericDrafts[`${item.id}:qty`] ?? String(item.qty)}
@@ -1132,7 +1135,7 @@ export default function EstimatorView({
                             <span className="hidden print:inline">${item.unitPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
                             <div className="no-print flex items-center justify-end gap-1">
                               <span className="text-[#566A7E] font-medium">$</span>
-                              <input
+                              <RoleInput
                                 type="text"
                                 inputMode="decimal"
                                 value={itemNumericDrafts[`${item.id}:unitPrice`] ?? String(item.unitPrice)}
@@ -1173,7 +1176,7 @@ export default function EstimatorView({
 
                   {/* Screen Mode: Editable Textarea */}
                   <div className="print:hidden">
-                    <textarea
+                    <RoleTextarea
                       value={activeEstimate.termsAndCommitment ?? DEFAULT_TERMS_TEXT}
                       onChange={(e) => handleUpdateTermsText(e.target.value)}
                       className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/40 rounded-lg p-2.5 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none transition-all font-medium h-36 resize-y"
@@ -1207,7 +1210,7 @@ export default function EstimatorView({
 
                         return (
                           <label key={opt.id} className="flex items-center gap-2.5 cursor-pointer p-1.5 hover:bg-white rounded transition-colors select-none">
-                            <input
+                            <RoleInput
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => handleToggleWarrantyType(opt.id)}
@@ -1365,8 +1368,7 @@ export default function EstimatorView({
 
       {/* Modal: New Estimate Lead Registration */}
       {isAddingLead && (
-        <div className="no-print fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#DCE4EB]/30 rounded-2xl p-6 shadow-2xl max-w-md w-full animate-in fade-in zoom-in duration-150 animate-fade-in select-none">
+        <RoleModal title={"Nueva cotización retail"} onClose={() => setIsAddingLead(false)} busy={false} wide={false} outerProps={{"className": "no-print fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"}} contentProps={{"className": "bg-white border border-[#DCE4EB]/30 rounded-2xl p-6 shadow-2xl max-w-md w-full animate-in fade-in zoom-in duration-150 animate-fade-in select-none"}}>
             <div className="flex items-center justify-between border-b pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <FileCheck2 className="w-5 h-5 text-[#664A14]" />
@@ -1374,6 +1376,7 @@ export default function EstimatorView({
               </div>
               <button
                 onClick={() => setIsAddingLead(false)}
+                aria-label="Cerrar nueva cotización"
                 className="text-[#566A7E] hover:text-red-500 p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
@@ -1383,7 +1386,7 @@ export default function EstimatorView({
             <form onSubmit={handleCreateLeadSubmit} className="space-y-4">
               <div>
                 <label className="block text-[10px] font-bold text-[#566A7E] uppercase tracking-wider mb-1">Nombre Completo *</label>
-                <input
+                <RoleInput
                   type="text"
                   value={newLeadName}
                   onChange={(e) => setNewLeadName(e.target.value)}
@@ -1395,7 +1398,7 @@ export default function EstimatorView({
 
               <div>
                 <label className="block text-[10px] font-bold text-[#566A7E] uppercase tracking-wider mb-1">Dirección de la Propiedad</label>
-                <input
+                <RoleInput
                   type="text"
                   value={newLeadAddress}
                   onChange={(e) => setNewLeadAddress(e.target.value)}
@@ -1407,7 +1410,7 @@ export default function EstimatorView({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-[#566A7E] uppercase tracking-wider mb-1">Teléfono</label>
-                  <input
+                  <RoleInput
                     type="text"
                     value={newLeadPhone}
                     onChange={(e) => setNewLeadPhone(e.target.value)}
@@ -1417,7 +1420,7 @@ export default function EstimatorView({
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[#566A7E] uppercase tracking-wider mb-1">Correo Electrónico</label>
-                  <input
+                  <RoleInput
                     type="email"
                     value={newLeadEmail}
                     onChange={(e) => setNewLeadEmail(e.target.value)}
@@ -1443,8 +1446,7 @@ export default function EstimatorView({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </RoleModal>
       )}
 
       {/* Floating Success Toast */}

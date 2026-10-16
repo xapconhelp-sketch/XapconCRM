@@ -1,3 +1,4 @@
+import { RoleSectionIcon, RoleIconTile } from "./contractor/DesignSystem";
 import React from "react";
 import { Lead } from "../types";
 import {
@@ -42,7 +43,7 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
           <div>
             <p className="mb-1 text-[10px] font-bold uppercase tracking-[.18em] text-[#664A14]">Operación de proyectos</p>
             <h1 className="font-display text-[28px] font-bold tracking-tight text-[#102A46] md:text-[32px]">
-              Pipeline de Producción
+              <RoleSectionIcon name="production" />Pipeline de Producción
             </h1>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-[#718093]">
               Sigue cada expediente por sus etapas y mantén visible el próximo movimiento del equipo.
@@ -99,9 +100,9 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
               <div className="flex-1 space-y-3 overflow-y-auto p-3">
                 {projects.length === 0 ? (
                   <div className="flex min-h-28 flex-col items-center justify-center rounded-2xl border border-dashed border-[#D5DEE5] bg-white/45 px-4 text-center">
-                    <span className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl" style={{ color: column.accent, backgroundColor: column.tint }}>
+                    <RoleIconTile name="production" className="contractor-row-icon mb-2"><span className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl" style={{ color: column.accent, backgroundColor: column.tint }}>
                       <Layers3 className="h-4 w-4" />
-                    </span>
+                    </span></RoleIconTile>
                     <span className="text-[11px] font-medium text-[#8794A1]">Sin expedientes en esta etapa</span>
                   </div>
                 ) : (

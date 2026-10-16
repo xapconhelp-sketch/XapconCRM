@@ -1,3 +1,5 @@
+import { RoleSectionIcon } from "./contractor/DesignSystem";
+import { RoleInput } from "./contractor/DesignSystem";
 import React, { useEffect, useState } from "react";
 import {
   Building2,
@@ -225,7 +227,7 @@ export default function SettingsView({
             <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#E5B688]">
               <ShieldCheck className="h-3.5 w-3.5" /> Centro de control
             </span>
-            <h1 className="mt-4 font-sans text-3xl font-bold tracking-tight sm:text-[2.5rem]">Configuración</h1>
+            <h1 className="mt-4 font-sans text-3xl font-bold tracking-tight sm:text-[2.5rem]"><RoleSectionIcon name="settings" />Configuración</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#D1DCE4]">
               {isContractor
                 ? "Administra tu cuenta, la seguridad y la identidad que distingue a tu empresa en sus documentos."
@@ -270,10 +272,10 @@ export default function SettingsView({
             {selectedTab === "account" && (
               <form onSubmit={handleSaveProfile} className="space-y-6 px-5 py-6 sm:px-8">
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Field label="Nombre completo"><input required value={name} onChange={event => setName(event.target.value)} className={inputClass} autoComplete="name" /></Field>
-                  <Field label="Correo de acceso"><input readOnly value={session?.user.email || profile?.email || ""} className={inputClass} /><span className="mt-1.5 block text-[11px] font-medium normal-case tracking-normal text-[#5C6D7D]">El correo de acceso se administra desde la verificación de tu cuenta.</span></Field>
-                  <Field label="Cargo o función"><input value={jobTitle} onChange={event => setJobTitle(event.target.value)} placeholder={isContractor ? "Propietario, ventas, operaciones…" : "Superadministrador"} className={inputClass} autoComplete="organization-title" /></Field>
-                  <Field label="Tipo de cuenta"><input readOnly value={profile?.role === 'platform_staff' ? 'Colaborador Xapcon (acceso limitado)' : isContractor ? (profile?.role === 'owner' || profile?.role === 'Dueño' ? 'Propietario de empresa' : 'Colaborador de empresa') : 'Superadministrador'} className={inputClass} /></Field>
+                  <Field label="Nombre completo"><RoleInput required value={name} onChange={event => setName(event.target.value)} className={inputClass} autoComplete="name" /></Field>
+                  <Field label="Correo de acceso"><RoleInput readOnly value={session?.user.email || profile?.email || ""} className={inputClass} /><span className="mt-1.5 block text-[11px] font-medium normal-case tracking-normal text-[#5C6D7D]">El correo de acceso se administra desde la verificación de tu cuenta.</span></Field>
+                  <Field label="Cargo o función"><RoleInput value={jobTitle} onChange={event => setJobTitle(event.target.value)} placeholder={isContractor ? "Propietario, ventas, operaciones…" : "Superadministrador"} className={inputClass} autoComplete="organization-title" /></Field>
+                  <Field label="Tipo de cuenta"><RoleInput readOnly value={profile?.role === 'platform_staff' ? 'Colaborador Xapcon (acceso limitado)' : isContractor ? (profile?.role === 'owner' || profile?.role === 'Dueño' ? 'Propietario de empresa' : 'Colaborador de empresa') : 'Superadministrador'} className={inputClass} /></Field>
                 </div>
                 <div className="flex flex-col gap-3 border-t border-[#EDF1F3] pt-5 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs text-[#596D80]">Se actualizará tu perfil en la cuenta y el sistema.</p>
@@ -296,8 +298,8 @@ export default function SettingsView({
                   </div>
                 </div>
                 <div className="grid max-w-2xl gap-5 sm:grid-cols-2">
-                  <Field label="Nueva contraseña"><div className="relative"><input required minLength={8} type={showPassword ? "text" : "password"} value={password} onChange={event => setPassword(event.target.value)} className={`${inputClass} pr-12`} autoComplete="new-password" /><button type="button" aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"} onClick={() => setShowPassword(value => !value)} className="absolute right-3 top-1/2 mt-[0.25rem] -translate-y-1/2 rounded-lg p-1 text-[#596D80] hover:bg-slate-100">{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></Field>
-                  <Field label="Confirmar contraseña"><input required minLength={8} type={showPassword ? "text" : "password"} value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} className={inputClass} autoComplete="new-password" /></Field>
+                  <Field label="Nueva contraseña"><div className="relative"><RoleInput required minLength={8} type={showPassword ? "text" : "password"} value={password} onChange={event => setPassword(event.target.value)} className={`${inputClass} pr-12`} autoComplete="new-password" /><button type="button" aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"} onClick={() => setShowPassword(value => !value)} className="absolute right-3 top-1/2 mt-[0.25rem] -translate-y-1/2 rounded-lg p-1 text-[#596D80] hover:bg-slate-100">{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></Field>
+                  <Field label="Confirmar contraseña"><RoleInput required minLength={8} type={showPassword ? "text" : "password"} value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} className={inputClass} autoComplete="new-password" /></Field>
                 </div>
                 <div className="flex flex-col gap-3 border-t border-[#EDF1F3] pt-5 sm:flex-row sm:items-center sm:justify-between">
                   {securityMessage && <span role="status" className={`text-xs font-semibold ${securityMessage.startsWith("No se pudo") || securityMessage.includes("no coinciden") || securityMessage.includes("al menos") ? "text-rose-600" : "text-emerald-700"}`}>{securityMessage}</span>}
@@ -339,27 +341,27 @@ export default function SettingsView({
               ) : (
                 <form onSubmit={handleSaveBranding} className="space-y-6 px-5 py-6 sm:px-8">
                   <div className="grid gap-5 sm:grid-cols-2">
-                    <Field label="Nombre comercial"><input required value={branding.companyName} onChange={event => updateBranding("companyName", event.target.value)} className={inputClass} /></Field>
-                    <Field label="Correo de empresa"><input type="email" value={branding.companyEmail} onChange={event => updateBranding("companyEmail", event.target.value)} placeholder="info@empresa.com" className={inputClass} /></Field>
-                    <Field label="Teléfono de empresa"><input value={branding.companyPhone} onChange={event => updateBranding("companyPhone", event.target.value)} placeholder="(555) 123-4567" className={inputClass} /></Field>
-                    <Field label="Sitio web"><input value={branding.companyWebsite} onChange={event => updateBranding("companyWebsite", event.target.value)} placeholder="www.empresa.com" className={inputClass} /></Field>
-                    <Field label="Dirección comercial"><input value={branding.companyAddress} onChange={event => updateBranding("companyAddress", event.target.value)} placeholder="Dirección, ciudad, estado y código postal" className={inputClass} /></Field>
-                    <Field label="Número de licencia"><input value={branding.licenseNumber} onChange={event => updateBranding("licenseNumber", event.target.value)} className={inputClass} /></Field>
-                    <Field label="Número de registro"><input value={branding.registrationNumber} onChange={event => updateBranding("registrationNumber", event.target.value)} className={inputClass} /></Field>
-                    <div><span className={labelClass}>Colores de marca</span><div className="mt-1.5 grid grid-cols-2 gap-3">{([['primaryColor', 'Principal'], ['accentColor', 'Acento']] as const).map(([key, title]) => <label key={key} className="flex items-center gap-2 rounded-xl border border-[#DCE4EB] px-3 py-2"><input aria-label={`Color ${title.toLowerCase()}`} type="color" value={branding[key]} onChange={event => updateBranding(key, event.target.value)} className="h-8 w-9 cursor-pointer border-0 bg-transparent p-0" /><span><span className="block text-[10px] font-semibold text-[#596D80]">{title}</span><span className="font-mono text-[11px] font-bold text-[#102A46]">{branding[key].toUpperCase()}</span></span></label>)}</div></div>
+                    <Field label="Nombre comercial"><RoleInput required value={branding.companyName} onChange={event => updateBranding("companyName", event.target.value)} className={inputClass} /></Field>
+                    <Field label="Correo de empresa"><RoleInput type="email" value={branding.companyEmail} onChange={event => updateBranding("companyEmail", event.target.value)} placeholder="info@empresa.com" className={inputClass} /></Field>
+                    <Field label="Teléfono de empresa"><RoleInput value={branding.companyPhone} onChange={event => updateBranding("companyPhone", event.target.value)} placeholder="(555) 123-4567" className={inputClass} /></Field>
+                    <Field label="Sitio web"><RoleInput value={branding.companyWebsite} onChange={event => updateBranding("companyWebsite", event.target.value)} placeholder="www.empresa.com" className={inputClass} /></Field>
+                    <Field label="Dirección comercial"><RoleInput value={branding.companyAddress} onChange={event => updateBranding("companyAddress", event.target.value)} placeholder="Dirección, ciudad, estado y código postal" className={inputClass} /></Field>
+                    <Field label="Número de licencia"><RoleInput value={branding.licenseNumber} onChange={event => updateBranding("licenseNumber", event.target.value)} className={inputClass} /></Field>
+                    <Field label="Número de registro"><RoleInput value={branding.registrationNumber} onChange={event => updateBranding("registrationNumber", event.target.value)} className={inputClass} /></Field>
+                    <div><span className={labelClass}>Colores de marca</span><div className="mt-1.5 grid grid-cols-2 gap-3">{([['primaryColor', 'Principal'], ['accentColor', 'Acento']] as const).map(([key, title]) => <label key={key} className="flex items-center gap-2 rounded-xl border border-[#DCE4EB] px-3 py-2"><RoleInput aria-label={`Color ${title.toLowerCase()}`} type="color" value={branding[key]} onChange={event => updateBranding(key, event.target.value)} className="h-8 w-9 cursor-pointer border-0 bg-transparent p-0" /><span><span className="block text-[10px] font-semibold text-[#596D80]">{title}</span><span className="font-mono text-[11px] font-bold text-[#102A46]">{branding[key].toUpperCase()}</span></span></label>)}</div></div>
                   </div>
                   <fieldset className="rounded-xl border border-[#DCE4EB] p-4 space-y-3">
                     <legend className="px-2 text-xs font-bold text-[#102A46]">Valores predeterminados del estimador retail</legend>
                     <div className="grid gap-5 sm:grid-cols-2">
-                      <Field label="Impuesto (%)"><input required type="number" min="0" max="100" step="0.01" value={branding.retailTaxPercent} onChange={event => updateBranding('retailTaxPercent', event.target.value)} className={inputClass} /></Field>
-                      <Field label="Permisos y tasas (USD)"><input required type="number" min="0" step="0.01" value={branding.retailDefaultFee} onChange={event => updateBranding('retailDefaultFee', event.target.value)} className={inputClass} /></Field>
+                      <Field label="Impuesto (%)"><RoleInput required type="number" min="0" max="100" step="0.01" value={branding.retailTaxPercent} onChange={event => updateBranding('retailTaxPercent', event.target.value)} className={inputClass} /></Field>
+                      <Field label="Permisos y tasas (USD)"><RoleInput required type="number" min="0" step="0.01" value={branding.retailDefaultFee} onChange={event => updateBranding('retailDefaultFee', event.target.value)} className={inputClass} /></Field>
                     </div>
                     <p className="text-xs font-normal normal-case tracking-normal text-[#596D80]">Se aplican a nuevas cotizaciones. Las cotizaciones guardadas conservan sus valores.</p>
                   </fieldset>
                   <div className="flex flex-col gap-4 rounded-2xl border border-dashed border-[#DCE4EB] bg-[#F8FAFB] p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 items-center gap-4">
                       <div className="flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#E2E8EC] bg-white p-2">{branding.logoFile ? <span className="px-2 text-center text-[10px] font-semibold text-[#102A46]">{branding.logoFile.name}</span> : activeOrganization.logo_url ? <img src={activeOrganization.logo_url} alt="Logo actual de la empresa" className="max-h-full max-w-full object-contain" /> : <span className="text-[10px] font-semibold text-[#5C6D7D]">Sin logo</span>}</div>
-                      <Field label="Logo para cotizaciones"><input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={event => updateBranding("logoFile", event.target.files?.[0] || undefined)} className="mt-1 block max-w-full text-xs font-medium normal-case tracking-normal text-[#465D70] file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-bold file:text-[#102A46]" /><span className="mt-1 block text-[10px] font-medium normal-case tracking-normal">PNG, JPG, WEBP o SVG.</span></Field>
+                      <Field label="Logo para cotizaciones"><RoleInput type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={event => updateBranding("logoFile", event.target.files?.[0] || undefined)} className="mt-1 block max-w-full text-xs font-medium normal-case tracking-normal text-[#465D70] file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-bold file:text-[#102A46]" /><span className="mt-1 block text-[10px] font-medium normal-case tracking-normal">PNG, JPG, WEBP o SVG.</span></Field>
                     </div>
                     <button type="button" onClick={() => updateBranding("logoFile", undefined)} disabled={!branding.logoFile} className="inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-[#596D80] hover:bg-white disabled:hidden"><X className="h-3.5 w-3.5" />Quitar selección</button>
                   </div>

@@ -1,4 +1,12 @@
+import IllustratedIcon from './contractor/IllustratedIcon';
+import { RoleInput, RoleSelect } from "./contractor/DesignSystem";
 import React from "react";
+import { Button } from './ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from './ui/empty';
+import { RoleField, RoleFieldGroup } from './contractor/DesignSystem';
+import { RoleModal } from './contractor/DesignSystem';
 import {
   AlarmClock,
   ArrowRight,
@@ -6,11 +14,7 @@ import {
   Check,
   CheckCheck,
   ChevronRight,
-  CircleAlert,
   ClipboardList,
-  Clock3,
-  HardHat,
-  MapPin,
   Plus,
   RotateCcw,
   X,
@@ -79,6 +83,7 @@ export default function ContractorDashboard({
   teamMembers,
   onNavigateToView,
   onNavigateToLead,
+  onCreateClaim,
   onToggleTask,
   onAddTask,
 }: ContractorDashboardProps) {
@@ -170,45 +175,36 @@ export default function ContractorDashboard({
     }
   };
 
-  const dayGreeting = new Date().getHours() < 12 ? "Buenos días" : new Date().getHours() < 19 ? "Buenas tardes" : "Buenas noches";
 
   return (
     <div className={composerOnly ? "contents" : "contractor-dashboard crm-workspace flex-1 min-h-0 overflow-y-auto bg-[#F1F4F7]"} aria-label={composerOnly ? "Crear tareas y actividades" : "Dashboard de contratistas"}>
       {composerOnly && <div className="flex shrink-0 flex-wrap justify-end gap-2 p-0"><button onClick={() => openComposer("task", "task")} className="whitespace-nowrap rounded-lg bg-white px-3.5 py-2.5 text-[11px] font-bold text-[#102A46] shadow-sm transition hover:bg-[#F4EEDB]">Nueva tarea</button><button onClick={() => openComposer("activity", "inspection")} className="whitespace-nowrap rounded-lg border border-white/25 bg-white/[0.04] px-3.5 py-2.5 text-[11px] font-bold text-white transition hover:border-white/45 hover:bg-white/[0.08]">Agendar actividad</button></div>}
       {!composerOnly && <>
       <div className="contractor-dashboard-inner mx-auto w-full max-w-[1500px] space-y-5 p-4 sm:p-6 xl:p-8">
-        <section className="contractor-hero relative isolate overflow-hidden rounded-[24px] bg-[#102A46] px-5 py-6 text-white shadow-[0_18px_48px_rgba(23,49,74,0.16)] sm:px-8 sm:py-8">
-          <div className="pointer-events-none absolute -right-8 -top-20 h-64 w-64 rounded-full border border-white/10" />
-          <div className="pointer-events-none absolute -right-1 -top-12 h-48 w-48 rounded-full border border-white/10" />
-          <div className="pointer-events-none absolute bottom-0 right-0 h-1 w-2/5 bg-gradient-to-l from-[#8C6A22] to-transparent" />
-          <div className="contractor-hero-content relative flex flex-col gap-7 xl:flex-row xl:items-end xl:justify-between">
-            <div>
-              <div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#D7A47B]">
-                <HardHat className="h-4 w-4" /> Centro de operaciones
-              </div>
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-[38px]">{dayGreeting}, equipo.</h1>
-            </div>
-            <div className="contractor-metrics grid grid-cols-3 gap-2 sm:gap-3">
-              <SummaryMetric label="Para hoy" value={taskCountToday} icon={<CalendarDays className="h-4 w-4" />} />
-              <SummaryMetric label="Vencidas" value={lateCount} icon={<CircleAlert className="h-4 w-4" />} alert={lateCount > 0} />
-              <SummaryMetric label="Agenda · 7 días" value={scheduled.length} icon={<Clock3 className="h-4 w-4" />} />
-            </div>
-          </div>
+        <div className="contractor-overview">
+        <header className="contractor-page-heading contractor-welcome">
+          <div><h1>Panel de trabajo</h1></div>
+          <div className="contractor-welcome-action"><Button onClick={onCreateClaim}><Plus data-icon="inline-start" />Nuevo reclamo</Button></div>
+        </header>
+        <section className="contractor-metrics" aria-label="Resumen de trabajo">
+          <SummaryMetric label="Reclamos activos" value={activeClaims.length} icon={<IllustratedIcon name="claim" />} />
+          <SummaryMetric label="Tareas para hoy" value={taskCountToday} icon={<IllustratedIcon name="calendar" />} />
+          <SummaryMetric label="Tareas vencidas" value={lateCount} icon={<IllustratedIcon name="alert" />} alert={lateCount > 0} />
+          <SummaryMetric label="Agenda · 7 días" value={scheduled.length} icon={<IllustratedIcon name="calendar" />} />
         </section>
+        </div>
 
         <section className="contractor-actionbar flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" aria-label="Acciones rápidas">
-          <div>
+          <div className="contractor-day-controls">
+            <div>
             <h2 className="text-lg font-bold tracking-tight text-[#102A46]">Mi día</h2>
             <p className="text-xs text-slate-500">Tareas, visitas y seguimientos de tu empresa.</p>
-            <div className="contractor-scope mt-2 flex gap-2"><button onClick={() => setTaskScope('mine')} className={`rounded-lg px-3 py-1 text-xs ${taskScope === 'mine' ? 'bg-[#102A46] text-white' : 'border bg-white'}`}>Mis tareas</button><button onClick={() => setTaskScope('all')} className={`rounded-lg px-3 py-1 text-xs ${taskScope === 'all' ? 'bg-[#102A46] text-white' : 'border bg-white'}`}>Toda la empresa</button></div>
+            </div>
+            <ToggleGroup type="single" value={taskScope} onValueChange={value => { if (value === 'mine' || value === 'all') setTaskScope(value); }} className="contractor-scope mt-3" size="sm" aria-label="Mostrar tareas"><ToggleGroupItem value="mine">Mis tareas</ToggleGroupItem><ToggleGroupItem value="all">Toda la empresa</ToggleGroupItem></ToggleGroup>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => openComposer("task", "task")} className="inline-flex items-center gap-2 rounded-xl bg-[#102A46] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#193856] focus:outline-none focus:ring-2 focus:ring-[#8C6A22] focus:ring-offset-2">
-              <Plus className="h-4 w-4" /> Nueva tarea
-            </button>
-            <button onClick={() => openComposer("activity", "inspection")} className="inline-flex items-center gap-2 rounded-xl border border-[#D5DDE1] bg-white px-4 py-2.5 text-xs font-bold text-[#102A46] transition hover:border-[#8C6A22] hover:bg-[#FBF9F2] focus:outline-none focus:ring-2 focus:ring-[#8C6A22] focus:ring-offset-2">
-              <CalendarDays className="h-4 w-4 text-[#755613]" /> Agendar actividad
-            </button>
+            <Button variant="outline" onClick={() => openComposer("task", "task")}><Plus data-icon="inline-start" />Nueva tarea</Button>
+            <Button variant="outline" onClick={() => openComposer("activity", "inspection")}><CalendarDays data-icon="inline-start" />Agendar actividad</Button>
           </div>
         </section>
 
@@ -312,30 +308,29 @@ export default function ContractorDashboard({
             )}
           </section>
 
-          <section className="contractor-shortcuts flex flex-col justify-between rounded-2xl border border-[#DCE5E8] bg-[#EAF0F2] p-5 sm:p-6 xl:col-span-5" aria-label="Atajos de operación">
-            <div>
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2F5270] shadow-sm"><MapPin className="h-5 w-5" /></div>
-              <h2 className="text-sm font-bold text-[#102A46]">Mantén los proyectos en movimiento</h2>
-              <p className="mt-2 text-xs leading-5 text-[#5E707A]">Registra el siguiente paso de cada reclamo. El equipo verá fechas, responsables y actividades desde el mismo expediente.</p>
-            </div>
-            <button onClick={() => onNavigateToView(ViewType.INSURANCE_CLAIM)} className="mt-5 inline-flex items-center justify-between rounded-xl bg-white px-4 py-3 text-xs font-bold text-[#102A46] shadow-sm transition hover:shadow-md">
-              Abrir reclamos <ArrowRight className="h-4 w-4 text-[#755613]" />
-            </button>
-          </section>
+          <Card className="contractor-progress">
+            <CardHeader><CardTitle>Estado de tus proyectos</CardTitle><CardDescription>Distribución de los reclamos activos.</CardDescription></CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              {activeClaims.length === 0 ? <p className="text-sm text-muted-foreground">Tus proyectos aparecerán aquí al registrar el primer reclamo.</p> : Array.from(new Set(activeClaims.map(claim => claim.status))).map(status => {
+                const count = activeClaims.filter(claim => claim.status === status).length;
+                return <div className="contractor-progress-row" key={status}><span>{status}</span><strong>{count}</strong><div className="contractor-progress-track" role="meter" aria-label={status} aria-valuenow={count} aria-valuemin={0} aria-valuemax={activeClaims.length}><span style={{ width: `${count / activeClaims.length * 100}%` }} /></div></div>;
+              })}
+            </CardContent>
+            <CardFooter><Button variant="ghost" onClick={() => onNavigateToView(ViewType.PRODUCTION)}>Ver producción<ArrowRight data-icon="inline-end" /></Button></CardFooter>
+          </Card>
         </div>
       </div>
 
       </>}
       {modalMode && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#102333]/55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setModalMode(null); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="composer-title" className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
+        <RoleModal title={modalMode === "task" ? "Nueva tarea" : "Agendar actividad"} onClose={() => setModalMode(null)} busy={saving} wide={false} outerProps={{"className": "fixed inset-0 z-[100] flex items-end justify-center bg-[#102333]/55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4", "role": "presentation", "onMouseDown": (event) => { if (event.target === event.currentTarget && !saving) setModalMode(null); }}} contentProps={{"role": "dialog", "aria-modal": "true", "aria-labelledby": "composer-title", "className": "max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"}}>
             <div className="flex items-start justify-between border-b border-[#EEF2F5] px-5 py-4 sm:px-6">
-              <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#755613]">{modalMode === "task" ? "Seguimiento" : "Agenda de trabajo"}</p><h2 id="composer-title" className="mt-1 text-lg font-bold text-[#102A46]">{modalMode === "task" ? "Nueva tarea" : "Agendar actividad"}</h2></div>
+              <div>{composerOnly && <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#755613]">{modalMode === "task" ? "Seguimiento" : "Agenda de trabajo"}</p>}<h2 id="composer-title" className={`${composerOnly ? "mt-1 " : ""}text-lg font-bold text-[#102A46]`}>{modalMode === "task" ? "Nueva tarea" : "Agendar actividad"}</h2></div>
               <button type="button" onClick={() => setModalMode(null)} disabled={saving} aria-label="Cerrar" className="rounded-lg p-2 text-slate-500 hover:bg-[#F1F4F7]"><X className="h-4 w-4" /></button>
             </div>
-            <form onSubmit={submit} className="space-y-4 px-5 py-5 sm:px-6">
+            <form onSubmit={submit} className="space-y-4 px-5 py-5 sm:px-6"><RoleFieldGroup>
               {modalMode === "task" ? (
-                <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Tipo de tarea o actividad</span><select value={kind === "task" ? category : kind} onChange={(event) => {
+                <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Tipo de tarea o actividad</span><RoleSelect value={kind === "task" ? category : kind} onChange={(event) => {
                   const value = event.target.value;
                   if (value === "general" || value === "pending_document" || value === "visit_homeowner" || value === "call_homeowner" || value === "call_adjuster") {
                     setCategory(value);
@@ -350,44 +345,36 @@ export default function ContractorDashboard({
                 }} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15">
                   <optgroup label="Tareas"><option value="general">Tarea general</option><option value="pending_document">Documento pendiente</option><option value="visit_homeowner">Visitar HO</option><option value="call_homeowner">Llamar HO</option><option value="call_adjuster">Llamar ADJ</option></optgroup>
                   <optgroup label="Actividades agendadas"><option value="inspection">Inspección</option><option value="adjuster_meeting">Cita con ajustador</option><option value="installation">Instalación</option></optgroup>
-                </select></label>
+                </RoleSelect></RoleField>
               ) : (
-                <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Tipo de actividad</span><select value={kind} onChange={(event) => { const next = event.target.value as Exclude<NonNullable<TaskItem["kind"]>, "task">; setKind(next); if (!title || Object.values(kindLabels).includes(title)) setTitle(kindLabels[next]); }} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15"><option value="inspection">Inspección</option><option value="adjuster_meeting">Cita con ajustador</option><option value="installation">Instalación</option></select></label>
+                <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Tipo de actividad</span><RoleSelect value={kind} onChange={(event) => { const next = event.target.value as Exclude<NonNullable<TaskItem["kind"]>, "task">; setKind(next); if (!title || Object.values(kindLabels).includes(title)) setTitle(kindLabels[next]); }} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15"><option value="inspection">Inspección</option><option value="adjuster_meeting">Cita con ajustador</option><option value="installation">Instalación</option></RoleSelect></RoleField>
               )}
-              <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Reclamo</span><select value={claimId} onChange={(event) => setClaimId(event.target.value)} required className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15"><option value="">Selecciona un reclamo</option>{activeClaims.map((claim) => <option key={claim.id} value={claim.id}>{claim.name}{claim.address ? ` · ${claim.address}` : ""}</option>)}</select></label>
-              <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Descripción</span><input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={120} placeholder={kind === "task" ? "Ej. Confirmar fecha con el ajustador" : `Ej. ${kindLabels[kind]} inicial`} className="w-full rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></label>
+              <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Reclamo</span><RoleSelect value={claimId} onChange={(event) => setClaimId(event.target.value)} required className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15"><option value="">Selecciona un reclamo</option>{activeClaims.map((claim) => <option key={claim.id} value={claim.id}>{claim.name}{claim.address ? ` · ${claim.address}` : ""}</option>)}</RoleSelect></RoleField>
+              <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Descripción</span><RoleInput value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={120} placeholder={kind === "task" ? "Ej. Confirmar fecha con el ajustador" : `Ej. ${kindLabels[kind]} inicial`} className="w-full rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></RoleField>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">{kind === "task" ? "Fecha límite" : "Fecha"}</span><input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} required={kind !== "task"} className="w-full rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></label>
-                {kind === "task" ? <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Prioridad</span><select value={priority} onChange={(event) => setPriority(event.target.value as typeof priority)} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15"><option value="high">Alta</option><option value="medium">Normal</option><option value="low">Baja</option></select></label> : <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Hora</span><input type="time" value={scheduledTime} onChange={(event) => setScheduledTime(event.target.value)} required className="w-full rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></label>}
+                <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">{kind === "task" ? "Fecha límite" : "Fecha"}</span><RoleInput type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} required={kind !== "task"} className="w-full rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></RoleField>
+                {kind === "task" ? <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Prioridad</span><RoleSelect value={priority} onChange={(event) => setPriority(event.target.value as typeof priority)} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15"><option value="high">Alta</option><option value="medium">Normal</option><option value="low">Baja</option></RoleSelect></RoleField> : <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Hora</span><RoleInput type="time" value={scheduledTime} onChange={(event) => setScheduledTime(event.target.value)} required className="w-full rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></RoleField>}
               </div>
-              <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Asignar a</span><select value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15"><option value="">Sin asignar</option>{assignmentMembers.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label>
+              <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Asignar a</span><RoleSelect value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15"><option value="">Sin asignar</option>{assignmentMembers.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</RoleSelect></RoleField>
               {formError && <p role="alert" className="rounded-xl bg-[#FCEDEA] px-3 py-2.5 text-xs font-medium text-[#B5493B]">{formError}</p>}
               <div className="flex flex-col-reverse gap-2 border-t border-[#EEF2F5] pt-4 sm:flex-row sm:justify-end">
                 <button type="button" onClick={() => setModalMode(null)} disabled={saving} className="rounded-xl px-4 py-2.5 text-xs font-bold text-[#465D70] hover:bg-[#F1F4F7]">Cancelar</button>
                 <button type="submit" disabled={saving || activeClaims.length === 0} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#102A46] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#193856] disabled:cursor-not-allowed disabled:opacity-50">{saving ? <><AlarmClock className="h-4 w-4 animate-pulse" /> Guardando…</> : <><Check className="h-4 w-4" /> {kind === "task" ? "Guardar tarea" : "Guardar actividad"}</>}</button>
               </div>
               {activeClaims.length === 0 && <p className="text-center text-[11px] text-slate-500">Necesitas un reclamo activo para registrar una actividad.</p>}
-            </form>
-          </section>
-        </div>
+            </RoleFieldGroup></form>
+          </RoleModal>
       )}
     </div>
   );
 }
 
 function SummaryMetric({ label, value, icon, alert = false }: { label: string; value: number; icon: React.ReactNode; alert?: boolean }) {
-  return <div className={`contractor-summary min-w-[86px] rounded-xl border px-3 py-2.5 sm:min-w-[110px] sm:px-4 ${alert ? "border-[#E9A196]/35 bg-[#8D3D34]/35" : "border-white/10 bg-white/[0.07]"}`}>
-    <div className={`flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wide sm:text-[10px] ${alert ? "text-[#FFD0C7]" : "text-blue-100/70"}`}>{icon}<span className="truncate">{label}</span></div>
-    <div className={`mt-1 text-2xl font-semibold tracking-tight sm:text-[28px] ${alert ? "text-[#FFD0C7]" : "text-white"}`}>{value}</div>
-  </div>;
+  return <Card className="contractor-summary" data-alert={alert}><div className="contractor-summary-top">{icon}<span className="contractor-summary-value">{value}</span></div><p className="contractor-summary-label">{label}</p></Card>;
 }
 
 function EmptyState({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) {
-  return <div className="contractor-empty flex min-h-[150px] flex-col items-center justify-center px-6 py-8 text-center">
-    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#F1F4F7] text-[#596D78]">{icon}</div>
-    <p className="text-xs font-bold text-[#102A46]">{title}</p>
-    <p className="mt-1 max-w-[280px] text-[11px] leading-5 text-slate-500">{detail}</p>
-  </div>;
+  return <Empty className="contractor-empty"><EmptyHeader><EmptyMedia variant="icon">{icon}</EmptyMedia><EmptyTitle>{title}</EmptyTitle><EmptyDescription>{detail}</EmptyDescription></EmptyHeader></Empty>;
 }
 
 function formatTime(value: string) {

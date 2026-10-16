@@ -1,3 +1,6 @@
+import { RoleSectionIcon, RoleIconTile } from "./contractor/DesignSystem";
+import { RoleModal } from "./contractor/DesignSystem";
+import { RoleInput, RoleTextarea } from "./contractor/DesignSystem";
 import React, { useEffect, useMemo, useState } from "react";
 import { Lead } from "../types";
 import {
@@ -253,14 +256,14 @@ export default function InsuranceDirectoryView({
   };
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto bg-[#F5F7FA] text-slate-800">
+    <div className="insurance-directory-page flex-1 min-h-0 overflow-y-auto bg-[#F5F7FA] text-slate-800">
       <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
-        <header className="relative overflow-hidden rounded-[26px] bg-[#142B40] px-5 py-4 text-white shadow-[0_18px_50px_-26px_rgba(20,43,64,.65)] sm:px-8 sm:py-5">
+        <header className="insurance-directory-hero relative overflow-hidden rounded-[26px] bg-[#142B40] px-5 py-4 text-white shadow-[0_18px_50px_-26px_rgba(20,43,64,.65)] sm:px-8 sm:py-5">
           <div className="pointer-events-none absolute -right-10 -top-24 h-64 w-64 rounded-full border border-white/10" />
           <div className="pointer-events-none absolute -right-1 -top-16 h-48 w-48 rounded-full border border-white/10" />
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-2xl">
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Directorio de aseguranzas</h1>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl"><RoleSectionIcon name="insurance" />Directorio de aseguranzas</h1>
             </div>
             {canManageDirectory && <button
               onClick={() => { setCustomCompanyName(""); setIsAddingNewCompany(true); }}
@@ -276,8 +279,8 @@ export default function InsuranceDirectoryView({
           </div>
         </header>
 
-        <main className="grid min-h-[620px] grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(290px,360px)_minmax(0,1fr)]">
-          <section className={`${showMobileDetail ? "hidden xl:block" : "block"} overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)] xl:sticky xl:top-4`}>
+        <main className="insurance-directory-layout grid min-h-[620px] grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(290px,360px)_minmax(0,1fr)]">
+          <section className={`insurance-directory-list ${showMobileDetail ? "hidden xl:block" : "block"} overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)] xl:sticky xl:top-4`}>
             <div className="border-b border-slate-100 p-4 sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -290,7 +293,7 @@ export default function InsuranceDirectoryView({
               </div>
               <label className="mt-4 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3 py-2.5 transition focus-within:border-[#8C6A22] focus-within:ring-4 focus-within:ring-[#8C6A22]/10">
                 <Search className="h-4 w-4 shrink-0 text-slate-400" />
-                <input
+                <RoleInput
                   type="search"
                   placeholder="Buscar aseguradora..."
                   value={searchTerm}
@@ -340,8 +343,8 @@ export default function InsuranceDirectoryView({
           </section>
 
           {selectedCompany ? (
-            <section className={`${showMobileDetail ? "block" : "hidden xl:block"} min-w-0 space-y-5`}>
-              <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)]">
+            <section className={`insurance-directory-detail ${showMobileDetail ? "block" : "hidden xl:block"} min-w-0 space-y-5`}>
+              <div className="insurance-company-summary overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)]">
                 <div className="border-b border-slate-100 px-5 pt-4 xl:hidden"><button onClick={() => setShowMobileDetail(false)} className="inline-flex items-center gap-1.5 pb-3 text-xs font-semibold text-[#664A14]"><ChevronRight className="h-4 w-4 rotate-180" /> Volver a aseguradoras</button></div>
                 <div className="flex flex-col gap-4 border-b border-slate-100 p-5 xl:flex-row xl:items-start xl:justify-between xl:p-6">
                   <div className="flex min-w-0 items-center gap-4">
@@ -368,7 +371,7 @@ export default function InsuranceDirectoryView({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(320px,.82fr)]">
+              <div className="insurance-directory-contact-grid grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(320px,.82fr)]">
                 <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)] sm:p-6">
                   <div className="flex items-start justify-between gap-3">
                     <div><SectionEyebrow>Actividad</SectionEyebrow><h3 className="mt-1 text-base font-semibold text-slate-900">Desglose de expedientes</h3></div>
@@ -378,7 +381,7 @@ export default function InsuranceDirectoryView({
                     <div className="mt-5 flex h-2.5 overflow-hidden rounded-full bg-slate-100" aria-label="Distribución de casos por estado">
                       {statusBreakdown.map((item) => item.count > 0 && <div key={item.label} title={`${item.label}: ${item.count}`} style={{ width: `${item.percent}%` }} className={`${item.color} transition-all`} />)}
                     </div>
-                    <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="insurance-status-grid mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {statusBreakdown.map((item) => {
                         const Icon = item.icon;
                         return <div key={item.label} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-[#FBFCFD] p-3">
@@ -400,7 +403,7 @@ export default function InsuranceDirectoryView({
                 </section>
               </div>
 
-              <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)]">
+              <div className="insurance-directory-history-grid grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)]">
                 <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)] sm:p-6">
                   <div><SectionEyebrow>Personas</SectionEyebrow><h3 className="mt-1 text-base font-semibold text-slate-900">Ajustadores asociados</h3></div>
                   {selectedCompany.adjusters.length ? <div className="mt-4 flex flex-wrap gap-2">
@@ -412,7 +415,7 @@ export default function InsuranceDirectoryView({
                   <div className="flex items-start justify-between gap-3"><div><SectionEyebrow>Historial</SectionEyebrow><h3 className="mt-1 text-base font-semibold text-slate-900">Expedientes relacionados</h3></div><span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-slate-600">{selectedCompany.claims.length}</span></div>
                   {selectedCompany.claims.length ? <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-100">
                     {selectedCompany.claims.map((claim) => <button key={claim.id} type="button" onClick={() => onNavigateToClaim(claim.id)} className="group flex w-full items-center gap-3 p-3 text-left transition hover:bg-[#F8FAFC] sm:px-4">
-                      <span className="admin-icon-well admin-icon-well-light flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F3F6F8] text-slate-500 transition group-hover:bg-[#E8EEF2]"><FileText className="h-4 w-4" /></span>
+                      <RoleIconTile name="claim" className="contractor-row-icon"><span className="admin-icon-well admin-icon-well-light flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F3F6F8] text-slate-500 transition group-hover:bg-[#E8EEF2]"><FileText className="h-4 w-4" /></span></RoleIconTile>
                       <span className="min-w-0 flex-1"><span className="flex min-w-0 items-center gap-2"><span className="truncate text-sm font-semibold text-slate-800">{claim.name}</span>{claim.claimNumber && <span className="hidden shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 sm:inline">#{claim.claimNumber}</span>}</span><span className="mt-1 block truncate text-xs text-slate-500">{claim.address || "Sin dirección"}{claim.adjusterName ? ` · ${claim.adjusterName}` : ""}</span></span>
                       <span className="hidden max-w-28 truncate rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600 sm:block">{claim.status}</span><ArrowUpRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-[#664A14]" />
                     </button>)}
@@ -429,7 +432,7 @@ export default function InsuranceDirectoryView({
       {canManageDirectory && isAddingContact && selectedCompany && <Dialog title="Agregar dato de contacto" subtitle={`Completa la agenda de ${selectedCompany.name}.`} onClose={() => setIsAddingContact(false)}>
         <form onSubmit={handleSaveContact} className="space-y-4">
           <FormField label="Correo de reclamos" type="email" placeholder="claims@aseguradora.com" value={newEmail} onChange={setNewEmail} />
-          <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Notas para el equipo</span><textarea rows={3} placeholder="Horario, extensión o indicaciones..." value={newNotes} onChange={(event) => setNewNotes(event.target.value)} className={`${inputClass} resize-y`} /></label>
+          <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Notas para el equipo</span><RoleTextarea rows={3} placeholder="Horario, extensión o indicaciones..." value={newNotes} onChange={(event) => setNewNotes(event.target.value)} className={`${inputClass} resize-y`} /></label>
           <DialogActions onCancel={() => setIsAddingContact(false)} saving={isSaving} submitLabel="Guardar contacto" disabled={!newEmail.trim() && !newNotes.trim()} />
         </form>
       </Dialog>}
@@ -438,15 +441,15 @@ export default function InsuranceDirectoryView({
         <form onSubmit={handleCreateCompany} className="space-y-4">
           <FormField label="Nombre de la compañía" required placeholder="Nombre de la aseguradora" value={customCompanyName} onChange={setCustomCompanyName} />
           <FormField label="Correo de reclamos" type="email" placeholder="claims@aseguradora.com" value={customCompanyEmail} onChange={setCustomCompanyEmail} />
-          <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Notas</span><textarea rows={3} placeholder="Portal, horario u otra referencia..." value={customCompanyNotes} onChange={(event) => setCustomCompanyNotes(event.target.value)} className={`${inputClass} resize-y`} /></label>
+          <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Notas</span><RoleTextarea rows={3} placeholder="Portal, horario u otra referencia..." value={customCompanyNotes} onChange={(event) => setCustomCompanyNotes(event.target.value)} className={`${inputClass} resize-y`} /></label>
           <DialogActions onCancel={() => setIsAddingNewCompany(false)} saving={isSaving} submitLabel="Crear aseguradora" disabled={!customCompanyName.trim()} />
         </form>
       </Dialog>}
 
       {canManageDirectory && isEditingCompany && selectedCompany && <Dialog title="Editar aseguradora" subtitle={`Actualiza los correos y las notas de ${selectedCompany.name}.`} onClose={() => setIsEditingCompany(false)}>
         <form onSubmit={handleEditCompany} className="space-y-4">
-          <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Correos de reclamos</span><textarea rows={6} value={editEmails} onChange={(event) => setEditEmails(event.target.value)} placeholder="Un correo por línea" className={`${inputClass} resize-y font-mono text-xs`} /><span className="mt-1.5 block text-[11px] text-slate-500">Puedes incluir varios; sepáralos con saltos de línea o comas.</span></label>
-          <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Notas</span><textarea rows={3} value={editNotes} onChange={(event) => setEditNotes(event.target.value)} placeholder="Información útil para el equipo..." className={`${inputClass} resize-y`} /></label>
+          <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Correos de reclamos</span><RoleTextarea rows={6} value={editEmails} onChange={(event) => setEditEmails(event.target.value)} placeholder="Un correo por línea" className={`${inputClass} resize-y font-mono text-xs`} /><span className="mt-1.5 block text-[11px] text-slate-500">Puedes incluir varios; sepáralos con saltos de línea o comas.</span></label>
+          <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Notas</span><RoleTextarea rows={3} value={editNotes} onChange={(event) => setEditNotes(event.target.value)} placeholder="Información útil para el equipo..." className={`${inputClass} resize-y`} /></label>
           {directoryActionError && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">{directoryActionError}</p>}
           <DialogActions onCancel={() => setIsEditingCompany(false)} saving={isSaving} submitLabel="Guardar cambios" />
         </form>
@@ -473,7 +476,7 @@ function DetailMetric({ label, value }: { label: string; value: number }) {
 
 function CompanyMark({ name, active = false, large = false }: { name: string; active?: boolean; large?: boolean }) {
   const initials = name.split(/[^a-z0-9]+/i).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-  return <span className={`flex shrink-0 items-center justify-center font-semibold tracking-tight ${large ? "h-14 w-14 rounded-2xl text-lg" : "h-10 w-10 rounded-xl text-xs"} ${active || large ? "bg-[#102A46] text-[#D5BF7A]" : "bg-[#F1F4F6] text-slate-600"}`}>{initials}</span>;
+  return <RoleIconTile name="insurance" className={large ? "" : "contractor-row-icon"}><span className={`flex shrink-0 items-center justify-center font-semibold tracking-tight ${large ? "h-14 w-14 rounded-2xl text-lg" : "h-10 w-10 rounded-xl text-xs"} ${active || large ? "bg-[#102A46] text-[#D5BF7A]" : "bg-[#F1F4F6] text-slate-600"}`}>{initials}</span></RoleIconTile>;
 }
 
 function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -489,20 +492,18 @@ function EmptyInline({ icon: Icon, title, description }: { icon: React.ElementTy
 }
 
 function ContactRow({ value, copied, onCopy }: { value: string; copied: boolean; onCopy: (value: string) => void }) {
-  return <div className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-100 bg-[#FBFCFD] px-3 py-2.5"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><Mail className="h-4 w-4" /></span><span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700" title={value}>{value}</span><button type="button" onClick={() => onCopy(value)} aria-label="Copiar correo" className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-600 transition hover:border-[#8C6A22] hover:text-[#664A14]">{copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}{copied ? "Copiado" : "Copiar"}</button></div>;
+  return <div className="insurance-contact-row flex min-w-0 items-center gap-3 rounded-xl border border-slate-100 bg-[#FBFCFD] px-3 py-2.5"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><Mail className="h-4 w-4" /></span><span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-700" title={value}>{value}</span><button type="button" onClick={() => onCopy(value)} aria-label="Copiar correo" className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-600 transition hover:border-[#8C6A22] hover:text-[#664A14]">{copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}{copied ? "Copiado" : "Copiar"}</button></div>;
 }
 
 function Dialog({ title, subtitle, onClose, children }: { title: string; subtitle: string; onClose: () => void; children: React.ReactNode }) {
-  return <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-slate-950/55 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <div role="dialog" aria-modal="true" aria-labelledby="insurance-dialog-title" className="my-auto w-full max-w-lg rounded-2xl border border-white/70 bg-white p-5 shadow-2xl sm:p-6">
+  return <RoleModal title={title} onClose={onClose} busy={false} wide={false} outerProps={{"className": "fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-slate-950/55 p-4 backdrop-blur-sm", "onMouseDown": (event) => { if (event.target === event.currentTarget) onClose(); }}} contentProps={{"role": "dialog", "aria-modal": "true", "aria-labelledby": "insurance-dialog-title", "className": "my-auto w-full max-w-lg rounded-2xl border border-white/70 bg-white p-5 shadow-2xl sm:p-6"}}>
       <div className="mb-5 flex items-start justify-between gap-4"><div><h2 id="insurance-dialog-title" className="text-lg font-semibold text-slate-900">{title}</h2><p className="mt-1 text-sm text-slate-500">{subtitle}</p></div><button type="button" onClick={onClose} aria-label="Cerrar" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-5 w-5" /></button></div>
       {children}
-    </div>
-  </div>;
+    </RoleModal>;
 }
 
 function FormField({ label, value, onChange, placeholder, type = "text", required = false }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; type?: string; required?: boolean }) {
-  return <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">{label}{required && <span className="ml-1 text-rose-600">*</span>}</span><input type={type} required={required} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className={inputClass} /></label>;
+  return <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">{label}{required && <span className="ml-1 text-rose-600">*</span>}</span><RoleInput type={type} required={required} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className={inputClass} /></label>;
 }
 
 function DialogActions({ onCancel, saving, submitLabel, disabled = false }: { onCancel: () => void; saving: boolean; submitLabel: string; disabled?: boolean }) {

@@ -1,3 +1,5 @@
+import { RoleModal } from "./contractor/DesignSystem";
+import { RoleInput } from "./contractor/DesignSystem";
 import React, { useState } from "react";
 import { MaterialItem } from "../types";
 import globalMaterials from "../data/materials.json";
@@ -23,8 +25,7 @@ export default function MaterialsCatalogModal({ onClose }: MaterialsCatalogModal
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#102A46]/60 backdrop-blur-sm p-4 animate-fade-in select-none">
-      <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden animate-slide-up flex flex-col h-[80vh]">
+    <RoleModal title={"Catálogo de materiales"} onClose={onClose} busy={false} wide={true} outerProps={{"className": "fixed inset-0 z-50 flex items-center justify-center bg-[#102A46]/60 backdrop-blur-sm p-4 animate-fade-in select-none"}} contentProps={{"className": "bg-white rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden animate-slide-up flex flex-col h-[80vh]"}}>
         
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-[#E6ECF1] flex items-center justify-between bg-[#f8fafc] shrink-0">
@@ -56,7 +57,7 @@ export default function MaterialsCatalogModal({ onClose }: MaterialsCatalogModal
 
             {/* Search Input */}
             <div className="relative w-full sm:max-w-xs">
-              <input
+              <RoleInput
                 type="text"
                 placeholder="Buscar material o trabajo..."
                 value={searchTerm}
@@ -119,7 +120,6 @@ export default function MaterialsCatalogModal({ onClose }: MaterialsCatalogModal
 
         </div>
 
-      </div>
-    </div>
+      </RoleModal>
   );
 }

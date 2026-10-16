@@ -1,3 +1,5 @@
+import { RoleModal } from "./contractor/DesignSystem";
+import { RoleInput, RoleSelect, RoleTextarea } from "./contractor/DesignSystem";
 import React from "react";
 import { Check, CircleAlert, Clock3, DollarSign, ExternalLink, FileText, LoaderCircle, Paperclip, Pencil, Plus, ReceiptText, Trash2, X } from "lucide-react";
 import { supabase } from "../lib/supabase";
@@ -302,7 +304,7 @@ export default function ClaimFinances({ claimId, organizationId }: { claimId: st
             <AmountField label="Depreciación no recuperable" value={amounts.non_recoverable_depreciation} onChange={value => setAmounts(prev => ({ ...prev, non_recoverable_depreciation: value }))} />
           </div>
         </div>
-        <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Notas financieras</span><textarea value={amounts.notes} onChange={event => setAmounts(prev => ({ ...prev, notes: event.target.value }))} rows={2} maxLength={1500} placeholder="Notas sobre el alcance aprobado, pagos o documentación financiera…" className="w-full resize-y rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></label>
+        <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Notas financieras</span><RoleTextarea value={amounts.notes} onChange={event => setAmounts(prev => ({ ...prev, notes: event.target.value }))} rows={2} maxLength={1500} placeholder="Notas sobre el alcance aprobado, pagos o documentación financiera…" className="w-full resize-y rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></label>
         <div className="flex flex-col gap-2 border-t border-[#EEF2F5] pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div aria-live="polite" className="text-xs">{errorMessage && !paymentFormOpen ? <span className="inline-flex items-center gap-1.5 font-medium text-[#B5493B]"><CircleAlert className="h-3.5 w-3.5" /> {errorMessage}</span> : statusMessage && !paymentFormOpen ? <span className="font-semibold text-[#36705E]">{statusMessage}</span> : <span className="text-slate-500">Actualiza estos valores cuando recibas una aprobación revisada.</span>}</div>
           <button type="submit" disabled={savingAmounts} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#102A46] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#193856] disabled:opacity-50">{savingAmounts ? <><LoaderCircle className="h-4 w-4 animate-spin" /> Guardando…</> : <><Check className="h-4 w-4" /> Guardar montos</>}</button>
@@ -332,8 +334,7 @@ export default function ClaimFinances({ claimId, organizationId }: { claimId: st
       {statusMessage && !paymentFormOpen && <p aria-live="polite" className="border-t border-[#EEF2F5] px-5 py-3 text-xs font-semibold text-[#36705E] sm:px-6">{statusMessage}</p>}
     </section>
 
-    {paymentFormOpen && <div className="fixed inset-0 z-[120] flex items-end justify-center bg-[#102333]/55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !savingPayment) setPaymentFormOpen(false); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="payment-form-title" className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
+    {paymentFormOpen && <RoleModal title={"Registrar pago"} onClose={() => setPaymentFormOpen(false)} busy={savingPayment} wide={false} outerProps={{"className": "fixed inset-0 z-[120] flex items-end justify-center bg-[#102333]/55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4", "role": "presentation", "onMouseDown": event => { if (event.target === event.currentTarget && !savingPayment) setPaymentFormOpen(false); }}} contentProps={{"role": "dialog", "aria-modal": "true", "aria-labelledby": "payment-form-title", "className": "max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"}}>
         <div className="flex items-start justify-between border-b border-[#EEF2F5] px-5 py-4 sm:px-6"><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#755613]">Control de cobros</p><h3 id="payment-form-title" className="mt-1 text-lg font-bold text-[#102A46]">{editingPayment ? "Editar pago" : "Registrar pago"}</h3></div><button type="button" onClick={() => setPaymentFormOpen(false)} disabled={savingPayment} aria-label="Cerrar" className="rounded-lg p-2 text-slate-500 hover:bg-[#F1F4F7]"><X className="h-4 w-4" /></button></div>
         <form onSubmit={savePayment} className="space-y-4 px-5 py-5 sm:px-6">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -344,14 +345,14 @@ export default function ClaimFinances({ claimId, organizationId }: { claimId: st
             {paymentForm.status === "expected" ? <FormField label="Fecha esperada" type="date" value={paymentForm.expected_date || ""} onChange={value => setPaymentForm(prev => ({ ...prev, expected_date: value }))} /> : <FormField label="Fecha de recepción" type="date" value={paymentForm.received_date || ""} onChange={value => setPaymentForm(prev => ({ ...prev, received_date: value }))} required />}
             <FormField label="Referencia / cheque" value={paymentForm.reference || ""} onChange={value => setPaymentForm(prev => ({ ...prev, reference: value }))} maxLength={120} />
           </div>
-          <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Notas</span><textarea value={paymentForm.notes || ""} onChange={event => setPaymentForm(prev => ({ ...prev, notes: event.target.value }))} rows={2} maxLength={1000} className="w-full resize-y rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></label>
+          <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Notas</span><RoleTextarea value={paymentForm.notes || ""} onChange={event => setPaymentForm(prev => ({ ...prev, notes: event.target.value }))} rows={2} maxLength={1000} className="w-full resize-y rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></label>
           <div className="rounded-xl border border-dashed border-[#CBD6DB] bg-[#FAFBFB] p-4">
             <label className="flex cursor-pointer items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#755613] shadow-sm"><FileText className="h-4 w-4" /></span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[11px] font-bold text-[#2F5270]">Recibo del pago <span className="font-medium text-slate-400">(opcional)</span></span>
                 <span className="mt-0.5 block text-[10px] text-slate-500">Adjunta un archivo PDF o JPEG de hasta 10 MB.</span>
-                <input type="file" accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg" onChange={event => { setReceiptFile(event.target.files?.[0] || null); if (event.target.files?.[0]) setRemoveExistingReceipt(false); }} className="mt-2 block w-full text-[10px] text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-1.5 file:text-[10px] file:font-bold file:text-[#2F5270]" />
+                <RoleInput type="file" accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg" onChange={event => { setReceiptFile(event.target.files?.[0] || null); if (event.target.files?.[0]) setRemoveExistingReceipt(false); }} className="mt-2 block w-full text-[10px] text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-1.5 file:text-[10px] file:font-bold file:text-[#2F5270]" />
               </span>
             </label>
             {receiptFile && <p className="mt-2 flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-[10px] font-medium text-[#465D70]"><span className="truncate">Nuevo: {receiptFile.name}</span><button type="button" onClick={() => setReceiptFile(null)} className="shrink-0 font-bold text-[#B5493B]">Quitar</button></p>}
@@ -361,8 +362,7 @@ export default function ClaimFinances({ claimId, organizationId }: { claimId: st
           {errorMessage && <p role="alert" className="rounded-xl bg-[#FCEDEA] px-3 py-2.5 text-xs font-medium text-[#B5493B]">{errorMessage}</p>}
           <div className="flex flex-col-reverse gap-2 border-t border-[#EEF2F5] pt-4 sm:flex-row sm:justify-end"><button type="button" onClick={() => setPaymentFormOpen(false)} disabled={savingPayment} className="rounded-xl px-4 py-2.5 text-xs font-bold text-[#465D70] hover:bg-[#F1F4F7]">Cancelar</button><button type="submit" disabled={savingPayment} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#102A46] px-5 py-2.5 text-xs font-bold text-white transition hover:bg-[#193856] disabled:opacity-50">{savingPayment ? <><LoaderCircle className="h-4 w-4 animate-spin" /> Guardando…</> : <><Check className="h-4 w-4" /> Guardar pago</>}</button></div>
         </form>
-      </section>
-    </div>}
+      </RoleModal>}
   </div>;
 }
 
@@ -375,11 +375,11 @@ function AmountField({ label, value, onChange, required = false }: { label: stri
 }
 
 function FormField({ label, value, onChange, type = "text", min, step, maxLength, required = false, prefix }: { label: string; value: string; onChange: (value: string) => void; type?: string; min?: string; step?: string; maxLength?: number; required?: boolean; prefix?: string }) {
-  return <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">{label}</span><span className="relative block">{prefix && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{prefix}</span>}<input type={type} min={min} step={step} maxLength={maxLength} required={required} value={value} onChange={event => onChange(event.target.value)} className={`w-full rounded-xl border border-[#DCE4EB] ${prefix ? "pl-7" : "px-3"} py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15`} /></span></label>;
+  return <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">{label}</span><span className="relative block">{prefix && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">{prefix}</span>}<RoleInput type={type} min={min} step={step} maxLength={maxLength} required={required} value={value} onChange={event => onChange(event.target.value)} className={`w-full rounded-xl border border-[#DCE4EB] ${prefix ? "pl-7" : "px-3"} py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15`} /></span></label>;
 }
 
 function SelectField({ label, value, onChange, children }: { label: string; value: string; onChange: (value: string) => void; children: React.ReactNode }) {
-  return <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">{label}</span><select value={value} onChange={event => onChange(event.target.value)} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15">{children}</select></label>;
+  return <label className="block"><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">{label}</span><RoleSelect value={value} onChange={event => onChange(event.target.value)} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15">{children}</RoleSelect></label>;
 }
 
 function formatDate(value: string | null) {

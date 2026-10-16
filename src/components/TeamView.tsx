@@ -1,3 +1,6 @@
+import { RoleSectionIcon, RoleCloseIcon } from "./contractor/DesignSystem";
+import { RoleModal } from "./contractor/DesignSystem";
+import { RoleInput, RoleSelect } from "./contractor/DesignSystem";
 import React, { useState, useEffect } from "react";
 import { TeamMember } from "../types";
 import {
@@ -202,7 +205,7 @@ export default function TeamView({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#DCE4EB]/30 pb-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="font-sans text-[26px] font-bold text-[#102A46] tracking-tight">Personal & Cuadrillas</h1>
+            <h1 className="font-sans text-[26px] font-bold text-[#102A46] tracking-tight"><RoleSectionIcon name="team" />Personal & Cuadrillas</h1>
             {userRole === "contractor" && companyInviteCode && (
               <span className="px-2.5 py-1 bg-[#fff8e1] border border-[#ffecb3] text-[#664A14] text-xs font-mono font-bold rounded-lg shadow-sm">
                 Código de Invitación: {companyInviteCode}
@@ -237,7 +240,7 @@ export default function TeamView({
             {/* Nombre */}
             <div className="space-y-1">
               <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Nombre Completo</label>
-              <input
+              <RoleInput
                 type="text"
                 required
                 value={name}
@@ -249,7 +252,7 @@ export default function TeamView({
             {/* Correo */}
             <div className="space-y-1">
               <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Email</label>
-              <input
+              <RoleInput
                 type="email"
                 required
                 value={email}
@@ -261,7 +264,7 @@ export default function TeamView({
             {/* Teléfono */}
             <div className="space-y-1">
               <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Teléfono (Opcional)</label>
-              <input
+              <RoleInput
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -276,7 +279,7 @@ export default function TeamView({
             <div className="space-y-1">
               <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Rol del Usuario</label>
               {userRole === "contractor" ? (
-                <select
+                <RoleSelect
                   value={roleCategory}
                   onChange={(e) => setRoleCategory(e.target.value as any)}
                   className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#8C6A22]"
@@ -284,9 +287,9 @@ export default function TeamView({
                   <option value="sales">Asesor Comercial (Ventas)</option>
                   <option value="pm">Project Manager</option>
                   <option value="install">Equipo de Instalación (Crews)</option>
-                </select>
+                </RoleSelect>
               ) : (
-                <select
+                <RoleSelect
                   value={roleCategory}
                   onChange={(e) => setRoleCategory(e.target.value as any)}
                   className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#8C6A22]"
@@ -297,7 +300,7 @@ export default function TeamView({
                   <option value="staff">Colaborador Xapcon (acceso limitado)</option>
                   <option value="admin">Superadministrador (acceso global)</option>
                   <option value="contractor">Contratista Externo (Empresa)</option>
-                </select>
+                </RoleSelect>
               )}
             </div>
 
@@ -305,7 +308,7 @@ export default function TeamView({
             {userRole === "admin" && roleCategory !== "staff" && roleCategory !== "admin" ? (
               <div className="space-y-1">
                 <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Empresa Asignada</label>
-                <select
+                <RoleSelect
                   value={selectedOrganizationId}
                   onChange={(e) => { setSelectedOrganizationId(e.target.value); setCompany(organizations.find(org => org.id === e.target.value)?.name || ''); }}
                   className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#8C6A22]"
@@ -313,13 +316,13 @@ export default function TeamView({
                   {contractorOrganizations.map(org => (
                     <option key={org.id} value={org.id}>{org.name}</option>
                   ))}
-                </select>
+                </RoleSelect>
               </div>
             ) : (
               /* Custom Role Text */
               <div className="space-y-1">
                 <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Título de Cargo (Personalizado)</label>
-                <input
+                <RoleInput
                   type="text"
                   value={customRoleText}
                   onChange={(e) => setCustomRoleText(e.target.value)}
@@ -335,7 +338,7 @@ export default function TeamView({
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 border-t border-gray-100 pt-4 mt-2">
               <div className="space-y-1">
                 <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Correo de la Compañía</label>
-                <input
+                <RoleInput
                   type="email"
                   value={companyEmail}
                   onChange={(e) => setCompanyEmail(e.target.value)}
@@ -345,7 +348,7 @@ export default function TeamView({
               </div>
               <div className="space-y-1">
                 <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Web de la Compañía</label>
-                <input
+                <RoleInput
                   type="text"
                   value={companyWebsite}
                   onChange={(e) => setCompanyWebsite(e.target.value)}
@@ -355,7 +358,7 @@ export default function TeamView({
               </div>
               <div className="space-y-1">
                 <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Número de Registro</label>
-                <input
+                <RoleInput
                   type="text"
                   value={registrationNumber}
                   onChange={(e) => setRegistrationNumber(e.target.value)}
@@ -365,7 +368,7 @@ export default function TeamView({
               </div>
               <div className="space-y-1">
                 <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Número de Licencia</label>
-                <input
+                <RoleInput
                   type="text"
                   value={licenseNumber}
                   onChange={(e) => setLicenseNumber(e.target.value)}
@@ -561,7 +564,7 @@ export default function TeamView({
               <div className="flex gap-2 pt-1 border-t border-[#E6ECF1]">
                 <a
                   href={`mailto:${m.email}`}
-                  className="flex-1 py-1.5 bg-[#102A46] hover:bg-[#252f46] text-[#8C6A22] text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1"
+                  className="team-contact-action flex-1 py-1.5 bg-[#102A46] hover:bg-[#252f46] text-[#8C6A22] text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1"
                 >
                   <Mail className="w-3.5 h-3.5" />
                   <span>Enviar Correo</span>
@@ -584,12 +587,11 @@ export default function TeamView({
 
       {/* Edit Modal Overlay */}
       {editingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#102A46]/60 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up">
+        <RoleModal title={"Editar información"} onClose={() => setEditingMember(null)} busy={isSaving} wide={false} outerProps={{"className": "fixed inset-0 z-50 flex items-center justify-center bg-[#102A46]/60 backdrop-blur-sm p-4 animate-fade-in"}} contentProps={{"className": "bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-slide-up"}}>
             <div className="px-6 py-4 border-b border-[#E6ECF1] flex items-center justify-between bg-gray-50">
               <h2 className="text-sm font-bold text-[#102A46]">Editar Información</h2>
-              <button onClick={() => setEditingMember(null)} className="text-gray-400 hover:text-gray-600">
-                ✕
+              <button aria-label="Cerrar edición" onClick={() => setEditingMember(null)} className="text-gray-400 hover:text-gray-600">
+                <RoleCloseIcon />
               </button>
             </div>
             <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
@@ -598,7 +600,7 @@ export default function TeamView({
                 <label className="block text-[10px] uppercase font-bold text-[#566A7E]">
                   {editingMember.roleCategory === "contractor" ? "Nombre del Dueño / Representante" : "Nombre Completo"}
                 </label>
-                <input
+                <RoleInput
                   type="text" required value={editName} onChange={e => setEditName(e.target.value)}
                   className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
                 />
@@ -607,7 +609,7 @@ export default function TeamView({
               {editingMember.roleCategory === "contractor" && (
                 <div className="space-y-1">
                   <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Nombre de la Empresa</label>
-                  <input
+                  <RoleInput
                     type="text" required value={editCompany} onChange={e => setEditCompany(e.target.value)}
                     className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
                   />
@@ -619,14 +621,14 @@ export default function TeamView({
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Correo de la Compañía</label>
-                      <input
+                      <RoleInput
                         type="email" value={editCompanyEmail} onChange={e => setEditCompanyEmail(e.target.value)}
                         className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
                       />
                     </div>
                     <div className="space-y-1">
                       <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Web de la Compañía</label>
-                      <input
+                      <RoleInput
                         type="text" value={editCompanyWebsite} onChange={e => setEditCompanyWebsite(e.target.value)}
                         className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
                       />
@@ -635,14 +637,14 @@ export default function TeamView({
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Número de Registro</label>
-                      <input
+                      <RoleInput
                         type="text" value={editRegistrationNumber} onChange={e => setEditRegistrationNumber(e.target.value)}
                         className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
                       />
                     </div>
                     <div className="space-y-1">
                       <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Número de Licencia</label>
-                      <input
+                      <RoleInput
                         type="text" value={editLicenseNumber} onChange={e => setEditLicenseNumber(e.target.value)}
                         className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
                       />
@@ -653,7 +655,7 @@ export default function TeamView({
 
               <div className="space-y-1">
                 <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Teléfono</label>
-                <input
+                <RoleInput
                   type="text" value={editPhone} onChange={e => setEditPhone(e.target.value)}
                   className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
                 />
@@ -661,7 +663,7 @@ export default function TeamView({
 
               <div className="space-y-1">
                 <label className="block text-[10px] uppercase font-bold text-[#566A7E]">Dirección Física</label>
-                <input
+                <RoleInput
                   type="text" value={editAddress} onChange={e => setEditAddress(e.target.value)}
                   className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
                 />
@@ -670,7 +672,7 @@ export default function TeamView({
               {editingMember.roleCategory === 'staff' && onUpdateStaffAccess && <fieldset className="space-y-2 rounded-xl border p-3">
                 <legend className="text-xs font-bold text-[#102A46]">Empresas autorizadas</legend>
                 <p className="text-xs text-slate-500">Este colaborador tendrá acceso operativo a las empresas seleccionadas. Su espacio de Xapcon se conserva.</p>
-                {contractorOrganizations.map(org => <label key={org.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={editStaffOrganizationIds.includes(org.id)} onChange={e => setEditStaffOrganizationIds(ids => e.target.checked ? [...ids, org.id] : ids.filter(id => id !== org.id))} />{org.name}</label>)}
+                {contractorOrganizations.map(org => <label key={org.id} className="flex items-center gap-2 text-sm"><RoleInput type="checkbox" checked={editStaffOrganizationIds.includes(org.id)} onChange={e => setEditStaffOrganizationIds(ids => e.target.checked ? [...ids, org.id] : ids.filter(id => id !== org.id))} />{org.name}</label>)}
               </fieldset>}
               {editError && <p role="alert" className="text-sm text-red-600">{editError}</p>}
               <div className="space-y-1 pt-2">
@@ -679,7 +681,7 @@ export default function TeamView({
                   <div className="w-20 h-20 rounded-xl border border-gray-200 bg-white p-1.5 flex items-center justify-center overflow-hidden shadow-sm">
                     <img src={editingMember.avatar} alt="Current" className="max-w-full max-h-full object-contain" />
                   </div>
-                  <input
+                  <RoleInput
                     type="file"
                     accept="image/*"
                     onChange={e => setEditAvatarFile(e.target.files ? e.target.files[0] : null)}
@@ -705,8 +707,7 @@ export default function TeamView({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </RoleModal>
       )}
     </div>
   );

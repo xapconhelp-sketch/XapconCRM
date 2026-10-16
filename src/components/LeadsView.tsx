@@ -1,15 +1,19 @@
+import { HomeownerProfile, InsuranceProfile } from "./contractor/CaseProfiles";
+import { RoleIconTile, RoleSectionIcon, RoleCloseIcon, RoleTabIcon } from "./contractor/DesignSystem";
+import { RoleModal } from "./contractor/DesignSystem";
+import { RoleInput, RoleSelect, RoleTextarea } from "./contractor/DesignSystem";
 import React, { useState, useEffect, useRef } from "react";
 import { eligibleCaseMembers } from "../lib/teamAccess.js";
 import { formatTimelineDate, getDaysSinceLastUpdate } from "../lib/caseActivity";
 import { AdminClaimRecord, AdminHomeownerContact, Lead, TimelineEvent, DocumentItem, TeamMember } from "../types";
-import { 
-  Users, 
-  MapPin, 
-  Phone, 
-  Building, 
-  FileCheck2, 
-  Plus, 
-  CheckCircle2, 
+import {
+  Users,
+  MapPin,
+  Phone,
+  Building,
+  FileCheck2,
+  Plus,
+  CheckCircle2,
   Home,
   FileText,
   Upload,
@@ -134,7 +138,7 @@ function HomeownerServicePanel({
       <div className="grid gap-3 sm:grid-cols-[minmax(150px,0.7fr)_minmax(220px,1.3fr)]">
         <label className="block">
           <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Fecha del contacto</span>
-          <input
+          <RoleInput
             type="date"
             value={contactedAt}
             max={localDateInputValue()}
@@ -147,7 +151,7 @@ function HomeownerServicePanel({
           <div className="flex flex-wrap gap-2">
             {HOMEOWNER_CONTACT_CHANNELS.map(channel => (
               <label key={channel.value} className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] transition-colors ${channels.includes(channel.value) ? "border-[#B9A16B] bg-[#F8F3E7] text-[#664A14]" : "border-[#DCE4EB] bg-white text-[#465D70] hover:bg-[#F4F6F8]"}`}>
-                <input
+                <RoleInput
                   type="checkbox"
                   checked={channels.includes(channel.value)}
                   onChange={() => toggleChannel(channel.value)}
@@ -162,7 +166,7 @@ function HomeownerServicePanel({
 
       <label className="mt-3 block">
         <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Nota del contacto <span className="font-normal text-slate-400">(opcional)</span></span>
-        <textarea
+        <RoleTextarea
           value={note}
           onChange={event => { setNote(event.target.value); setMessage(""); }}
           rows={2}
@@ -260,7 +264,7 @@ function AdminDocumentsSentPanel({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block sm:col-span-2">
           <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Fecha del envío</span>
-          <input
+          <RoleInput
             type="date"
             value={lastDocumentsSentAt}
             max={localDateInputValue()}
@@ -281,7 +285,7 @@ function AdminDocumentsSentPanel({
         <div className="absolute left-0 right-0 z-20 mt-1 grid grid-cols-2 gap-1 rounded-lg border border-[#DCE4EB] bg-white p-2 shadow-lg sm:grid-cols-4">
           {SENT_DOCUMENT_OPTIONS.map(option => (
             <label key={option} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs text-[#33485B] hover:bg-[#F4F6F8]">
-              <input
+              <RoleInput
                 type="checkbox"
                 checked={sentDocumentTypes.includes(option)}
                 onChange={() => toggleDocumentType(option)}
@@ -301,7 +305,7 @@ function AdminDocumentsSentPanel({
 
       <label className="mt-3 block">
         <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Nota del envío <span className="font-normal text-slate-400">(opcional)</span></span>
-        <textarea value={note} onChange={event => { setNote(event.target.value); setSaveMessage(""); }} rows={2} maxLength={2000} placeholder="Destinatario, confirmación de envío u otros detalles…" className="w-full resize-y rounded-lg border border-[#DCE4EB] px-3 py-2 text-xs text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15" />
+        <RoleTextarea value={note} onChange={event => { setNote(event.target.value); setSaveMessage(""); }} rows={2} maxLength={2000} placeholder="Destinatario, confirmación de envío u otros detalles…" className="w-full resize-y rounded-lg border border-[#DCE4EB] px-3 py-2 text-xs text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15" />
       </label>
 
       <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
@@ -362,11 +366,11 @@ function InsuranceResponsePanel({
       <h3 className="mb-3 text-sm font-bold text-[#102A46]">Última Respuesta Aseguranza o Ajustador</h3>
       <label className="block">
         <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Fecha de la respuesta</span>
-        <input type="date" value={respondedAt} max={localDateInputValue()} onChange={event => { setRespondedAt(event.target.value); setMessage(""); }} className="w-full rounded-lg border border-[#DCE4EB] bg-white px-3 py-2 text-xs text-[#102A46] outline-none focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15 sm:max-w-sm" />
+        <RoleInput type="date" value={respondedAt} max={localDateInputValue()} onChange={event => { setRespondedAt(event.target.value); setMessage(""); }} className="w-full rounded-lg border border-[#DCE4EB] bg-white px-3 py-2 text-xs text-[#102A46] outline-none focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15 sm:max-w-sm" />
       </label>
       <label className="mt-3 block">
         <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Detalle de la respuesta <span className="font-normal text-slate-400">(opcional)</span></span>
-        <textarea value={note} onChange={event => { setNote(event.target.value); setMessage(""); }} rows={3} maxLength={2000} placeholder="Resumen de la respuesta del seguro o ajustador…" className="w-full resize-y rounded-lg border border-[#DCE4EB] px-3 py-2 text-xs text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15" />
+        <RoleTextarea value={note} onChange={event => { setNote(event.target.value); setMessage(""); }} rows={3} maxLength={2000} placeholder="Resumen de la respuesta del seguro o ajustador…" className="w-full resize-y rounded-lg border border-[#DCE4EB] px-3 py-2 text-xs text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15" />
       </label>
       <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
         {message && <span role="status" className={`text-[11px] ${message === "Registro guardado" ? "text-emerald-700" : "text-amber-700"}`}>{message}</span>}
@@ -445,11 +449,11 @@ function InsuranceCallsPanel({
       <h3 className="mb-3 text-sm font-bold text-[#102A46]">Llamadas a aseguradoras o ajustadores</h3>
       <label className="block">
         <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Fecha de la llamada</span>
-        <input type="date" value={calledAt} max={localDateInputValue()} onChange={event => { setCalledAt(event.target.value); setMessage(""); }} className="w-full rounded-lg border border-[#DCE4EB] bg-white px-3 py-2 text-xs text-[#102A46] outline-none focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15 sm:max-w-sm" />
+        <RoleInput type="date" value={calledAt} max={localDateInputValue()} onChange={event => { setCalledAt(event.target.value); setMessage(""); }} className="w-full rounded-lg border border-[#DCE4EB] bg-white px-3 py-2 text-xs text-[#102A46] outline-none focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15 sm:max-w-sm" />
       </label>
       <label className="mt-3 block">
         <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Nota de la llamada</span>
-        <textarea value={note} onChange={event => { setNote(event.target.value); setMessage(""); }} rows={3} maxLength={2000} placeholder="Con quién hablaste y qué se conversó…" className="w-full resize-y rounded-lg border border-[#DCE4EB] px-3 py-2 text-xs text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15" />
+        <RoleTextarea value={note} onChange={event => { setNote(event.target.value); setMessage(""); }} rows={3} maxLength={2000} placeholder="Con quién hablaste y qué se conversó…" className="w-full resize-y rounded-lg border border-[#DCE4EB] px-3 py-2 text-xs text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15" />
       </label>
       <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
         {message && <span role="status" className={`text-[11px] ${message === "Llamada guardada" ? "text-emerald-700" : "text-amber-700"}`}>{message}</span>}
@@ -641,7 +645,7 @@ export default function LeadsView({
 
   const handleSaveEdit = async () => {
     if (!selectedLead || !onUpdateLead) return;
-    
+
     await onUpdateLead(selectedLead.id, {
       name: editName,
       address: editAddress,
@@ -665,7 +669,7 @@ export default function LeadsView({
       assignedRep: editAssignedRep,
       organizationId: editOrgId || undefined
     });
-    
+
     setIsEditingLead(false);
   };
   const [insuranceClaimNumber, setInsuranceClaimNumber] = useState("");
@@ -773,7 +777,7 @@ export default function LeadsView({
   const [isUploading, setIsUploading] = useState(false);
   const [pastedImages, setPastedImages] = useState<File[]>([]);
   const [isUploadingNote, setIsUploadingNote] = useState(false);
-  
+
   // Mentions state
   const [cursorPosition, setCursorPosition] = useState(0);
   const [showMentions, setShowMentions] = useState(false);
@@ -845,17 +849,17 @@ export default function LeadsView({
         {/* Header */}
         <div className={`insurance-list-heading flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b pb-5 ${isInsuranceView ? "border-[#DCE4EB]" : "border-[#DCE4EB]/30"}`}>
           <div className="flex items-center gap-4">
-            {isInsuranceView && (
+            {isInsuranceView && userRole === "admin" && (
               <div className="admin-claim-heading-icon hidden sm:flex w-12 h-12 rounded-2xl bg-gradient-to-br from-[#102A46] to-[#193856] shadow-md items-center justify-center shrink-0">
                 <ShieldCheck className="w-6 h-6 text-[#D5BF7A]" strokeWidth={1.7} />
               </div>
             )}
             <div>
             {isInsuranceView && userRole === "admin" && <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#664A14] mb-1">Gestión de expedientes</p>}
-            <h1 className={`font-sans font-bold tracking-tight ${isInsuranceView ? "text-[28px] text-[#102A46]" : "text-[26px] text-[#102A46]"}`}>
+            <h1 className={`font-sans font-bold tracking-tight ${isInsuranceView ? "text-[28px] text-[#102A46]" : "text-[26px] text-[#102A46]"}`}><RoleSectionIcon name="claim" />
               {viewTitle || "Carpeta de Leads & Clientes"}
             </h1>
-            {!(isInsuranceView && userRole === "admin") && <p className="font-sans text-xs text-[#53677B] mt-1 font-medium">
+            {userRole !== "contractor" && !(isInsuranceView && userRole === "admin") && <p className="font-sans text-xs text-[#53677B] mt-1 font-medium">
               {viewSubtitle || "Cronologías de reclamos de seguros, visitas de peritos y archivos técnicos de propiedad."}
             </p>}
             </div>
@@ -925,9 +929,9 @@ export default function LeadsView({
                   {isInsuranceView ? (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
                       <div className="lg:col-span-3 flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-[#F4EEDB] text-[#664A14] flex items-center justify-center shrink-0">
+                        <RoleIconTile name="home" className="contractor-row-icon"><div className="w-10 h-10 rounded-xl bg-[#F4EEDB] text-[#664A14] flex items-center justify-center shrink-0">
                           <Home className="w-[18px] h-[18px]" />
-                        </div>
+                        </div></RoleIconTile>
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-[#102A46] truncate group-hover:text-[#664A14] transition-colors">{lead.name}</p>
                           <p className="text-[11px] text-slate-400 truncate">{lead.phone || "Sin teléfono registrado"}</p>
@@ -1004,14 +1008,14 @@ export default function LeadsView({
                     {/* Col 6: Días / 3D Finalizado Checkmark Icon + Chevron */}
                     <div className="lg:col-span-1 flex items-center justify-end gap-2.5 shrink-0">
                       {lead.status === "Finalizado" ? (
-                        <div 
+                        <div
                           className="w-8 h-8 rounded-full bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-700 text-white flex items-center justify-center shadow-[0_3px_8px_rgba(16,185,129,0.35),inset_0_1px_0_rgba(255,255,255,0.4)] border border-emerald-400/60 transition-transform hover:scale-105 shrink-0"
                           title="Caso Finalizado"
                         >
                           <CheckCircle2 className="w-4 h-4 text-white fill-emerald-800 shrink-0 drop-shadow-sm" />
                         </div>
                       ) : (
-                        <div 
+                        <div
                           className="w-8 h-8 rounded-full bg-gradient-to-b from-red-500 to-red-600 text-white font-extrabold text-xs flex items-center justify-center shadow-[0_2px_6px_rgba(239,68,68,0.35)] border border-red-400/40 shrink-0"
                           title={`Sin actualizar hace ${days} ${days === 1 ? 'día' : 'días'}`}
                         >
@@ -1032,11 +1036,11 @@ export default function LeadsView({
       </div>
     );
   }
-  
+
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
-    
+
     const newFiles: File[] = [];
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf("image") !== -1) {
@@ -1044,7 +1048,7 @@ export default function LeadsView({
         if (file) newFiles.push(file);
       }
     }
-    
+
     if (newFiles.length > 0) {
       setPastedImages(prev => [...prev, ...newFiles]);
     }
@@ -1057,7 +1061,7 @@ export default function LeadsView({
   const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const pos = e.target.selectionStart || 0;
-    
+
     setNewNote(value);
     setMentionedMembers((members) => members.filter((member) => {
       const firstName = member.name ? member.name.split(" ")[0] : "";
@@ -1066,11 +1070,11 @@ export default function LeadsView({
     setCursorPosition(pos);
     const textBeforeCursor = value.substring(0, pos);
     const lastAtSign = textBeforeCursor.lastIndexOf("@");
-    
+
     const isAtStartOrAfterSpace = lastAtSign === 0 || /\s/.test(textBeforeCursor.charAt(lastAtSign - 1));
     if (
-      lastAtSign !== -1 && 
-      isAtStartOrAfterSpace && 
+      lastAtSign !== -1 &&
+      isAtStartOrAfterSpace &&
       !textBeforeCursor.substring(lastAtSign).includes(" ")
     ) {
       setShowMentions(true);
@@ -1099,14 +1103,14 @@ export default function LeadsView({
     const lastAtPos = newNote.lastIndexOf("@", cursorPosition - 1);
     const textBeforeAt = newNote.substring(0, lastAtPos);
     const textAfterCursor = newNote.substring(cursorPosition);
-    
+
     const firstName = member.name ? member.name.split(" ")[0] : "Usuario";
-    
+
     const updatedText = `${textBeforeAt}@${firstName} ${textAfterCursor}`;
     setNewNote(updatedText);
     setMentionedMembers((members) => members.some((item) => item.id === member.id) ? members : [...members, member]);
     setShowMentions(false);
-    
+
     setTimeout(() => {
       inputRef.current?.focus();
     }, 10);
@@ -1115,19 +1119,19 @@ export default function LeadsView({
   const handlePostNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNote.trim() && pastedImages.length === 0) return;
-    
+
     setIsUploadingNote(true);
     setNoteError('');
     try {
       let uploadedUrls: string[] = [];
-    
+
       if (pastedImages.length > 0 && onUploadImageForTimeline) {
         for (const file of pastedImages) {
           const url = await onUploadImageForTimeline(file);
           if (url) uploadedUrls.push(url);
         }
       }
-    
+
       await onAddTimelineEvent(selectedLead.id, {
         type: "note",
         author: "", // The authenticated author is set by the server.
@@ -1152,7 +1156,7 @@ export default function LeadsView({
   const handleCreateLead = (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadName.trim()) return;
-    
+
     onAddLead({
       name: leadName,
       status: "Nuevo",
@@ -1200,7 +1204,7 @@ export default function LeadsView({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#DCE4EB]/30 pb-4">
         <div>
           <h1 className="font-sans text-[26px] font-bold text-[#102A46] tracking-tight">{viewTitle || "Carpeta de Leads & Clientes"}</h1>
-          {!(isInsuranceView && userRole === "admin") && <p className="font-sans text-xs text-[#566A7E] mt-1 font-medium">{viewSubtitle || "Cronologías de reclamos de seguros, visitas de peritos y archivos técnicos de propiedad."}</p>}
+          {userRole !== "contractor" && !(isInsuranceView && userRole === "admin") && <p className="font-sans text-xs text-[#566A7E] mt-1 font-medium">{viewSubtitle || "Cronologías de reclamos de seguros, visitas de peritos y archivos técnicos de propiedad."}</p>}
         </div>
         <button
           onClick={() => setIsAddingLead(!isAddingLead)}
@@ -1215,7 +1219,7 @@ export default function LeadsView({
         <form onSubmit={handleCreateLead} className="w-full space-y-6">
           {isInsuranceView ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-              
+
               {/* Left Card: Homeowner Details */}
               <div className="bg-white border border-[#DCE4EB]/30 rounded-2xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
                 <div className="space-y-4">
@@ -1223,13 +1227,13 @@ export default function LeadsView({
                     <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#664A14] font-bold">1</span>
                     <span>Datos del Homeowner (Propietario)</span>
                   </h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {userRole === "admin" && organizations && organizations.length > 0 && (
                       <div className="md:col-span-2">
                         <label className="block text-[11px] font-bold text-[#664A14] mb-1">Empresa / Contratista Asignado</label>
-                        <select 
-                          value={selectedOrgId} 
+                        <RoleSelect
+                          value={selectedOrgId}
                           onChange={(e) => setSelectedOrgId(e.target.value)}
                           className="w-full bg-white border border-[#DCE4EB]/80 rounded-lg p-2 text-xs text-[#191c1e] font-bold focus:border-[#8C6A22] outline-none cursor-pointer"
                           required
@@ -1237,66 +1241,66 @@ export default function LeadsView({
                           {organizations.map((org) => (
                             <option key={org.id} value={org.id}>{org.name}</option>
                           ))}
-                        </select>
+                        </RoleSelect>
                       </div>
                     )}
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Nombre Completo</label>
-                      <input 
-                        type="text" 
-                        value={leadName} 
+                      <RoleInput
+                        type="text"
+                        value={leadName}
                         onChange={(e) => setLeadName(e.target.value)}
-                        placeholder="Nombre del propietario" 
+                        placeholder="Nombre del propietario"
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                         required
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Dirección Física</label>
-                      <input 
-                        type="text" 
-                        value={leadAddress} 
+                      <RoleInput
+                        type="text"
+                        value={leadAddress}
                         onChange={(e) => setLeadAddress(e.target.value)}
-                        placeholder="Ej. 1244 Maplewood Dr, Austin" 
+                        placeholder="Ej. 1244 Maplewood Dr, Austin"
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Teléfono de Contacto 1</label>
-                      <input 
-                        type="text" 
-                        value={leadPhone} 
+                      <RoleInput
+                        type="text"
+                        value={leadPhone}
                         onChange={(e) => setLeadPhone(e.target.value)}
-                        placeholder="(555) 012-3456" 
+                        placeholder="(555) 012-3456"
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Correo Electrónico 1</label>
-                      <input 
-                        type="email" 
-                        value={leadEmail} 
+                      <RoleInput
+                        type="email"
+                        value={leadEmail}
                         onChange={(e) => setLeadEmail(e.target.value)}
-                        placeholder="ejemplo@correo.com" 
+                        placeholder="ejemplo@correo.com"
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Nombre del Vendedor (Rep. Asignado)</label>
-                      <input 
-                        type="text" 
-                        value={leadAssignedRep} 
+                      <RoleInput
+                        type="text"
+                        value={leadAssignedRep}
                         onChange={(e) => setLeadAssignedRep(e.target.value)}
-                        placeholder="Ej. Michael Chen" 
+                        placeholder="Ej. Michael Chen"
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                       />
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Nota (Observación Extra)</label>
-                      <textarea 
-                        value={homeownerNotes} 
+                      <RoleTextarea
+                        value={homeownerNotes}
                         onChange={(e) => setHomeownerNotes(e.target.value)}
-                        placeholder="Escribe alguna observación o comentario extra del propietario..." 
+                        placeholder="Escribe alguna observación o comentario extra del propietario..."
                         rows={3}
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none resize-none"
                       />
@@ -1304,7 +1308,7 @@ export default function LeadsView({
                   </div>
                 </div>
               </div>
-              
+
               {/* Right Card: Insurance Details */}
               <div className="bg-white border border-[#DCE4EB]/30 rounded-2xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
                 <div className="space-y-4">
@@ -1312,7 +1316,7 @@ export default function LeadsView({
                     <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#664A14] font-bold">2</span>
                     <span>Datos de la Aseguradora</span>
                   </h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <div className="flex items-center justify-between mb-1">
@@ -1328,7 +1332,7 @@ export default function LeadsView({
                           </button>
                         )}
                       </div>
-                      <select 
+                      <RoleSelect
                         value={leadInsurance}
                         onChange={(e) => setLeadInsurance(e.target.value)}
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
@@ -1336,7 +1340,7 @@ export default function LeadsView({
                         {dynamicInsuranceCompanies.map((company) => (
                           <option key={company} value={company}>{company}</option>
                         ))}
-                      </select>
+                      </RoleSelect>
 
                       {(newClaimKnownContacts.emails.length > 0 || newClaimKnownContacts.phones.length > 0) && (
                         <div className="mt-2 p-2.5 bg-blue-50/80 border border-blue-200/80 rounded-xl flex items-center justify-between gap-2">
@@ -1362,78 +1366,78 @@ export default function LeadsView({
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Número de Claim</label>
-                      <input 
-                        type="text" 
-                        value={insuranceClaimNumber} 
+                      <RoleInput
+                        type="text"
+                        value={insuranceClaimNumber}
                         onChange={(e) => setInsuranceClaimNumber(e.target.value)}
-                        placeholder="Número de reclamación" 
+                        placeholder="Número de reclamación"
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Nombre Ajustador</label>
-                      <input 
-                        type="text" 
-                        value={leadAdjusterName} 
+                      <RoleInput
+                        type="text"
+                        value={leadAdjusterName}
                         onChange={(e) => setLeadAdjusterName(e.target.value)}
-                        placeholder="Ej. John Doe" 
+                        placeholder="Ej. John Doe"
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Número de Póliza</label>
-                      <input 
-                        type="text" 
-                        value={insurancePolicy} 
+                      <RoleInput
+                        type="text"
+                        value={insurancePolicy}
                         onChange={(e) => setInsurancePolicy(e.target.value)}
-                        placeholder="Número de póliza" 
+                        placeholder="Número de póliza"
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Tipo de Daño</label>
-                      <select 
-                        value={insuranceDamage} 
+                      <RoleSelect
+                        value={insuranceDamage}
                         onChange={(e) => setInsuranceDamage(e.target.value)}
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                       >
                         {DAMAGE_TYPES.map((type) => (
                           <option key={type} value={type}>{type}</option>
                         ))}
-                      </select>
+                      </RoleSelect>
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Fecha de Pérdida</label>
-                      <input 
-                        type="date" 
-                        value={insuranceLossDate} 
+                      <RoleInput
+                        type="date"
+                        value={insuranceLossDate}
                         onChange={(e) => setInsuranceLossDate(e.target.value)}
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Teléfono Seguro 1</label>
-                      <input 
-                        type="text" 
-                        value={insPhone1} 
+                      <RoleInput
+                        type="text"
+                        value={insPhone1}
                         onChange={(e) => setInsPhone1(e.target.value)}
-                        placeholder="Teléfono primario" 
+                        placeholder="Teléfono primario"
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Correo Seguro 1</label>
-                      <input 
-                        type="email" 
-                        value={insEmail1} 
+                      <RoleInput
+                        type="email"
+                        value={insEmail1}
                         onChange={(e) => setInsEmail1(e.target.value)}
-                        placeholder="correo1@seguro.com" 
+                        placeholder="correo1@seguro.com"
                         className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                       />
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-[11px] font-bold text-[#45464d] mb-1">Nota (Observación Extra)</label>
-                      <textarea
+                      <RoleTextarea
                         value={insuranceNotes}
                         onChange={(e) => setInsuranceNotes(e.target.value)}
                         placeholder="Escribe una observación o comentario sobre la aseguradora..."
@@ -1444,7 +1448,7 @@ export default function LeadsView({
                   </div>
                 </div>
               </div>
-              
+
             </div>
           ) : (
             // Leads view - Single card
@@ -1454,8 +1458,8 @@ export default function LeadsView({
                 {userRole === "admin" && organizations && organizations.length > 0 && (
                   <div className="md:col-span-2">
                     <label className="block text-[11px] font-bold text-[#664A14] mb-1">Empresa / Contratista Asignado</label>
-                    <select 
-                      value={selectedOrgId} 
+                    <RoleSelect
+                      value={selectedOrgId}
                       onChange={(e) => setSelectedOrgId(e.target.value)}
                       className="w-full bg-white border border-[#DCE4EB]/80 rounded-lg p-2 text-xs text-[#191c1e] font-bold focus:border-[#8C6A22] outline-none cursor-pointer"
                       required
@@ -1463,63 +1467,63 @@ export default function LeadsView({
                       {organizations.map((org) => (
                         <option key={org.id} value={org.id}>{org.name}</option>
                       ))}
-                    </select>
+                    </RoleSelect>
                   </div>
                 )}
                 <div>
                   <label className="block text-[11px] font-bold text-[#45464d] mb-1">Nombre Completo</label>
-                  <input 
-                    type="text" 
-                    value={leadName} 
+                  <RoleInput
+                    type="text"
+                    value={leadName}
                     onChange={(e) => setLeadName(e.target.value)}
-                    placeholder="Nombre del propietario" 
+                    placeholder="Nombre del propietario"
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-[#45464d] mb-1">Dirección Física</label>
-                  <input 
-                    type="text" 
-                    value={leadAddress} 
+                  <RoleInput
+                    type="text"
+                    value={leadAddress}
                     onChange={(e) => setLeadAddress(e.target.value)}
-                    placeholder="Ej. 1244 Maplewood Dr, Austin" 
+                    placeholder="Ej. 1244 Maplewood Dr, Austin"
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-[#45464d] mb-1">Teléfono de Contacto 1</label>
-                  <input 
-                    type="text" 
-                    value={leadPhone} 
+                  <RoleInput
+                    type="text"
+                    value={leadPhone}
                     onChange={(e) => setLeadPhone(e.target.value)}
-                    placeholder="(555) 012-3456" 
+                    placeholder="(555) 012-3456"
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-[#45464d] mb-1">Correo Electrónico 1</label>
-                  <input 
-                    type="email" 
-                    value={leadEmail} 
+                  <RoleInput
+                    type="email"
+                    value={leadEmail}
                     onChange={(e) => setLeadEmail(e.target.value)}
-                    placeholder="ejemplo@correo.com" 
+                    placeholder="ejemplo@correo.com"
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-[#45464d] mb-1">Superficie Estimada (SQFT)</label>
-                  <input 
-                    type="number" 
-                    value={leadSqft} 
+                  <RoleInput
+                    type="number"
+                    value={leadSqft}
                     onChange={(e) => setLeadSqft(Number(e.target.value))}
-                    placeholder="2000" 
+                    placeholder="2000"
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-[#45464d] mb-1">Compañía de Seguros</label>
-                  <select 
+                  <RoleSelect
                     value={leadInsurance}
                     onChange={(e) => setLeadInsurance(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
@@ -1527,49 +1531,49 @@ export default function LeadsView({
                     {dynamicInsuranceCompanies.map((company) => (
                       <option key={company} value={company}>{company}</option>
                     ))}
-                  </select>
+                  </RoleSelect>
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-[#45464d] mb-1">Nombre del Vendedor (Rep. Asignado)</label>
-                  <input 
-                    type="text" 
-                    value={leadAssignedRep} 
+                  <RoleInput
+                    type="text"
+                    value={leadAssignedRep}
                     onChange={(e) => setLeadAssignedRep(e.target.value)}
-                    placeholder="Ej. Michael Chen" 
+                    placeholder="Ej. Michael Chen"
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
               </div>
             </div>
           )}
-          
+
           {/* Action buttons (fixed/styled row) */}
           <div className={`flex justify-end gap-2 p-4 bg-white border border-[#DCE4EB]/30 rounded-2xl shadow-sm w-full ${isInsuranceView ? "" : "max-w-2xl"}`}>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setIsAddingLead(false)}
               className="px-4 py-2 border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-slate-100 transition-colors"
             >
               Cancelar
             </button>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="btn-responsive btn-gold-3d px-4 py-2 bg-[#8C6A22] text-slate-900 text-xs font-bold rounded-lg shadow-sm hover:bg-[#664A14] transition-colors"
             >
               {formSubmitLabel || "Registrar Prospecto"}
             </button>
           </div>
-          
+
         </form>
       )}
 
       {/* Main Content Pane */}
       {selectedLead && (
         <div className="claim-case-layout grid grid-cols-1 xl:grid-cols-[310px_minmax(0,1fr)] gap-5 items-start">
-        
+
         {/* Columna 2: Ficha Técnica (Dividida en 2 Cuadros: Homeowner e Información del Seguro) */}
         <div className="claim-case-sidebar flex flex-col gap-4">
-          
+
           {/* CUADRO 1: Información del Homeowner */}
           <div className={`claim-profile-card bg-white border border-[#DCE4EB]/30 rounded-2xl p-4 shadow-sm flex flex-col space-y-3 ${useContractorProfileStyle ? "contractor-profile-card contractor-homeowner-card" : ""}`}>
             <div className="claim-profile-card-header flex items-center justify-between border-b border-gray-100 pb-2 w-full">
@@ -1578,9 +1582,9 @@ export default function LeadsView({
                 <h2 className="font-sans text-xs font-bold text-[#102A46]">Información del Homeowner</h2>
               </div>
               {!isEditingLead && onUpdateLead && (
-                <button 
+                <button
                   type="button"
-                  onClick={handleStartEdit} 
+                  onClick={handleStartEdit}
                   className="text-[#664A14] hover:text-[#664A14] text-[10px] font-bold transition-colors cursor-pointer"
                 >
                   Editar
@@ -1592,52 +1596,52 @@ export default function LeadsView({
               <div className="space-y-3 text-xs">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nombre Propietario</label>
-                  <input 
-                    type="text" 
-                    value={editName} 
-                    onChange={(e) => setEditName(e.target.value)} 
+                  <RoleInput
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Dirección Física</label>
-                  <input 
-                    type="text" 
-                    value={editAddress} 
-                    onChange={(e) => setEditAddress(e.target.value)} 
+                  <RoleInput
+                    type="text"
+                    value={editAddress}
+                    onChange={(e) => setEditAddress(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Teléfono Principal</label>
-                  <input 
-                    type="text" 
-                    value={editPhone} 
-                    onChange={(e) => setEditPhone(e.target.value)} 
+                  <RoleInput
+                    type="text"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Electrónico</label>
-                  <input 
-                    type="email" 
-                    value={editEmail} 
-                    onChange={(e) => setEditEmail(e.target.value)} 
+                  <RoleInput
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Vendedor (Rep. Asignado)</label>
-                  <input 
-                    type="text" 
-                    value={editAssignedRep} 
-                    onChange={(e) => setEditAssignedRep(e.target.value)} 
+                  <RoleInput
+                    type="text"
+                    value={editAssignedRep}
+                    onChange={(e) => setEditAssignedRep(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
               </div>
-            ) : (
+            ) : userRole === "contractor" ? <HomeownerProfile lead={selectedLead} /> : (
               <div className="claim-profile-data space-y-3 text-xs text-center">
                 <div className={useContractorProfileStyle ? "contractor-profile-identity" : undefined}>
                   {useContractorProfileStyle && <span className="contractor-profile-mark"><Home aria-hidden="true" /></span>}
@@ -1697,15 +1701,15 @@ export default function LeadsView({
                       </button>
                     )}
                   </div>
-                  <select 
-                    value={editInsuranceProvider} 
-                    onChange={(e) => setEditInsuranceProvider(e.target.value)} 
+                  <RoleSelect
+                    value={editInsuranceProvider}
+                    onChange={(e) => setEditInsuranceProvider(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   >
                     {dynamicInsuranceCompanies.map(company => (
                       <option key={company} value={company}>{company}</option>
                     ))}
-                  </select>
+                  </RoleSelect>
 
                   {(editKnownContacts.emails.length > 0 || editKnownContacts.phones.length > 0) && (
                     <div className="mt-2 p-2 bg-blue-50/80 border border-blue-200/80 rounded-xl flex items-center justify-between gap-2">
@@ -1731,73 +1735,73 @@ export default function LeadsView({
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Número de Claim</label>
-                  <input 
-                    type="text" 
-                    value={editClaimNumber} 
-                    onChange={(e) => setEditClaimNumber(e.target.value)} 
+                  <RoleInput
+                    type="text"
+                    value={editClaimNumber}
+                    onChange={(e) => setEditClaimNumber(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Número de Póliza</label>
-                  <input 
-                    type="text" 
-                    value={editPolicyNumber} 
-                    onChange={(e) => setEditPolicyNumber(e.target.value)} 
+                  <RoleInput
+                    type="text"
+                    value={editPolicyNumber}
+                    onChange={(e) => setEditPolicyNumber(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipo de Daño</label>
-                  <select 
-                    value={editDamageType} 
-                    onChange={(e) => setEditDamageType(e.target.value)} 
+                  <RoleSelect
+                    value={editDamageType}
+                    onChange={(e) => setEditDamageType(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   >
                     {DAMAGE_TYPES.map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}
-                  </select>
+                  </RoleSelect>
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Fecha de Pérdida</label>
-                  <input 
-                    type="date" 
-                    value={editLossDate} 
-                    onChange={(e) => setEditLossDate(e.target.value)} 
+                  <RoleInput
+                    type="date"
+                    value={editLossDate}
+                    onChange={(e) => setEditLossDate(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Perito / Ajustador</label>
-                  <input 
-                    type="text" 
-                    value={editAdjusterName} 
-                    onChange={(e) => setEditAdjusterName(e.target.value)} 
+                  <RoleInput
+                    type="text"
+                    value={editAdjusterName}
+                    onChange={(e) => setEditAdjusterName(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Teléfono Seguro 1</label>
-                  <input 
-                    type="text" 
-                    value={editInsurancePhone1} 
-                    onChange={(e) => setEditInsurancePhone1(e.target.value)} 
+                  <RoleInput
+                    type="text"
+                    value={editInsurancePhone1}
+                    onChange={(e) => setEditInsurancePhone1(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Correo Seguro 1</label>
-                  <input 
-                    type="email" 
-                    value={editInsuranceEmail1} 
-                    onChange={(e) => setEditInsuranceEmail1(e.target.value)} 
+                  <RoleInput
+                    type="email"
+                    value={editInsuranceEmail1}
+                    onChange={(e) => setEditInsuranceEmail1(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nota de la Aseguradora</label>
-                  <textarea
+                  <RoleTextarea
                     value={editInsuranceNotes}
                     onChange={(e) => setEditInsuranceNotes(e.target.value)}
                     className="w-full bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-lg p-2 text-xs text-[#191c1e] focus:bg-white focus:border-[#8C6A22] outline-none resize-none"
@@ -1806,23 +1810,23 @@ export default function LeadsView({
                 </div>
 
                 <div className="pt-3 border-t border-[#DCE4EB]/30 flex flex-col gap-2">
-                  <button 
+                  <button
                     type="button"
-                    onClick={handleSaveEdit} 
+                    onClick={handleSaveEdit}
                     className="btn-gold-3d w-full text-center py-2 bg-[#8C6A22] hover:bg-[#664A14] text-slate-900 font-bold text-xs rounded-lg transition-colors cursor-pointer"
                   >
                     Guardar Cambios
                   </button>
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => setIsEditingLead(false)} 
+                    onClick={() => setIsEditingLead(false)}
                     className="w-full text-center py-2 border border-gray-300 text-gray-700 font-bold text-xs rounded-lg transition-colors cursor-pointer hover:bg-slate-50"
                   >
                     Cancelar
                   </button>
                 </div>
               </div>
-            ) : (
+            ) : userRole === "contractor" ? <InsuranceProfile lead={selectedLead} /> : (
               <div className="claim-profile-data space-y-3 text-xs text-center">
                 <div className={useContractorProfileStyle ? "contractor-profile-identity" : undefined}>
                   {useContractorProfileStyle && <span className="contractor-profile-mark"><ShieldCheck aria-hidden="true" /></span>}
@@ -1892,7 +1896,7 @@ export default function LeadsView({
 
         {/* Columna 3: Expediente Completo */}
         <div className="claim-workspace bg-white border border-[#DCE4EB]/30 rounded-2xl p-6 shadow-sm flex flex-col space-y-6">
-          
+
           {/* Header Metadata of Selected Lead */}
           <div className="claim-case-header flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#E6ECF1] pb-4">
             <div className="flex items-center gap-3">
@@ -1923,7 +1927,7 @@ export default function LeadsView({
                 </div>
               </div>
             </div>
-            
+
             <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
               {/* Renglón 3 conservado: Estado del Caso */}
               <div className="flex items-center gap-2">
@@ -1990,7 +1994,7 @@ export default function LeadsView({
                     : "border-transparent text-[#566A7E] hover:text-[#102A46]"
                 }`}
               >
-                {tab === "timeline" ? "Línea de Tiempo" : tab === "documents" ? "Documentos" : tab === "records" ? "Registros" : "Finanzas"}
+                <RoleTabIcon tab={tab} />{tab === "timeline" ? "Línea de Tiempo" : tab === "documents" ? "Documentos" : tab === "records" ? "Registros" : "Finanzas"}
               </button>
             ))}
           </div>
@@ -2049,15 +2053,15 @@ export default function LeadsView({
 
               {activeTab === "timeline" && (
                 <div className="space-y-4">
-                  
+
                   {/* Enter note editor form */}
                   <form onSubmit={handlePostNote} className="claim-note-composer bg-[#F4F6F8] border border-[#DCE4EB]/30 rounded-xl p-3 flex flex-col gap-2 relative">
-                    
+
                     {/* Mentions Dropdown */}
                     {noteError && <p role="alert" className="text-xs text-red-600">{noteError}</p>}
                     {showMentions && allowedTeamMembers && allowedTeamMembers.filter(m => {
                       const searchStr = mentionFilter.toLowerCase();
-                      return m.name.toLowerCase().includes(searchStr) || 
+                      return m.name.toLowerCase().includes(searchStr) ||
                              (m.email && m.email.toLowerCase().includes(searchStr));
                     }).length > 0 && (
                       <div className="absolute bottom-full mb-2 w-64 bg-slate-900 border border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50">
@@ -2066,7 +2070,7 @@ export default function LeadsView({
                         </div>
                         {allowedTeamMembers.filter(m => {
                           const searchStr = mentionFilter.toLowerCase();
-                          return m.name.toLowerCase().includes(searchStr) || 
+                          return m.name.toLowerCase().includes(searchStr) ||
                                  (m.email && m.email.toLowerCase().includes(searchStr));
                         }).map((member) => (
                           <button
@@ -2085,18 +2089,18 @@ export default function LeadsView({
                     )}
 
                     <div className="flex gap-2 items-center">
-                      <textarea 
+                      <RoleTextarea
                         ref={inputRef}
-                        value={newNote} 
+                        value={newNote}
                         onChange={handleNoteChange}
                         onPaste={handlePaste}
                         onKeyDown={handleKeyDown}
-                        placeholder="Escribir nota o bitácora... (Ctrl+V para imágenes, Shift+Enter para nueva línea)" 
+                        placeholder="Escribir nota o bitácora... (Ctrl+V para imágenes, Shift+Enter para nueva línea)"
                         className="flex-1 bg-white border border-[#DCE4EB]/50 rounded-lg py-2 px-3 text-xs text-[#191c1e] outline-none focus:ring-1 focus:ring-[#8C6A22] resize-none h-16 scrollbar-thin"
                         disabled={isUploadingNote}
                       />
-                      <button 
-                        type="submit" 
+                      <button
+                        type="submit"
                         disabled={(!newNote.trim() && pastedImages.length === 0) || isUploadingNote}
                         className="btn-gold-3d p-2 bg-[#8C6A22] text-white rounded-lg hover:bg-[#664A14] transition-colors disabled:opacity-50 shrink-0"
                       >
@@ -2107,9 +2111,9 @@ export default function LeadsView({
                       <div className="flex flex-wrap gap-2 pt-2 border-t border-[#DCE4EB]/20">
                         {pastedImages.map((file, idx) => (
                           <div key={idx} className="relative group w-14 h-14 rounded-lg border border-[#DCE4EB]/50 bg-white overflow-hidden">
-                            <img 
-                              src={URL.createObjectURL(file)} 
-                              alt={`Pasted ${idx}`} 
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`Pasted ${idx}`}
                               className="w-full h-full object-cover"
                             />
                             <button
@@ -2157,7 +2161,7 @@ export default function LeadsView({
                             </div>
                             {ev.author && ev.type !== "note" && <p className="text-[11px] font-medium text-[#566A7E]">{ev.author}</p>}
                             <p className="font-sans text-xs text-[#45464d] leading-relaxed whitespace-pre-wrap">{ev.content}</p>
-                            
+
                             {ev.duration && (
                               <span className="inline-block px-1.5 py-0.5 bg-white text-[#566A7E] text-[9px] rounded font-medium border border-[#DCE4EB]/20">Duración: {ev.duration}</span>
                             )}
@@ -2166,9 +2170,9 @@ export default function LeadsView({
                               <div className="flex gap-2 mt-2">
                                 {ev.photos.map((ph, idx) => (
                                   <div key={idx} className="relative group overflow-hidden rounded-lg w-16 h-16 border border-[#DCE4EB]/30 bg-slate-100">
-                                    <img 
-                                      src={ph} 
-                                      alt={`Inspection ${idx}`} 
+                                    <img
+                                      src={ph}
+                                      alt={`Inspection ${idx}`}
                                       referrerPolicy="no-referrer"
                                       className="w-full h-full object-cover group-hover:scale-105 transition-all"
                                     />
@@ -2192,15 +2196,15 @@ export default function LeadsView({
 
               {activeTab === "documents" && (
                 <div className="claim-document-panel space-y-4">
-                  <div 
+                  <div
                     onClick={() => fileInputRef.current?.click()}
                     className={`claim-document-upload flex items-center justify-between p-3.5 bg-[#E6ECF1]/50 border border-[#DCE4EB]/30 border-dashed rounded-xl cursor-pointer transition-all text-center ${isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-100'}`}
                   >
-                    <input 
-                      type="file" 
-                      multiple 
-                      className="hidden" 
-                      ref={fileInputRef} 
+                    <RoleInput
+                      type="file"
+                      multiple
+                      className="hidden"
+                      ref={fileInputRef}
                       onChange={handleFileChange}
                       disabled={isUploading}
                     />
@@ -2231,7 +2235,7 @@ export default function LeadsView({
                           <div className="claim-document-actions flex items-center gap-3">
                             <button onClick={(e) => handleDownloadFile(e, doc)} className="claim-document-download text-xs text-[#664A14] font-bold hover:underline">Descargar</button>
                             {onDeleteDocument && (
-                              <button 
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (confirm("¿Seguro que deseas eliminar este archivo de forma permanente?")) {
@@ -2262,8 +2266,7 @@ export default function LeadsView({
 
       {/* Express Directory Modal for fast copy / insert */}
       {showExpressDirectoryModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in select-none">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+        <RoleModal title={showExpressDirectoryModal || "Directorio de aseguradoras"} onClose={() => setShowExpressDirectoryModal(null)} busy={false} wide={false} outerProps={{"className": "fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in select-none"}} contentProps={{"className": "bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200"}}>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-[#102A46] text-[#8C6A22] flex items-center justify-center font-bold text-xs">
@@ -2277,9 +2280,10 @@ export default function LeadsView({
               <button
                 type="button"
                 onClick={() => setShowExpressDirectoryModal(null)}
+                aria-label="Cerrar directorio"
                 className="text-slate-400 hover:text-slate-600 font-bold"
               >
-                ✕
+                <RoleCloseIcon />
               </button>
             </div>
 
@@ -2383,8 +2387,7 @@ export default function LeadsView({
                 Cerrar
               </button>
             </div>
-          </div>
-        </div>
+          </RoleModal>
       )}
     </div>
   );

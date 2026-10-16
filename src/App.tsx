@@ -5,6 +5,8 @@ import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
 
 import Sidebar from "./components/Sidebar";
+import ContractorNavigation from "./components/contractor/Navigation";
+import { ContractorDesignContext } from "./components/contractor/DesignSystem";
 const MainDashboard = lazy(() => import("./components/MainDashboard"));
 const ContractorDashboard = lazy(() => import("./components/ContractorDashboard"));
 const LeadsView = lazy(() => import("./components/LeadsView"));
@@ -21,7 +23,7 @@ import { eligibleCaseMembers, memberBelongsToOrganization } from "./lib/teamAcce
 import PasswordRecoveryView from "./components/PasswordRecoveryView";
 import ContractorWeather from "./components/ContractorWeather";
 
-import { Menu, X } from "lucide-react";
+import { Menu, X, Search, ChevronRight } from "lucide-react";
 
 type AppRole = "admin" | "contractor";
 
@@ -1320,9 +1322,25 @@ export default function App() {
   const construidosCount = finalizadoCount + esperandoDepreciacionCount;
 
   return (
+    <ContractorDesignContext.Provider value={userRole === "contractor"}>
     <div className={`${userRole === "contractor" ? "contractor-app" : "admin-app"} min-h-screen flex flex-col md:flex-row bg-[#F4F6F8] text-[#191c1e] font-sans antialiased overflow-hidden`}>
 
       {/* Sidebar - Desktop */}
+      {userRole === "contractor" ? (
+      <ContractorNavigation
+        currentView={currentView}
+        onViewChange={(view) => {
+          navigateToView(view);
+          setMobileMenuOpen(false);
+          setSelectedInsuranceClaimId("");
+          setSearchTerm("");
+        }}
+        onLogout={signOut}
+        company={activeOrganization?.company_name || contractorCompany}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+      ) : (
       <Sidebar
         currentView={currentView}
         onViewChange={(view) => {
@@ -1336,9 +1354,10 @@ export default function App() {
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
+      )}
 
       {/* Header - Mobile */}
-      <header className="no-print md:hidden flex items-center justify-between px-6 py-4 bg-[#102A46] text-white border-b border-white/15 shrink-0 select-none">
+      {userRole === "admin" && <header className="no-print md:hidden flex items-center justify-between px-6 py-4 bg-[#102A46] text-white border-b border-white/15 shrink-0 select-none">
         <div className="flex items-center">
           <img
             src={logo}
@@ -1354,17 +1373,15 @@ export default function App() {
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
-      </header>
+      </header>}
 
       {/* Mobile Drawer Navigation links */}
-      {mobileMenuOpen && (
+      {mobileMenuOpen && userRole === "admin" && (
         <div className="md:hidden fixed inset-0 top-[65px] bg-[#102A46] z-50 p-6 flex flex-col space-y-3 animate-fade-in select-none">
           {[
             { id: ViewType.DASHBOARD, label: "Dashboard" },
             { id: ViewType.INSURANCE_CLAIM, label: "Insurance Claim" },
-            ...(userRole === "contractor" ? [{ id: ViewType.CLAIMS, label: "Retail Estimator" }] : []),
             { id: ViewType.PRODUCTION, label: "Production Pipeline" },
-            ...(userRole === "contractor" ? [{ id: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras" }] : []),
             ...(userRole === "admin" ? [
               { id: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras" },
               { id: ViewType.VALORES_INSURANCE, label: "Valores Insurance" },
@@ -1552,9 +1569,7 @@ export default function App() {
                 className="w-full pl-9 pr-8 py-1.5 bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-xl text-xs text-[#102A46] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#8C6A22] focus:border-[#8C6A22] shadow-sm transition-all"
               />
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
+                <Search className="size-4" aria-hidden="true" />
               </div>
               {searchTerm && (
                 <button
@@ -1600,9 +1615,7 @@ export default function App() {
                         </div>
 
                         <div className="flex items-center shrink-0">
-                          <svg className="w-4 h-4 text-[#CBD5E1] group-hover:text-[#664A14] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                          </svg>
+                          <ChevronRight className="size-4" aria-hidden="true" />
                         </div>
                       </div>
                     ))
@@ -1772,5 +1785,6 @@ export default function App() {
 
       </main>
     </div>
+    </ContractorDesignContext.Provider>
   );
 }
