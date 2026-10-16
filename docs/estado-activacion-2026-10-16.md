@@ -9,10 +9,13 @@
 - Supabase Auth: Site URL corregida desde `http://localhost:3001` al dominio del CRM; redirección autorizada `https://crm.xapcongroup.com/**`.
 - Inventario inicial: 144 expedientes; 61 objetos en `documents` y 2 comprobantes privados.
 - Simulación de migración histórica: 10 expedientes y 46 referencias de archivos.
+- Migración ejecutada: 46 archivos copiados y verificados, referencias actualizadas en 10 expedientes; originales conservados. Manifiesto de recuperación local excluido de Git.
+- Comprobación HTTP de una copia: descarga firmada 200, acceso público sin firma 400 y solicitud de firma anónima rechazada.
+- Comprobación con identidad contratista en PostgreSQL (transacción terminada con rollback): cero filas privadas y cero casos fuera de sus permisos; escritura directa de documentos, tareas y timeline denegada.
+- SMTP personalizado ya habilitado; no se cambió su configuración ni se enviaron correos.
 
 ## En curso
 
-- Copia verificada de archivos históricos a `case-files`, conservando los originales.
 - Publicación y verificación del nuevo código.
 
 ## Validación local
