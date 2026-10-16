@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createRequestCache, RequestCapacityError } from './requestCache';
+import { createRequestCache, RequestCapacityError } from './requestCache.js';
 
 export interface ContractorWeatherResult {
   location: string;

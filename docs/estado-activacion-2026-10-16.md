@@ -15,6 +15,7 @@
 - SMTP personalizado ya habilitado; no se cambió su configuración ni se enviaron correos.
 - Segunda simulación después de migrar: cero expedientes y cero referencias históricas pendientes.
 - Preview de Vercel carecía de variables Supabase: se añadieron exclusivamente `VITE_SUPABASE_URL` y la clave pública `anon` como Config para Preview; las variables existentes de producción se conservaron. La clave administrativa no se subió a Vercel.
+- El runtime remoto del clima reveló una importación sin extensión (`requestCache`), incompatible con Node ESM. Se corrigió a `requestCache.js` y se añadió una prueba que ejecuta JavaScript compilado con la resolución nativa de Node.
 
 ## En curso
 
@@ -22,7 +23,7 @@
 
 ## Validación local
 
-TypeScript y compilación correctos. Las 58 pruebas pasaron al permitir la conexión local que necesita la prueba HTTP del servidor (57 en la suite y la prueba HTTP repetida por separado). El primer intento de esa prueba fue bloqueado por el aislamiento de red (`EACCES`), no por una aserción de la aplicación.
+TypeScript y compilación correctos. La suite completa pasó con 59 pruebas, ninguna fallida ni omitida, incluyendo la nueva prueba de Node ESM. Se permitió la conexión local que necesita la prueba HTTP del servidor; el primer intento aislado había sido bloqueado por el entorno (`EACCES`), no por una aserción de la aplicación.
 
 ## Pendiente de comprobación final
 

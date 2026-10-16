@@ -139,7 +139,7 @@ La división completa de los componentes grandes y la consolidación de CSS se m
 
 ## Pruebas locales
 
-Validación final: **58 pruebas aprobadas, ninguna fallida u omitida**, `npm run lint` y `npm run build` correctos. La auditoría de npm después de instalar las dependencias adicionales reportó cero vulnerabilidades.
+Validación final: **59 pruebas aprobadas, ninguna fallida u omitida**, `npm run lint` y `npm run build` correctos. Incluye la resolución nativa de módulos Node ESM de la función del clima. La auditoría de npm después de instalar las dependencias adicionales reportó cero vulnerabilidades.
 
 Se verificaron TypeScript, compilación y pruebas de PostgreSQL local/RLS: preservación de márgenes, aislamiento entre empresas y frente a anónimos, políticas antiguas demasiado amplias, escrituras atómicas, rechazo de accesos cruzados, migración idempotente, protección contra cambios simultáneos y limpieza después de eliminar el caso completo. También hay pruebas del cliente de archivos, del plan de migración histórica, de la caché y función de clima, del importador Excel y del servidor de producción.
 
