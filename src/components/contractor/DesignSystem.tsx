@@ -7,7 +7,7 @@ import { Field, FieldGroup, FieldLabel } from '../ui/field';
 import IllustratedIcon, { type Illustration } from './IllustratedIcon';
 import { History, FolderOpen, Wallet, X } from 'lucide-react';
 
-// Context follows React portals too: shared screens retain their original admin UI.
+// Context follows React portals so shared screens and dialogs keep the active app's shared visual system.
 export const ContractorDesignContext = createContext(false);
 
 export function RoleIconTile({ name, children, className = '' }: { name: Illustration; children: React.ReactNode; className?: string }) {

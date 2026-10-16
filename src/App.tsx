@@ -23,7 +23,7 @@ import { eligibleCaseMembers, memberBelongsToOrganization } from "./lib/teamAcce
 import PasswordRecoveryView from "./components/PasswordRecoveryView";
 import ContractorWeather from "./components/ContractorWeather";
 
-import { Menu, X, Search, ChevronRight } from "lucide-react";
+import { Menu, X, Search, ChevronRight, ChevronDown, Building2, Check } from "lucide-react";
 
 type AppRole = "admin" | "contractor";
 
@@ -201,6 +201,8 @@ export default function App() {
 
   // Views and collapsible menus
   const [openClaimFormOnEnter, setOpenClaimFormOnEnter] = useState(false);
+  const [companyFilterOpen, setCompanyFilterOpen] = useState(false);
+  const companyFilterRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (userRole === "contractor" && currentView === ViewType.VALORES_INSURANCE) {
       navigateToView(ViewType.DASHBOARD);
@@ -210,6 +212,26 @@ export default function App() {
   }, [currentView, userRole]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (!companyFilterOpen) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (event.target instanceof Node && !companyFilterRef.current?.contains(event.target)) {
+        setCompanyFilterOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setCompanyFilterOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [companyFilterOpen]);
 
   // Core CRM States
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -945,7 +967,7 @@ export default function App() {
   };
 
   const handleAddTask = async (leadId: string, taskTitle: string, assignedToId?: string,
-    details?: { dueDate?: string; priority?: 'high' | 'medium' | 'low'; kind?: 'task' | 'inspection' | 'adjuster_meeting' | 'installation'; category?: TaskItem['category']; scheduledTime?: string }
+    details?: { dueDate?: string; priority?: 'high' | 'medium' | 'low'; kind?: TaskItem['kind']; category?: TaskItem['category']; scheduledTime?: string }
   ) => {
     const claim = insuranceClaims.find(l => l.id === leadId) || leads.find(l => l.id === leadId);
     if (assignedToId && !eligibleCaseMembers(teamMembers, claim?.organizationId).some(m => m.id === assignedToId))
@@ -1322,7 +1344,7 @@ export default function App() {
   const construidosCount = finalizadoCount + esperandoDepreciacionCount;
 
   return (
-    <ContractorDesignContext.Provider value={userRole === "contractor"}>
+    <ContractorDesignContext.Provider value={userRole === "contractor" || userRole === "admin"}>
     <div className={`${userRole === "contractor" ? "contractor-app" : "admin-app"} min-h-screen flex flex-col md:flex-row bg-[#F4F6F8] text-[#191c1e] font-sans antialiased overflow-hidden`}>
 
       {/* Sidebar - Desktop */}
@@ -1431,17 +1453,50 @@ export default function App() {
               <div className="h-7 w-px bg-slate-200 hidden sm:block" />
 
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Empresa:</span>
-                <select
-                  value={activeOrganization?.id || "Todas"}
-                  onChange={(e) => handleSetCompanyFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl py-1 px-3 text-xs font-bold text-[#102A46] focus:outline-none focus:ring-1 focus:ring-[#8C6A22] cursor-pointer shadow-sm"
-                >
-                  <option value="Todas">Todas las Empresas (Vista Consolidada)</option>
-                  {organizations.filter(org => !org.is_internal && org.name.trim().toLowerCase() !== "xapcon group").map(org => (
-                     <option key={org.id} value={org.id}>{org.name}</option>
-                  ))}
-                </select>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Empresa</span>
+                <div className="admin-company-filter" ref={companyFilterRef}>
+                  <button
+                    type="button"
+                    className="admin-company-filter-trigger"
+                    aria-haspopup="dialog"
+                    aria-expanded={companyFilterOpen}
+                    aria-label={`Empresa seleccionada: ${activeOrganization?.name || "Todas las empresas"}`}
+                    onClick={() => setCompanyFilterOpen(open => !open)}
+                  >
+                    <span className="admin-company-filter-icon"><Building2 aria-hidden="true" /></span>
+                    <span className="admin-company-filter-copy">
+                      <span className="admin-company-filter-name">{activeOrganization?.name || "Todas las empresas"}</span>
+                      <span className="admin-company-filter-caption">{activeOrganization ? "Empresa seleccionada" : "Vista consolidada"}</span>
+                    </span>
+                    <ChevronDown className={`admin-company-filter-chevron${companyFilterOpen ? " is-open" : ""}`} aria-hidden="true" />
+                  </button>
+                  {companyFilterOpen && (
+                    <div className="admin-company-filter-menu" role="dialog" aria-label="Seleccionar empresa">
+                      <div className="admin-company-filter-options">
+                        {[{ id: "Todas", name: "Todas las empresas", description: "Vista consolidada", isAll: true }, ...organizations.filter(org => !org.is_internal && org.name.trim().toLowerCase() !== "xapcon group").map(org => ({ id: org.id, name: org.name, description: "Empresa", isAll: false }))]
+                          .map(option => {
+                            const selected = option.id === "Todas" ? !activeOrganization : activeOrganization?.id === option.id;
+                            return (
+                              <button
+                                key={option.id}
+                                type="button"
+                                aria-pressed={selected}
+                                className={`admin-company-filter-option${selected ? " is-selected" : ""}`}
+                                onClick={() => {
+                                  handleSetCompanyFilter(option.id);
+                                  setCompanyFilterOpen(false);
+                                }}
+                              >
+                                <span className="admin-company-filter-option-icon"><Building2 aria-hidden="true" /></span>
+                                <span className="admin-company-filter-option-copy"><strong>{option.name}</strong><small>{option.description}</small></span>
+                                {selected && <Check className="admin-company-filter-option-check" aria-hidden="true" />}
+                              </button>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1741,6 +1796,7 @@ export default function App() {
               claims={directoryClaims}
               onNavigateToClaim={handleNavigateToInsuranceClaim}
               canManageDirectory={userRole === "admin"}
+              isSuperAdmin={userRole === "admin"}
               directoryRefreshKey={insuranceRefreshKey}
               onInsuranceRegistered={userRole === "admin" ? () => setInsuranceRefreshKey(k => k + 1) : undefined}
             />

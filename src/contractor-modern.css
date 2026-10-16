@@ -201,7 +201,7 @@
   .contractor-app .claim-document-item { border-color:var(--ui-border); border-radius:10px; }
   .contractor-app .production-page > div > section { background:#edf2ef; border-color:var(--ui-border); border-radius:12px; box-shadow:none; }
   .contractor-app .production-page article { border-color:var(--ui-border); border-radius:10px; box-shadow:0 2px 3px #14332604; }
-  .contractor-app .settings-hero { background:#e5f0e9; color:var(--foreground); border:1px solid #cddfd3; border-radius:14px; box-shadow:none; }
+  .contractor-app .settings-hero { background:#e5f0e9; color:var(--foreground); border:1px solid #cddfd4; border-radius:14px; box-shadow:none; }
   .contractor-app .settings-hero :is(h1,h2,p,.text-white) { color:var(--foreground); }
   .contractor-app .retail-estimator { min-height:0; height:100%; }
   .contractor-app .estimator-case-list { width:260px; background:#fff; border-color:var(--ui-border); }
@@ -289,7 +289,7 @@
   .contractor-app .claim-tabs { gap:4px; overflow-x:auto; }
   .contractor-app .claim-tabs button { display:inline-flex; align-items:center; justify-content:center; gap:7px; white-space:nowrap; min-height:40px; padding:8px 12px; flex-shrink:0; }
   .contractor-app .claim-tabs button[aria-selected="true"] .lucide { --icon-ink:var(--primary); }
-  .contractor-app :is(.claim-document-icon,.claim-document-upload-icon,.contractor-profile-mark,.claim-case-icon) { background:linear-gradient(145deg,#fff,#e8f1ed) !important; border:1px solid #d5e4dd !important; border-radius:12px; box-shadow:0 2px 5px #20353208 !important; }
+  .contractor-app :is(.claim-document-icon,.claim-document-upload-icon,.contractor-profile-mark,.claim-case-icon) { background:linear-gradient(145deg,#fff,#edf4f1) !important; border:1px solid #d5e4dd !important; border-radius:12px; box-shadow:0 2px 5px #20353208 !important; }
   .contractor-app :is(.claim-document-icon,.claim-document-upload-icon,.contractor-profile-mark,.claim-case-icon) > svg { width:50%; height:50%; max-width:28px; max-height:28px; }
   .contractor-app .contractor-panel-head > div > div:first-child { border:1px solid #dce7e1; background:linear-gradient(145deg,#fff,#edf4f1); border-radius:10px; }
   .contractor-app .contractor-panel-head > div > div:first-child > svg { width:20px; height:20px; }
@@ -411,7 +411,7 @@
   .contractor-app .insurance-directory-list label { padding:4px 10px; background:white; border-radius:9px; }
   .contractor-app .insurance-directory-list label input { border:0 !important; box-shadow:none !important; padding-left:0; background:transparent !important; min-width:0; }
   .contractor-app .insurance-directory-list > div:last-child { max-height:calc(100dvh - 360px); min-height:220px; padding:8px; }
-  .contractor-app .insurance-directory-list button[aria-current="true"] { background:#e8f3ed; box-shadow:inset 3px 0 #14665b; border-radius:10px; }
+  .contractor-app .insurance-directory-list button[aria-current="true"] { background:#edf4f1; box-shadow:inset 3px 0 #14665b; border-radius:10px; }
   .contractor-app .insurance-directory-list button[aria-current="true"] .contractor-illustration { background:#fff; }
   .contractor-app .insurance-directory-detail { min-width:0; }
   .contractor-app .insurance-directory-detail > * + * { margin-top:18px; }

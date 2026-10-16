@@ -849,13 +849,7 @@ export default function LeadsView({
         {/* Header */}
         <div className={`insurance-list-heading flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b pb-5 ${isInsuranceView ? "border-[#DCE4EB]" : "border-[#DCE4EB]/30"}`}>
           <div className="flex items-center gap-4">
-            {isInsuranceView && userRole === "admin" && (
-              <div className="admin-claim-heading-icon hidden sm:flex w-12 h-12 rounded-2xl bg-gradient-to-br from-[#102A46] to-[#193856] shadow-md items-center justify-center shrink-0">
-                <ShieldCheck className="w-6 h-6 text-[#D5BF7A]" strokeWidth={1.7} />
-              </div>
-            )}
             <div>
-            {isInsuranceView && userRole === "admin" && <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#664A14] mb-1">Gestión de expedientes</p>}
             <h1 className={`font-sans font-bold tracking-tight ${isInsuranceView ? "text-[28px] text-[#102A46]" : "text-[26px] text-[#102A46]"}`}><RoleSectionIcon name="claim" />
               {viewTitle || "Carpeta de Leads & Clientes"}
             </h1>
@@ -1641,7 +1635,7 @@ export default function LeadsView({
                   />
                 </div>
               </div>
-            ) : userRole === "contractor" ? <HomeownerProfile lead={selectedLead} /> : (
+            ) : useContractorProfileStyle ? <HomeownerProfile lead={selectedLead} /> : (
               <div className="claim-profile-data space-y-3 text-xs text-center">
                 <div className={useContractorProfileStyle ? "contractor-profile-identity" : undefined}>
                   {useContractorProfileStyle && <span className="contractor-profile-mark"><Home aria-hidden="true" /></span>}
@@ -1826,7 +1820,17 @@ export default function LeadsView({
                   </button>
                 </div>
               </div>
-            ) : userRole === "contractor" ? <InsuranceProfile lead={selectedLead} /> : (
+            ) : useContractorProfileStyle ? (
+              <>
+                <InsuranceProfile lead={selectedLead} />
+                {isAdminInsuranceView && (
+                  <div className="case-profile-admin-actions">
+                    <button type="button" className="case-profile-admin-action">Escribir Correo a Ajustador</button>
+                    <button type="button" className="case-profile-admin-action">Escribir Correo al HO</button>
+                  </div>
+                )}
+              </>
+            ) : (
               <div className="claim-profile-data space-y-3 text-xs text-center">
                 <div className={useContractorProfileStyle ? "contractor-profile-identity" : undefined}>
                   {useContractorProfileStyle && <span className="contractor-profile-mark"><ShieldCheck aria-hidden="true" /></span>}
@@ -1982,17 +1986,15 @@ export default function LeadsView({
           </div>
 
           {/* Tab Control */}
-          <div className="claim-tabs flex border-b border-[#E6ECF1] pb-1.5 gap-4">
+          <div className={`claim-tabs flex border-b border-[#E6ECF1] pb-1.5 gap-4 ${isAdminInsuranceView ? "claim-admin-tabs" : ""}`} role="tablist" aria-label="Secciones del expediente">
             {["timeline", "documents", ...(isAdminInsuranceView ? ["records"] : []), ...(userRole === "contractor" ? ["finances"] : [])].map((tab) => (
               <button
                 key={tab}
+                type="button"
+                role="tab"
                 onClick={() => setActiveTab(tab as any)}
                 aria-selected={activeTab === tab}
-                className={`font-sans text-xs font-semibold pb-1 border-b-2 transition-all ${
-                  activeTab === tab
-                    ? "border-[#8C6A22] text-[#102A46] font-bold"
-                    : "border-transparent text-[#566A7E] hover:text-[#102A46]"
-                }`}
+                className={`font-sans text-xs font-semibold pb-1 border-b-2 transition-all ${activeTab === tab ? "border-[#8C6A22] text-[#102A46] font-bold" : "border-transparent text-[#566A7E] hover:text-[#102A46]"}`}
               >
                 <RoleTabIcon tab={tab} />{tab === "timeline" ? "Línea de Tiempo" : tab === "documents" ? "Documentos" : tab === "records" ? "Registros" : "Finanzas"}
               </button>
@@ -2002,24 +2004,39 @@ export default function LeadsView({
           {/* Tab content panel */}
           <div className="claim-tab-content w-full space-y-4">
               {activeTab === "records" && isAdminInsuranceView && selectedLead && (
-                <div className="space-y-4">
-                  <div className="claim-record-tabs flex flex-wrap gap-2 border-b border-[#E6ECF1] pb-2" role="tablist" aria-label="Categorías de registros">
+                <div className="claim-records-view space-y-4">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold tracking-tight text-[#102A46]">Seguimiento del caso</h3>
+                      <p className="mt-1 text-[11px] text-[#718096]">Elige el área para consultar o guardar una actividad.</p>
+                    </div>
+                    <span className="hidden rounded-full border border-[#E5E8E5] bg-[#F8F9F7] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#74818A] sm:inline-flex">3 áreas</span>
+                  </div>
+                  <div className="claim-record-tabs grid grid-cols-1 gap-2 sm:grid-cols-3" role="tablist" aria-label="Categorías de registros">
                     {([
-                      ["nosotros", "Nosotros"],
-                      ["homeowner", "Homeowner"],
-                      ["aseguranza", "Aseguranza"],
-                    ] as const).map(([tab, label]) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        role="tab"
-                        aria-selected={activeRecordTab === tab}
-                        onClick={() => setActiveRecordTab(tab)}
-                        className={`rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors ${activeRecordTab === tab ? "bg-[#102A46] text-white shadow-sm" : "bg-[#F4F6F8] text-[#566A7E] hover:bg-[#E9EEF2] hover:text-[#102A46]"}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                      { tab: "homeowner", label: "Homeowner", description: "Llamadas, correos y SMS", Icon: Home },
+                      { tab: "aseguranza", label: "Aseguranza", description: "Llamadas de seguimiento", Icon: ShieldCheck },
+                      { tab: "nosotros", label: "Nosotros", description: "Envíos y respuestas", Icon: FileText },
+                    ] as const).map(({ tab, label, description, Icon }) => {
+                      const active = activeRecordTab === tab;
+                      return (
+                        <button
+                          key={tab}
+                          type="button"
+                          role="tab"
+                          aria-selected={active}
+                          onClick={() => setActiveRecordTab(tab)}
+                          className={`group flex min-h-[62px] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8C6A22] sm:min-h-[70px] ${active ? "border-[#D6C89F] bg-[#FFFEFA] shadow-[0_3px_10px_rgba(83,66,29,0.07)]" : "border-[#E3E8E9] bg-white hover:border-[#C9D2D4] hover:bg-[#FAFBFA]"}`}
+                        >
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors ${active ? "border-[#E7DAB8] bg-[#F6F1E4] text-[#755613]" : "border-[#E8ECEB] bg-[#F5F7F6] text-[#667984] group-hover:text-[#2F5270]"}`}><Icon className="h-4 w-4" /></span>
+                          <span className="min-w-0 flex-1">
+                            <span className={`block truncate text-xs font-bold ${active ? "text-[#102A46]" : "text-[#42586A]"}`}>{label}</span>
+                            <span className="mt-1 line-clamp-2 text-[9px] font-medium leading-3 text-[#77858C]">{description}</span>
+                          </span>
+                          {active && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#8C6A22]" aria-hidden="true" />}
+                        </button>
+                      );
+                    })}
                   </div>
                   {activeRecordTab === "nosotros" && onSaveAdminClaimRecord && (
                     <div className="space-y-4">

@@ -7,16 +7,9 @@ import {
   Check,
   CheckCircle2,
   Clock3,
-  FileText,
-  Flag,
-  HardHat,
-  Home,
-  ListChecks,
-  Scale,
-  Users,
-  XCircle,
 } from "lucide-react";
 import { KPI, Lead, TaskItem, ViewType } from "../types";
+import IllustratedIcon, { type Illustration } from "./contractor/IllustratedIcon";
 
 interface MainDashboardProps {
   kpis: KPI[];
@@ -30,19 +23,25 @@ interface MainDashboardProps {
 type TaskRow = { claimId: string; claimName: string; claimStatus: string; task: TaskItem };
 type InactivityRow = { claim: Lead; days: number };
 type TaskFilter = "all" | "urgent";
-type InactivityFilter = 3 | 7 | 14;
 
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  "users": Users,
-  "file-text": FileText,
-  "hard-hat": HardHat,
-  "check-circle": CheckCircle2,
-  "clock": Clock3,
-  "trending-up": Activity,
-  "x-circle": XCircle,
-  "scale": Scale,
-  "plus-circle": FileText,
-  "flag": Flag,
+const xapconTaskCategories = new Set<NonNullable<TaskItem["category"]>>([
+  "prepare_supplement",
+  "prepare_estimate",
+  "pending_coc",
+  "request_depreciation",
+]);
+
+const metricIllustrations: Record<string, Illustration> = {
+  "users": "team",
+  "file-text": "claim",
+  "hard-hat": "production",
+  "check-circle": "success",
+  "clock": "clock",
+  "trending-up": "activity",
+  "x-circle": "declined",
+  "scale": "estimate",
+  "plus-circle": "claim",
+  "flag": "production",
 };
 
 const activeClaim = (claim: Lead) => !["Finalizado", "Cancelado", "Negados"].includes(claim.status);
@@ -97,6 +96,68 @@ function taskDueLabel(task: TaskItem, overdueDays: number) {
   return `Vence ${new Intl.DateTimeFormat("es-US", { month: "short", day: "numeric" }).format(due)}`;
 }
 
+function TaskPanel({
+  title,
+  tasks,
+  onNavigateToView,
+  onNavigateToLead,
+  onToggleTask,
+}: {
+  title: string;
+  tasks: TaskRow[];
+  onNavigateToView: (view: ViewType) => void;
+  onNavigateToLead: (leadId: string) => void;
+  onToggleTask?: (leadId: string, taskId: string) => void;
+}) {
+  const [taskFilter, setTaskFilter] = React.useState<TaskFilter>("all");
+  const urgentCount = tasks.filter(({ task }) => daysOverdue(task) > 0).length;
+  const visibleTasks = taskFilter === "urgent"
+    ? tasks.filter(({ task }) => daysOverdue(task) > 0)
+    : tasks;
+
+  return (
+    <section className="h-fit self-start overflow-hidden rounded-2xl border border-[#E0E5E8] border-t-[3px] border-t-[#8C6A22] bg-white shadow-[0_5px_22px_rgba(23,49,74,0.045)]" aria-label={title}>
+      <div className="admin-task-panel-heading flex flex-wrap items-center justify-between gap-2.5 border-b border-[#E9EDEF] bg-[#FCFCFA] px-3.5 py-3 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <IllustratedIcon name="tasks" className="admin-task-heading-icon" />
+          <div className="min-w-0"><h2 className="truncate text-[13px] font-bold text-[#102A46]">{title}</h2><p className="mt-0.5 text-[9px] font-medium text-[#78858D]">{tasks.length} {tasks.length === 1 ? "pendiente" : "pendientes"}</p></div>
+        </div>
+        <div className="flex w-fit rounded-lg border border-[#E3E7E7] bg-white p-0.5 shadow-[0_1px_2px_rgba(23,49,74,0.04)]" role="group" aria-label={`Filtrar ${title}`}>
+          <FilterButton active={taskFilter === "all"} onClick={() => setTaskFilter("all")}>Todas</FilterButton>
+          <FilterButton active={taskFilter === "urgent"} onClick={() => setTaskFilter("urgent")}>Vencidas <span className="ml-1 tabular-nums">{urgentCount}</span></FilterButton>
+        </div>
+      </div>
+      <div className="max-h-[430px] divide-y divide-[#F0F2F3] overflow-y-auto">
+        {visibleTasks.length === 0 ? (
+          <EmptyState icon={<CheckCircle2 className="h-5 w-5" />} title={taskFilter === "urgent" ? "Sin tareas vencidas" : "Todo al día"} description={taskFilter === "urgent" ? "No hay tareas pendientes que hayan superado su fecha límite." : `No hay tareas pendientes en ${title.toLowerCase()}.`} />
+        ) : visibleTasks.map(({ claimId, claimName, claimStatus, task }) => {
+          const age = daysOverdue(task);
+          const isUrgent = age > 0;
+          return (
+            <article key={`${claimId}-${task.id}`} className={`group flex items-start gap-2.5 border-l-2 px-3 py-3.5 transition-colors hover:bg-[#FAFBFB] sm:px-4 ${isUrgent ? "border-l-[#C95648] bg-[#FFFDFC]" : "border-l-transparent"}`}>
+              <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${isUrgent ? "bg-[#FCEDEA] text-[#B5493B]" : "bg-[#F7F4E9] text-[#755613]"}`}>{isUrgent ? <AlertCircle className="h-3.5 w-3.5" /> : <Clock3 className="h-3.5 w-3.5" />}</span>
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                  <button type="button" onClick={() => onNavigateToLead(claimId)} className="max-w-full truncate text-[10px] font-bold text-[#2F5270] hover:text-[#755613]">{claimName}</button>
+                  {task.assignedTo && <span className="max-w-[100px] truncate rounded-full bg-[#EEF3F7] px-2 py-0.5 text-[9px] font-semibold text-[#465D70]">{task.assignedTo}</span>}
+                  {isUrgent && <span className="rounded-full bg-[#FCEDEA] px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-[#B5493B]">Vencida</span>}
+                </div>
+                <p className="break-words text-xs font-semibold leading-5 text-[#1D3449]">{task.title}</p>
+                <p className="mt-1 truncate text-[10px] text-slate-500">{claimStatus} <span className="px-1 text-slate-300">·</span> {taskDueLabel(task, age)}</p>
+              </div>
+              {onToggleTask && <button type="button" onClick={() => onToggleTask(claimId, task.id)} aria-label={`Marcar como lista: ${task.title}`} className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[#DCE4E8] px-2 text-[10px] font-bold text-[#465D70] transition hover:border-[#755613] hover:bg-[#FBF9F2] hover:text-[#664A14] focus-visible:outline-[#755613]"><Check className="h-3.5 w-3.5" /><span className="hidden sm:inline">Completar</span></button>}
+            </article>
+          );
+        })}
+      </div>
+      <div className="flex items-center justify-between gap-2 border-t border-[#EDF0F1] bg-[#FAFBFB] px-3 py-2.5 sm:px-4">
+        <p className="truncate text-[9px] text-slate-500">{urgentCount ? <><span className="font-bold text-[#B5493B]">{urgentCount} requieren atención</span><span> por fecha límite</span></> : "Sin acciones vencidas"}</p>
+        <button type="button" onClick={() => onNavigateToView(ViewType.INSURANCE_CLAIM)} className="inline-flex shrink-0 items-center gap-1 text-[9px] font-bold text-[#2F5270] transition hover:text-[#755613]">Ver expedientes <ArrowRight className="h-3 w-3" /></button>
+      </div>
+    </section>
+  );
+}
+
 export default function MainDashboard({
   kpis,
   onNavigateToView,
@@ -105,116 +166,73 @@ export default function MainDashboard({
   onToggleTask,
   taskComposer,
 }: MainDashboardProps) {
-  const [taskFilter, setTaskFilter] = React.useState<TaskFilter>("all");
-  const [inactivityFilter, setInactivityFilter] = React.useState<InactivityFilter>(7);
 
   const pendingTasks = React.useMemo<TaskRow[]>(() => claims.flatMap(claim => {
     if (!claim || !activeClaim(claim)) return [];
     return (claim.tasks || [])
-      .filter(task => task.status === "pending")
+      .filter(task => task.status === "pending" && (!task.kind || task.kind === "task"))
       .map(task => ({ claimId: claim.id, claimName: claim.name, claimStatus: claim.status, task }));
   }), [claims]);
+
+  const xapconTasks = pendingTasks.filter(({ task }) => task.category && xapconTaskCategories.has(task.category));
+  const contractorTasks = pendingTasks.filter(({ task }) => !task.category || !xapconTaskCategories.has(task.category));
 
   const inactivityRows = React.useMemo<InactivityRow[]>(() => claims
     .filter(activeClaim)
     .map(claim => ({ claim, days: daysSinceLastActivity(claim) }))
     .sort((a, b) => b.days - a.days), [claims]);
 
-  const urgentTaskCount = pendingTasks.filter(({ task }) => daysOverdue(task) > 0).length;
-  const criticalClaimCount = inactivityRows.filter(({ days }) => days >= 14).length;
-  const visibleTasks = taskFilter === "urgent"
-    ? pendingTasks.filter(({ task }) => daysOverdue(task) > 0)
-    : pendingTasks;
-  const visibleClaims = inactivityRows.filter(({ days }) => days >= inactivityFilter);
+  const visibleClaims = inactivityRows.filter(({ days }) => days >= 3);
 
   return (
     <main className="crm-workspace min-h-0 flex-1 overflow-y-auto bg-[#F2F4F6]" aria-label="Dashboard de superadministrador">
-      <div className="mx-auto w-full max-w-[1680px] space-y-5 p-4 sm:p-6 2xl:p-8">
+      <div className="mx-auto w-full max-w-[1680px] space-y-4 p-4 sm:space-y-5 sm:p-6 2xl:p-8">
         <section className="admin-dashboard-hero relative overflow-hidden rounded-[22px] bg-[#102A46] px-5 py-4 text-white shadow-[0_16px_38px_rgba(23,49,74,0.14)] sm:px-7 sm:py-5">
           <div className="pointer-events-none absolute -right-10 -top-24 h-72 w-72 rounded-full border border-white/[0.07]" />
           <div className="pointer-events-none absolute -right-1 -top-16 h-56 w-56 rounded-full border border-white/[0.08]" />
           <div className="pointer-events-none absolute bottom-0 right-0 h-1 w-2/5 bg-gradient-to-l from-[#8C6A22] to-transparent" />
           <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl">
-              <div className="mb-1.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#D3B566]"><Activity className="h-3.5 w-3.5" /> Panel de control</div>
               <h1 className="font-display text-2xl font-bold tracking-tight sm:text-[30px]">Centro de operaciones</h1>
             </div>
             <div className="admin-dashboard-actions flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
               <div className="admin-dashboard-composer flex shrink-0 flex-wrap items-center gap-2">{taskComposer}</div>
-              <div className="grid grid-cols-2 gap-2 sm:min-w-[310px]">
-                <PrioritySummary icon={<AlertCircle className="h-4 w-4" />} label="Casos inactivos · 14+ d" value={criticalClaimCount} />
-                <PrioritySummary icon={<Clock3 className="h-4 w-4" />} label="Tareas vencidas" value={urgentTaskCount} />
-              </div>
             </div>
           </div>
         </section>
 
         <section aria-labelledby="portfolio-heading">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
-            <MetricCard title="Expedientes" value={String(claims.length)} subtitle="Total en cartera" icon={Home} accent="navy" onClick={() => onNavigateToView(ViewType.INSURANCE_CLAIM)} />
+            <MetricCard title="Expedientes" value={String(claims.length)} illustration="home" onClick={() => onNavigateToView(ViewType.INSURANCE_CLAIM)} />
             {kpis.map((kpi, index) => {
-              const Icon = iconMap[kpi.icon] || FileText;
-              const accent = ["copper", "blue", "navy", "green", "slate"][index % 5] as MetricAccent;
-              return <MetricCard key={`${kpi.title}-${index}`} title={kpi.title} value={kpi.value} subtitle={kpi.subtitle} icon={Icon} accent={accent} onClick={() => onNavigateToView(kpi.title.toLowerCase().includes("constru") ? ViewType.PRODUCTION : ViewType.INSURANCE_CLAIM)} />;
+              const title = kpi.title.toLowerCase();
+              const illustration = title.includes("constru") ? "production"
+                : title.includes("depre") ? "finance"
+                  : title.includes("disput") || title.includes("negad") ? "alert"
+                    : title.includes("finaliz") ? "success"
+                      : title.includes("activo") ? "claim"
+                        : metricIllustrations[kpi.icon] || "claim";
+              return <MetricCard key={`${kpi.title}-${index}`} title={kpi.title} value={kpi.value} illustration={illustration} onClick={() => onNavigateToView(kpi.title.toLowerCase().includes("constru") ? ViewType.PRODUCTION : ViewType.INSURANCE_CLAIM)} />;
             })}
           </div>
         </section>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12 xl:gap-5">
-          <section className="overflow-hidden rounded-2xl border border-[#E0E5E8] bg-white shadow-[0_5px_22px_rgba(23,49,74,0.045)] xl:col-span-7" aria-labelledby="tasks-heading">
-            <div className="flex flex-col gap-3 border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-              <div className="flex items-center gap-3">
-              <span className="admin-icon-well flex h-10 w-10 items-center justify-center rounded-xl border border-[#D3B566]/20 bg-[#8C6A22]/15 text-[#D3B566]"><ListChecks className="h-5 w-5" /></span>
-                <div><h2 id="tasks-heading" className="text-sm font-bold text-white">Tareas pendientes</h2><p className="mt-0.5 text-[10px] text-[#CBD6DE]">Acciones asignadas a través de la cartera</p></div>
-                <span className="ml-1 rounded-full border border-[#D3B566]/20 bg-[#8C6A22]/15 px-2.5 py-1 text-[10px] font-bold tabular-nums text-[#D8C68A]">{pendingTasks.length}</span>
-              </div>
-              <div className="flex w-fit rounded-lg border border-white/10 bg-[#0C2036]/55 p-1" role="group" aria-label="Filtrar tareas">
-                <FilterButton dark active={taskFilter === "all"} onClick={() => setTaskFilter("all")}>Todas</FilterButton>
-                <FilterButton dark active={taskFilter === "urgent"} onClick={() => setTaskFilter("urgent")}>Vencidas <span className="ml-1 tabular-nums">{urgentTaskCount}</span></FilterButton>
-              </div>
-            </div>
-            <div className="max-h-[430px] divide-y divide-[#F0F2F3] overflow-y-auto">
-              {visibleTasks.length === 0 ? (
-                <EmptyState icon={<CheckCircle2 className="h-5 w-5" />} title={taskFilter === "urgent" ? "Sin tareas vencidas" : "Todo al día"} description={taskFilter === "urgent" ? "No hay tareas pendientes que hayan superado su fecha límite." : "No hay tareas pendientes en los expedientes activos."} />
-              ) : visibleTasks.map(({ claimId, claimName, claimStatus, task }) => {
-                const age = daysOverdue(task);
-                const isUrgent = age > 0;
-                return (
-                  <article key={`${claimId}-${task.id}`} className={`group flex items-start gap-3 border-l-2 px-4 py-3.5 transition-colors hover:bg-[#FAFBFB] sm:px-5 ${isUrgent ? "border-l-[#C95648] bg-[#FFFDFC]" : "border-l-transparent"}`}>
-                    <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${isUrgent ? "bg-[#FCEDEA] text-[#B5493B]" : "bg-[#F7F4E9] text-[#755613]"}`}>{isUrgent ? <AlertCircle className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}</span>
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                        <button type="button" onClick={() => onNavigateToLead(claimId)} className="max-w-full truncate text-[10px] font-bold text-[#2F5270] hover:text-[#755613]">{claimName}</button>
-                        {task.assignedTo && <span className="max-w-[130px] truncate rounded-full bg-[#EEF3F7] px-2 py-0.5 text-[9px] font-semibold text-[#465D70]">{task.assignedTo}</span>}
-                        {isUrgent && <span className="rounded-full bg-[#FCEDEA] px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-[#B5493B]">Vencida</span>}
-                      </div>
-                      <p className="break-words text-xs font-semibold leading-5 text-[#1D3449]">{task.title}</p>
-                      <p className="mt-0.5 text-[10px] text-slate-500">{claimStatus} <span className="px-1 text-slate-300">·</span> {taskDueLabel(task, age)}</p>
-                    </div>
-                    {onToggleTask && <button type="button" onClick={() => onToggleTask(claimId, task.id)} aria-label={`Marcar como lista: ${task.title}`} className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[#DCE4E8] px-2.5 text-[10px] font-bold text-[#465D70] transition hover:border-[#755613] hover:bg-[#FBF9F2] hover:text-[#664A14] focus-visible:outline-[#755613]"><Check className="h-3.5 w-3.5" /><span className="hidden sm:inline">Completar</span></button>}
-                  </article>
-                );
-              })}
-            </div>
-            <div className="flex items-center justify-between border-t border-[#EDF0F1] bg-[#FAFBFB] px-4 py-3 sm:px-5">
-              <p className="text-[10px] text-slate-500">{urgentTaskCount ? <><span className="font-bold text-[#B5493B]">{urgentTaskCount} requieren atención</span><span> por fecha límite</span></> : "No hay acciones vencidas"}</p>
-              <button type="button" onClick={() => onNavigateToView(ViewType.INSURANCE_CLAIM)} className="inline-flex items-center gap-1 text-[10px] font-bold text-[#2F5270] transition hover:text-[#755613]">Ver expedientes <ArrowRight className="h-3 w-3" /></button>
-            </div>
-          </section>
+          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:col-span-7">
+            <TaskPanel title="Tareas Xapcon" tasks={xapconTasks} onNavigateToView={onNavigateToView} onNavigateToLead={onNavigateToLead} onToggleTask={onToggleTask} />
+            <TaskPanel title="Tareas Contratistas" tasks={contractorTasks} onNavigateToView={onNavigateToView} onNavigateToLead={onNavigateToLead} onToggleTask={onToggleTask} />
+          </div>
 
           <section className="overflow-hidden rounded-2xl border border-[#E0E5E8] bg-white shadow-[0_5px_22px_rgba(23,49,74,0.045)] xl:col-span-5" aria-labelledby="followup-heading">
-            <div className="border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] px-4 py-4 sm:px-5">
+            <div className="admin-followup-heading border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] px-4 py-3 sm:px-5">
               <div className="flex items-center gap-3">
-                <span className="admin-icon-well flex h-10 w-10 items-center justify-center rounded-xl border border-[#D3B566]/20 bg-[#8C6A22]/15 text-[#D3B566]"><Activity className="h-5 w-5" /></span>
+                <span className="admin-followup-icon contractor-illustration" style={{ "--icon-accent": "#14665b" } as React.CSSProperties}><Activity className="h-5 w-5" /></span>
                 <div className="min-w-0 flex-1"><h2 id="followup-heading" className="text-sm font-bold text-white">Seguimiento de expedientes</h2><p className="mt-0.5 text-[10px] text-[#CBD6DE]">Casos sin movimiento reciente</p></div>
                 <span className="rounded-full border border-[#D3B566]/20 bg-[#8C6A22]/15 px-2.5 py-1 text-[10px] font-bold tabular-nums text-[#D8C68A]">{visibleClaims.length}</span>
               </div>
-              <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Antigüedad de expedientes">
-                {([3, 7, 14] as const).map(days => <FilterButton dark key={days} active={inactivityFilter === days} onClick={() => setInactivityFilter(days)}>Sin actividad · {days}+ d</FilterButton>)}
-              </div>
             </div>
             <div className="max-h-[430px] divide-y divide-[#F0F2F3] overflow-y-auto">
-              {visibleClaims.length === 0 ? <EmptyState icon={<CheckCircle2 className="h-5 w-5" />} title="Cartera al día" description={`No hay expedientes sin actividad por ${inactivityFilter} días o más.`} /> : visibleClaims.map(({ claim, days }) => {
+              {visibleClaims.length === 0 ? <EmptyState icon={<CheckCircle2 className="h-5 w-5" />} title="Cartera al día" description="No hay expedientes sin actividad por 3 días o más." /> : visibleClaims.map(({ claim, days }) => {
                 const urgency = days >= 14
                   ? { dot: "bg-[#B5493B]", pill: "bg-[#FCEDEA] text-[#A64035]", label: "Prioridad alta" }
                   : days >= 7
@@ -243,31 +261,14 @@ export default function MainDashboard({
   );
 }
 
-type MetricAccent = "navy" | "copper" | "blue" | "green" | "slate";
-const metricColors: Record<MetricAccent, { icon: string; line: string; number: string }> = {
-  navy: { icon: "bg-[#EAF0F4] text-[#2F5270]", line: "bg-[#2F5270]", number: "text-[#102A46]" },
-  copper: { icon: "bg-[#F7F4E9] text-[#755613]", line: "bg-[#8C6A22]", number: "text-[#102A46]" },
-  blue: { icon: "bg-[#EDF3FA] text-[#4377A4]", line: "bg-[#4377A4]", number: "text-[#102A46]" },
-  green: { icon: "bg-[#EAF3EF] text-[#36705E]", line: "bg-[#5F927C]", number: "text-[#102A46]" },
-  slate: { icon: "bg-[#F0F3F5] text-[#596D78]", line: "bg-[#98A6AE]", number: "text-[#102A46]" },
-};
-
-function MetricCard({ title, value, icon: Icon, accent, onClick }: { key?: React.Key; title: string; value: string; subtitle?: string; icon: React.ComponentType<{ className?: string }>; accent: MetricAccent; onClick: () => void }) {
-  const colors = metricColors[accent];
+function MetricCard({ title, value, illustration, onClick }: { key?: React.Key; title: string; value: string; illustration: Illustration; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="admin-metric-card group relative flex min-h-[76px] min-w-0 items-center gap-3 overflow-hidden rounded-2xl border border-[#E0E5E8] bg-white px-3 py-3 text-left shadow-[0_4px_15px_rgba(23,49,74,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#D3DBDF] hover:shadow-[0_10px_22px_rgba(23,49,74,0.075)] focus-visible:outline-[#755613] sm:px-3.5">
-      <span className={`absolute inset-x-0 top-0 h-[2px] ${colors.line} opacity-70`} />
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${colors.icon}`}><Icon className="h-4 w-4" /></span>
-      <span className="min-w-0 flex-1"><span title={title} className="line-clamp-2 whitespace-normal break-words text-[9px] font-bold uppercase leading-[1.15] tracking-[0.065em] text-[#73818B]">{title}</span><span className={`mt-1 block truncate text-2xl font-bold leading-none tracking-tight tabular-nums ${colors.number}`}>{value}</span></span>
+      <span className="admin-metric-accent absolute inset-x-0 top-0 h-[2px]" />
+      <IllustratedIcon name={illustration} className="admin-metric-illustration" />
+      <span className="min-w-0 flex-1"><span title={title} className="line-clamp-2 whitespace-normal break-words text-[9px] font-bold uppercase leading-[1.15] tracking-[0.065em] text-[#73818B]">{title}</span><span className="mt-1 block truncate text-2xl font-bold leading-none tracking-tight tabular-nums text-[#102A46]">{value}</span></span>
     </button>
   );
-}
-
-function PrioritySummary({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
-  return <div className="admin-priority-summary min-w-0 rounded-xl border border-white/[0.11] bg-white/[0.055] px-3 py-2.5 backdrop-blur-sm">
-    <div className="admin-priority-label flex items-center gap-1.5"><span className="admin-priority-icon flex h-5 w-5 shrink-0 items-center justify-center rounded-full">{icon}</span><span className="truncate text-[9px] font-bold uppercase tracking-[0.1em]">{label}</span></div>
-    <p className="mt-1.5 text-2xl font-bold leading-none tabular-nums text-white">{value}</p>
-  </div>;
 }
 
 function FilterButton({ active, onClick, children, dark = false }: { key?: React.Key; active: boolean; onClick: () => void; children: React.ReactNode; dark?: boolean }) {

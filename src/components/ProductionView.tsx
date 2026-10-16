@@ -37,9 +37,6 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
     <div className="production-page crm-workspace flex-1 min-h-0 overflow-y-auto p-5 md:p-7 space-y-6">
       <header className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-5 border-b border-[#DCE3E8] pb-6">
         <div className="flex items-start gap-4">
-          <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#102A46] shadow-md shadow-[#102A46]/15">
-            <Layers3 className="h-5 w-5 text-[#D5BF7A]" strokeWidth={1.8} />
-          </div>
           <div>
             <p className="mb-1 text-[10px] font-bold uppercase tracking-[.18em] text-[#664A14]">Operación de proyectos</p>
             <h1 className="font-display text-[28px] font-bold tracking-tight text-[#102A46] md:text-[32px]">

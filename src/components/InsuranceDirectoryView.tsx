@@ -1,6 +1,7 @@
 import { RoleSectionIcon, RoleIconTile } from "./contractor/DesignSystem";
 import { RoleModal } from "./contractor/DesignSystem";
 import { RoleInput, RoleTextarea } from "./contractor/DesignSystem";
+import IllustratedIcon from "./contractor/IllustratedIcon";
 import React, { useEffect, useMemo, useState } from "react";
 import { Lead } from "../types";
 import {
@@ -30,6 +31,7 @@ import {
   Pencil,
   Plus,
   Search,
+  ShieldCheck,
   Trash2,
   Users,
   X,
@@ -41,6 +43,7 @@ interface InsuranceDirectoryViewProps {
   onNavigateToClaim: (claimId: string) => void;
   onInsuranceRegistered?: () => void;
   canManageDirectory?: boolean;
+  isSuperAdmin?: boolean;
   directoryRefreshKey?: number;
 }
 
@@ -53,6 +56,7 @@ export default function InsuranceDirectoryView({
   onNavigateToClaim,
   onInsuranceRegistered,
   canManageDirectory = true,
+  isSuperAdmin = false,
   directoryRefreshKey = 0,
 }: InsuranceDirectoryViewProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -132,10 +136,10 @@ export default function InsuranceDirectoryView({
     const denied = selectedCompany.deniedClaims;
     const active = Math.max(0, total - approved - dispute - denied);
     return [
-      { label: "Aprobados y cerrados", count: approved, color: "bg-emerald-500", text: "text-emerald-700", icon: CheckCircle2 },
-      { label: "En seguimiento", count: active, color: "bg-blue-500", text: "text-blue-700", icon: Activity },
-      { label: "En disputa", count: dispute, color: "bg-amber-500", text: "text-amber-700", icon: Clock3 },
-      { label: "Negados", count: denied, color: "bg-rose-500", text: "text-rose-700", icon: XCircle },
+      { label: "Aprobados y cerrados", count: approved, color: "bg-emerald-500", text: "text-emerald-700", illustration: "success" as const, icon: CheckCircle2 },
+      { label: "En seguimiento", count: active, color: "bg-blue-500", text: "text-blue-700", illustration: "activity" as const, icon: Activity },
+      { label: "En disputa", count: dispute, color: "bg-amber-500", text: "text-amber-700", illustration: "clock" as const, icon: Clock3 },
+      { label: "Negados", count: denied, color: "bg-rose-500", text: "text-rose-700", illustration: "declined" as const, icon: XCircle },
     ].map((item) => ({ ...item, percent: Math.round((item.count / total) * 100) }));
   }, [selectedCompany]);
 
@@ -273,9 +277,9 @@ export default function InsuranceDirectoryView({
             </button>}
           </div>
           <div className="relative mt-4 grid grid-cols-1 gap-3 border-t border-white/10 pt-4 sm:grid-cols-3 sm:gap-6">
-            <SummaryMetric label="Aseguradoras en catálogo" value={summary.companies} icon={Building2} />
-            <SummaryMetric label="Casos relacionados" value={summary.cases} icon={FileText} />
-            <SummaryMetric label="Con correo registrado" value={summary.withContacts} icon={Mail} />
+            <SummaryMetric label="Aseguradoras en catálogo" value={summary.companies} illustration="insurance" icon={Building2} isSuperAdmin={isSuperAdmin} />
+            <SummaryMetric label="Casos relacionados" value={summary.cases} illustration="claim" icon={FileText} isSuperAdmin={isSuperAdmin} />
+            <SummaryMetric label="Con correo registrado" value={summary.withContacts} illustration="mail" icon={Mail} isSuperAdmin={isSuperAdmin} />
           </div>
         </header>
 
@@ -319,7 +323,7 @@ export default function InsuranceDirectoryView({
                     aria-current={isSelected ? "true" : undefined}
                     className={`group flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${isSelected ? "bg-[#F5F1EC] ring-1 ring-[#E9D5C3]" : "hover:bg-slate-50"}`}
                   >
-                    <CompanyMark name={company.name} active={isSelected} />
+                    <CompanyMark active={isSelected} />
                     <span className="min-w-0 flex-1">
                       <span className={`block truncate text-[13px] font-semibold ${isSelected ? "text-[#102A46]" : "text-slate-800"}`}>{company.name}</span>
                       <span className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
@@ -348,7 +352,7 @@ export default function InsuranceDirectoryView({
                 <div className="border-b border-slate-100 px-5 pt-4 xl:hidden"><button onClick={() => setShowMobileDetail(false)} className="inline-flex items-center gap-1.5 pb-3 text-xs font-semibold text-[#664A14]"><ChevronRight className="h-4 w-4 rotate-180" /> Volver a aseguradoras</button></div>
                 <div className="flex flex-col gap-4 border-b border-slate-100 p-5 xl:flex-row xl:items-start xl:justify-between xl:p-6">
                   <div className="flex min-w-0 items-center gap-4">
-                    <CompanyMark name={selectedCompany.name} large />
+                    <CompanyMark large />
                     <div className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[#664A14]">Ficha de aseguradora</p>
                       <h2 className="mt-1 truncate text-xl font-semibold tracking-tight text-[#102A46] sm:text-2xl">{selectedCompany.name}</h2>
@@ -383,9 +387,8 @@ export default function InsuranceDirectoryView({
                     </div>
                     <div className="insurance-status-grid mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {statusBreakdown.map((item) => {
-                        const Icon = item.icon;
                         return <div key={item.label} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-[#FBFCFD] p-3">
-                          <span className={`flex h-9 w-9 items-center justify-center rounded-lg bg-white shadow-sm ${item.text}`}><Icon className="h-4 w-4" /></span>
+                          {isSuperAdmin ? <IllustratedIcon name={item.illustration} className={`insurance-status-icon ${item.text}`} /> : <span className={`flex h-9 w-9 items-center justify-center rounded-lg bg-white shadow-sm ${item.text}`}><item.icon className="h-4 w-4" /></span>}
                           <span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium text-slate-600">{item.label}</span><span className="mt-0.5 block text-sm font-semibold tabular-nums text-slate-900">{item.count} <span className="text-xs font-normal text-slate-400">· {item.percent}%</span></span></span>
                         </div>;
                       })}
@@ -466,17 +469,18 @@ export default function InsuranceDirectoryView({
   );
 }
 
-function SummaryMetric({ label, value, icon: Icon }: { label: string; value: number; icon: React.ElementType }) {
-  return <div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#D5BF7A]"><Icon className="h-4 w-4" /></span><span><span className="block text-lg font-semibold tabular-nums text-white">{value.toLocaleString()}</span><span className="block text-[11px] text-slate-300">{label}</span></span></div>;
+function SummaryMetric({ label, value, illustration, icon: Icon, isSuperAdmin }: { label: string; value: number; illustration: "insurance" | "claim" | "mail"; icon: React.ElementType; isSuperAdmin: boolean }) {
+  return <div className="flex items-center gap-3">{isSuperAdmin ? <IllustratedIcon name={illustration} className="insurance-summary-icon" /> : <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#D5BF7A]"><Icon className="h-4 w-4" /></span>}<span><span className="block text-lg font-semibold tabular-nums text-white">{value.toLocaleString()}</span><span className="block text-[11px] text-slate-300">{label}</span></span></div>;
 }
 
 function DetailMetric({ label, value }: { label: string; value: number }) {
   return <div className="px-4 py-3.5 sm:px-5"><span className="block text-lg font-semibold tabular-nums text-slate-900">{value.toLocaleString()}</span><span className="mt-0.5 block text-xs text-slate-500">{label}</span></div>;
 }
 
-function CompanyMark({ name, active = false, large = false }: { name: string; active?: boolean; large?: boolean }) {
-  const initials = name.split(/[^a-z0-9]+/i).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-  return <RoleIconTile name="insurance" className={large ? "" : "contractor-row-icon"}><span className={`flex shrink-0 items-center justify-center font-semibold tracking-tight ${large ? "h-14 w-14 rounded-2xl text-lg" : "h-10 w-10 rounded-xl text-xs"} ${active || large ? "bg-[#102A46] text-[#D5BF7A]" : "bg-[#F1F4F6] text-slate-600"}`}>{initials}</span></RoleIconTile>;
+function CompanyMark({ active = false, large = false }: { active?: boolean; large?: boolean }) {
+  return <span className={`flex shrink-0 items-center justify-center border border-[#D5E7DE] bg-[#EAF3EF] text-[#14665B] ${large ? "h-14 w-14 rounded-2xl" : "h-10 w-10 rounded-xl"} ${active ? "ring-1 ring-[#14665B]/15" : ""}`}>
+    <ShieldCheck aria-hidden="true" className={large ? "h-7 w-7" : "h-5 w-5"} strokeWidth={1.8} />
+  </span>;
 }
 
 function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {

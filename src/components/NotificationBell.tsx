@@ -17,6 +17,13 @@ interface NotificationBellProps {
   homeownerAlertsEnabled?: boolean;
 }
 
+const excludedReminderStatuses = new Set(["cancelado", "cancelados", "finalizado"]);
+const homeownerContactChannels = new Set(["call", "email", "sms"]);
+
+function isReminderEligibleLead(lead: Lead) {
+  return lead.is_insurance_claim && !excludedReminderStatuses.has(lead.status.trim().toLocaleLowerCase("es"));
+}
+
 export function NotificationBell({
   userId,
   organizationId,
@@ -48,7 +55,7 @@ export function NotificationBell({
 
     return callReminderLeads.flatMap(lead => {
       const sentAt = lead.adminActivity?.lastDocumentsSentAt;
-      if (!lead.is_insurance_claim || !sentAt) return [];
+      if (!isReminderEligibleLead(lead) || !sentAt) return [];
       const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(sentAt);
       if (!match) return [];
       const sentDate = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
@@ -78,8 +85,10 @@ export function NotificationBell({
     };
 
     return homeownerReminderLeads.flatMap(lead => {
-      if (!lead.is_insurance_claim) return [];
-      const contacts = lead.adminHomeownerContacts || [];
+      if (!isReminderEligibleLead(lead)) return [];
+      const contacts = (lead.adminHomeownerContacts || []).filter(contact =>
+        contact.channels.some(channel => homeownerContactChannels.has(channel))
+      );
       const latestContact = contacts.reduce<(typeof contacts)[number] | undefined>((latest, contact) => {
         if (!latest || toLocalDay(contact.contactedAt) > toLocalDay(latest.contactedAt)) return contact;
         return latest;
@@ -173,11 +182,11 @@ export function NotificationBell({
           aria-label="Notificaciones"
           title="Notificaciones"
           onClick={() => togglePanel("notifications")}
-          className="relative rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+          className="superadmin-notification-trigger relative rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+            <span className="superadmin-alert-count absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
@@ -188,11 +197,11 @@ export function NotificationBell({
             aria-label="Alertas de llamadas"
             title="Alertas de llamadas"
             onClick={() => togglePanel("calls")}
-            className={`relative rounded-xl border p-2 transition-colors ${callReminders.length > 0 ? "border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200" : "border-amber-200 bg-amber-50 text-[#8C6A22] hover:bg-[#F4EEDB]"}`}
+            className={`superadmin-notification-trigger relative rounded-xl border p-2 transition-colors ${callReminders.length > 0 ? "border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200" : "border-amber-200 bg-amber-50 text-[#8C6A22] hover:bg-[#F4EEDB]"}`}
           >
             <PhoneCall className="h-5 w-5" />
             {callReminders.length > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white animate-pulse">
+              <span className="superadmin-alert-count absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white animate-pulse">
                 {callReminders.length > 99 ? "99+" : callReminders.length}
               </span>
             )}
@@ -204,11 +213,11 @@ export function NotificationBell({
             aria-label="Seguimiento de homeowner"
             title="Seguimiento de homeowner"
             onClick={() => togglePanel("homeowners")}
-            className={`relative rounded-xl border p-2 transition-colors ${homeownerReminders.length > 0 ? "border-sky-300 bg-sky-100 text-sky-900 hover:bg-sky-200" : "border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100"}`}
+            className={`superadmin-notification-trigger relative rounded-xl border p-2 transition-colors ${homeownerReminders.length > 0 ? "border-sky-300 bg-sky-100 text-sky-900 hover:bg-sky-200" : "border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100"}`}
           >
             <House className="h-5 w-5" />
             {homeownerReminders.length > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white animate-pulse">
+              <span className="superadmin-alert-count absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white animate-pulse">
                 {homeownerReminders.length > 99 ? "99+" : homeownerReminders.length}
               </span>
             )}
@@ -217,7 +226,7 @@ export function NotificationBell({
       </div>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+        <div className="notification-popover absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
             <h3 className="font-bold text-gray-800 text-sm">{activePanel === "calls" ? "Alertas de llamadas" : activePanel === "homeowners" ? "Seguimiento de homeowner" : "Notificaciones"}</h3>
             {activePanel === "notifications" && unreadCount > 0 && (
@@ -307,7 +316,7 @@ export function NotificationBell({
                               <span className="mt-0.5 block truncate text-[11px] text-gray-600">{reminder.email}</span>
                               <span className="mt-1.5 flex items-center gap-1 text-[10px] font-semibold text-sky-800">
                                 <Clock3 className="h-3 w-3" />
-                                {reminder.neverContacted ? `Sin contacto registrado · Caso creado hace ${reminder.daysSinceContact} días` : `${reminder.daysSinceContact} días desde la última actualización`}
+                                {reminder.neverContacted ? `Sin contacto registrado · Caso creado hace ${reminder.daysSinceContact} días` : `${reminder.daysSinceContact} días desde el último contacto`}
                               </span>
                             </span>
                           </span>
@@ -320,7 +329,7 @@ export function NotificationBell({
                 <div className="px-4 py-8 text-center text-gray-500">
                   <House className="mx-auto mb-2 h-8 w-8 text-sky-600/35" />
                   <p className="text-sm font-medium">No hay actualizaciones pendientes</p>
-                  <p className="mt-1 text-xs leading-relaxed">Los casos aparecerán aquí 7 días después del último contacto registrado con el homeowner.</p>
+                  <p className="mt-1 text-xs leading-relaxed">Los casos aparecerán aquí 7 días después de la última llamada, correo o mensaje de texto registrado con el homeowner.</p>
                 </div>
               )}
             </div>

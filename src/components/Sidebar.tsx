@@ -1,16 +1,15 @@
 import React from "react";
-import logo from "../../LogoNegativo-copia.png";
+import logo from "../../LogoXapcon-letra.png";
 import { ViewType } from "../types";
+import IllustratedIcon, { type Illustration } from "./contractor/IllustratedIcon";
 import { 
   LayoutDashboard, 
   FileCheck2,
   FileSignature, 
   HardHat, 
   Users2, 
-  Settings, 
   ChevronLeft,
   ChevronRight,
-  LogOut,
   ShieldCheck,
   ChartNoAxesCombined
 } from "lucide-react";
@@ -43,8 +42,18 @@ const SECTION_TEAM = [
 
 export default function Sidebar({ currentView, onViewChange, onLogout, userRole = "admin", collapsed, onToggleCollapse }: SidebarProps) {
   const renderItem = (item: { type: ViewType; label: string; icon: React.ElementType }) => {
-    const Icon = item.icon;
     const isActive = currentView === item.type;
+    const illustrationByView: Partial<Record<ViewType, Illustration>> = {
+      [ViewType.DASHBOARD]: "home",
+      [ViewType.INSURANCE_CLAIM]: "claim",
+      [ViewType.CLAIMS]: "estimate",
+      [ViewType.PRODUCTION]: "production",
+      [ViewType.INSURANCE_DIRECTORY]: "insurance",
+      [ViewType.VALORES_INSURANCE]: "estimate",
+      [ViewType.TEAM]: "team",
+      [ViewType.SETTINGS]: "settings",
+    };
+    const illustration = illustrationByView[item.type] || "claim";
 
     return (
       <button
@@ -59,7 +68,7 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
             : "w-full px-4 py-2.5 rounded-lg"
         }`}
       >
-        <Icon className={`shrink-0 ${collapsed ? "w-5 h-5" : "w-4 h-4"}`} />
+        <IllustratedIcon name={illustration} className="admin-nav-illustration" />
         {!collapsed && <span className="font-medium tracking-tight">{item.label}</span>}
       </button>
     );
@@ -77,13 +86,13 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
   return (
     <nav
       data-collapsed={collapsed}
-      className={`crm-sidebar hidden md:flex flex-col h-screen text-white fixed left-0 top-0 z-50 shrink-0 select-none transition-all duration-300 ${
+      className={`crm-sidebar hidden md:flex flex-col fixed left-0 top-0 z-50 h-screen shrink-0 select-none transition-all duration-300 ${
         collapsed ? "w-[76px]" : "w-[280px]"
       }`}
-      style={{ background: "linear-gradient(180deg, #172B40 0%, #102136 100%)", borderRight: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ background: "#fff", borderRight: "1px solid var(--ui-border)" }}
     >
       {/* Brand Header */}
-      <div className={`flex items-center border-b border-white/10 ${collapsed ? "justify-center py-5 px-2" : "justify-between px-5 py-5"}`}>
+      <div className={`crm-sidebar-brand flex items-center border-b ${collapsed ? "justify-center py-5 px-2" : "justify-between px-5 py-5"}`}>
         {!collapsed && (
           <img
             src={logo}
@@ -135,7 +144,7 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
           } ${collapsed ? "w-10 h-10 rounded-lg justify-center mx-auto" : "w-full px-4 py-2.5 rounded-lg"}`}
           title="Configuración"
         >
-          <Settings className={`shrink-0 ${collapsed ? "w-5 h-5" : "w-4 h-4"}`} />
+          <IllustratedIcon name="settings" className="admin-nav-illustration" />
           {!collapsed && <span className="font-medium tracking-tight">Configuración</span>}
         </button>
 
@@ -146,7 +155,7 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
           }`}
           title="Cerrar Sesión"
         >
-          <LogOut className={`shrink-0 ${collapsed ? "w-5 h-5" : "w-4 h-4"}`} />
+          <IllustratedIcon name="logout" className="admin-nav-illustration" />
           {!collapsed && <span>Cerrar Sesión</span>}
         </button>
       </div>

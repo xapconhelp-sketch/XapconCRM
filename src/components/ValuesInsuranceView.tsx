@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { AlertCircle, BadgeDollarSign, BarChart3, CalendarDays, Check, CheckCircle2, ChevronRight, CircleDollarSign, FileCheck2, FilePlus2, LoaderCircle, Plus, Search, ShieldCheck, Trash2, TrendingUp } from "lucide-react";
 import { Lead } from "../types";
 import { supabase } from "../lib/supabase";
+import IllustratedIcon from "./contractor/IllustratedIcon";
 
 type EntryKind = "estimate" | "sow" | "supplement";
 type ValueEntry = {
@@ -57,7 +58,7 @@ function ClaimSelector({ claims, selectedId, onSelect, query, onQuery }: {
   const visible = claims.filter((claim) => `${claim.name} ${claim.claimNumber} ${claim.company} ${claim.insuranceProvider}`.toLowerCase().includes(query.trim().toLowerCase()));
   return (
     <aside className="overflow-hidden rounded-[20px] border border-[#DDE3E8] bg-white shadow-[0_8px_30px_rgba(23,49,74,0.045)]">
-      <div className="border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] p-3 sm:p-4">
+      <div className="values-selector-heading border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] p-3 sm:p-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-[16px] font-semibold tracking-[-0.02em] text-white">Expedientes</h2>
           <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[#D3B566]/20 bg-[#8C6A22]/15 px-2 font-sans text-[11px] font-semibold text-[#D8C68A]">{claims.length}</span>
@@ -95,7 +96,7 @@ function ValueEntryCard({ title, subtitle, kind, entries, onChange, onSave, onDe
     <section className="overflow-hidden rounded-[20px] border border-[#DDE3E8] bg-white shadow-[0_8px_30px_rgba(23,49,74,0.045)] transition-shadow duration-200 hover:shadow-[0_12px_34px_rgba(23,49,74,0.065)]">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E9EDF0] bg-[linear-gradient(180deg,#FFFFFF_0%,#FBFCFD_100%)] px-4 py-4 sm:px-5">
         <div className="flex min-w-0 items-center gap-3">
-          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] ${kind === "estimate" ? "bg-[#EEF2F6] text-[#2F5270]" : kind === "sow" ? "bg-[#F7F4E9] text-[#755613]" : "bg-[#EDF4F0] text-[#477B62]"}`}><Icon className="h-[17px] w-[17px]" /></span>
+            <span className={`values-entry-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] ${kind === "estimate" ? "bg-[#EEF2F6] text-[#2F5270]" : kind === "sow" ? "bg-[#F7F4E9] text-[#755613]" : "bg-[#EDF4F0] text-[#477B62]"}`}><Icon className="h-[17px] w-[17px]" /></span>
           <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-display text-[15px] font-semibold tracking-[-0.02em] text-[#102A46]">{title}</h3><span className="rounded-md bg-[#F1F4F6] px-2 py-1 font-sans text-[10px] font-semibold tracking-wide text-[#596D78]">{count}</span></div><p className="mt-1 text-[12px] text-[#596D78]">{subtitle}</p></div>
         </div>
         <div className="flex w-full items-center justify-between gap-3 pl-[52px] sm:w-auto sm:justify-end sm:pl-0">
@@ -140,7 +141,7 @@ function AnalyticsStat({ label, value, detail, icon: Icon, tone = "blue" }: {
     slate: "bg-[#F0F3F5] text-[#596D78]",
   };
   return <article className="min-w-0 rounded-2xl border border-[#DDE3E8] bg-white p-4 shadow-[0_5px_18px_rgba(23,49,74,0.035)] sm:p-5">
-    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[.1em] text-[#687C89]">{label}</p><p className="mt-2 truncate font-display text-[24px] font-semibold tracking-[-.035em] text-[#122B40] sm:text-[28px]">{value}</p></div><span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}><Icon className="h-5 w-5" /></span></div>
+    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[.1em] text-[#687C89]">{label}</p><p className="mt-2 truncate font-display text-[24px] font-semibold tracking-[-.035em] text-[#122B40] sm:text-[28px]">{value}</p></div><span className={`values-analytics-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}><Icon className="h-5 w-5" /></span></div>
     <p className="mt-2 text-[11px] leading-5 text-[#637782]">{detail}</p>
   </article>;
 }
@@ -291,7 +292,7 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
     </div>
 
     <section className="overflow-hidden rounded-2xl border border-[#DDE3E8] bg-white shadow-[0_6px_22px_rgba(23,49,74,0.04)]">
-      <header className="flex flex-col gap-4 border-b border-[#E9EDF0] bg-[linear-gradient(112deg,#102945_0%,#102A46_65%,#1A3854_100%)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="values-analytics-heading flex flex-col gap-4 border-b border-[#E9EDF0] bg-[linear-gradient(112deg,#102945_0%,#102A46_65%,#1A3854_100%)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div><div className="flex items-center gap-2"><CircleDollarSign className="h-4 w-4 text-[#D3B566]" /><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#D3B566]">Lectura por expediente</p></div><h2 className="mt-1 font-display text-[17px] font-semibold tracking-[-.02em] text-white">Desempeño del caso</h2></div>
         <div className="relative w-full sm:max-w-[350px]">
           <label className="relative block"><Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#738596]" /><input value={caseQuery} onFocus={() => setCaseSearchOpen(true)} onBlur={() => setCaseSearchOpen(false)} onChange={(event) => { setCaseQuery(event.target.value); setSelectedCaseId(""); setCaseSearchOpen(true); }} placeholder="Buscar cliente, reclamo o aseguradora" className="h-10 w-full rounded-xl border border-white/15 bg-white px-3 pl-9 text-[12px] text-[#183249] outline-none placeholder:text-[#82909A] focus:border-[#D3B566] focus:ring-4 focus:ring-[#D3B566]/20" /></label>
@@ -484,13 +485,13 @@ export default function ValuesInsuranceView({ claims }: { claims: Lead[] }) {
   return (
     <main className="crm-workspace min-h-0 flex-1 overflow-y-auto bg-[#F2F4F6]" aria-label="Valores Insurance, superadministrador">
       <div className="mx-auto w-full max-w-[1500px] space-y-5 px-4 py-5 sm:px-6 sm:py-7 xl:px-8">
-        <header className="relative isolate overflow-hidden rounded-[22px] border border-[#29465D] bg-[linear-gradient(112deg,#102945_0%,#102A46_58%,#1A3854_100%)] px-5 py-3.5 shadow-[0_12px_32px_rgba(23,49,74,0.16)] sm:px-6 sm:py-4">
+        <header className="values-page-header relative isolate overflow-hidden rounded-[22px] border border-[#29465D] bg-[linear-gradient(112deg,#102945_0%,#102A46_58%,#1A3854_100%)] px-5 py-3.5 shadow-[0_12px_32px_rgba(23,49,74,0.16)] sm:px-6 sm:py-4">
           <div className="pointer-events-none absolute -right-10 -top-20 -z-10 h-52 w-52 rounded-full border border-[#8C6A22]/20" />
           <div className="pointer-events-none absolute -right-1 -top-11 -z-10 h-36 w-36 rounded-full border border-[#D3B566]/30" />
           <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 w-1/2 bg-[radial-gradient(ellipse_at_top_right,rgba(183,122,75,0.18),transparent_68%)]" />
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3.5">
-              <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border border-[#D3B566]/35 bg-[#8C6A22]/15 text-[#D5BF7A] shadow-[inset_0_1px_0_rgba(255,255,255,.1)]"><BadgeDollarSign className="h-[18px] w-[18px]" /></span>
+              <IllustratedIcon name="finance" className="admin-values-header-icon" />
               <div><p className="text-[9px] font-bold uppercase tracking-[0.17em] text-[#D3B566]">Administración de casos</p><h1 className="mt-0.5 font-display text-[23px] font-semibold tracking-[-0.04em] text-white sm:text-[25px]">Valores Insurance</h1></div>
             </div>
             <span className="ml-[58px] inline-flex w-fit items-center gap-1.5 rounded-full border border-[#D3B566]/25 bg-[#0C2036]/55 px-3 py-1.5 text-[9px] font-semibold tracking-wide text-[#D8C68A] sm:ml-0"><span className="h-1.5 w-1.5 rounded-full bg-[#D89B6D]" />Solo superadmin</span>
@@ -505,13 +506,13 @@ export default function ValuesInsuranceView({ claims }: { claims: Lead[] }) {
         {sectionTab === "analysis" ? <ValuesInsuranceAnalytics claims={activeClaims} /> : activeClaims.length === 0 ? <section className="rounded-[20px] border border-dashed border-[#CED7DE] bg-white px-5 py-16 text-center shadow-[0_6px_24px_rgba(23,49,74,0.035)]"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F1F4F6] text-[#8294A2]"><FilePlus2 className="h-5 w-5" /></span><h2 className="mt-4 font-display text-[15px] font-semibold text-[#102A46]">No hay expedientes de seguro</h2><p className="mx-auto mt-1.5 max-w-sm text-[11px] leading-relaxed text-[#596D80]">Cuando la cartera tenga casos, podrás registrar sus estimados, SOW y suplementos aquí.</p></section> : <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
           <ClaimSelector claims={activeClaims} selectedId={selectedClaimId} onSelect={setSelectedClaimId} query={query} onQuery={setQuery} />
           <div className="min-w-0 space-y-4 sm:space-y-5">
-            {selectedClaim && <section className="relative overflow-hidden rounded-[20px] border border-[#29465D] bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] px-4 py-4 shadow-[0_10px_28px_rgba(23,49,74,0.15)] sm:px-5 sm:py-[18px]">
+            {selectedClaim && <section className="values-selected-case relative overflow-hidden rounded-[20px] border border-[#29465D] bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] px-4 py-4 shadow-[0_10px_28px_rgba(23,49,74,0.15)] sm:px-5 sm:py-[18px]">
               <span className="absolute inset-y-4 left-0 w-[3px] rounded-r-full bg-gradient-to-b from-[#D3B566] via-[#8C6A22] to-[#D5BF7A]" />
               <span aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 h-40 w-40 rounded-full border border-[#D3B566]/15" />
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D3B566]/20 bg-[#8C6A22]/15 text-[#D5BF7A]"><FileCheck2 className="h-[17px] w-[17px]" /></span>
-                  <div className="min-w-0"><p className="font-sans text-[10px] font-bold uppercase tracking-[0.15em] text-[#D3B566]">Expediente seleccionado</p><h2 className="mt-1 truncate font-sans text-[18px] font-semibold tracking-[-0.015em] text-white">{selectedClaim.name}</h2><p className="mt-1 truncate font-sans text-[12px] text-[#CBD6DE]">{selectedClaim.company} <span className="mx-1 text-[#D3B566]/70">·</span> {selectedClaim.insuranceProvider}</p></div>
+                  <IllustratedIcon name="claim" className="admin-values-header-icon" />
+                  <div className="min-w-0"><h2 className="truncate font-sans text-[18px] font-semibold tracking-[-0.015em] text-white">{selectedClaim.name}</h2><p className="mt-1 truncate font-sans text-[12px] text-[#CBD6DE]">{selectedClaim.company} <span className="mx-1 text-[#D3B566]/70">·</span> {selectedClaim.insuranceProvider}</p></div>
                 </div>
                 <span className="ml-[52px] w-fit rounded-lg border border-[#D3B566]/25 bg-[#0C2036]/55 px-2.5 py-1.5 font-sans text-[11px] font-semibold tracking-[0.01em] text-[#D8C68A] sm:ml-0">{selectedClaim.claimNumber}</span>
               </div>

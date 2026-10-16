@@ -66,6 +66,8 @@ const kindLabels: Record<NonNullable<TaskItem["kind"]>, string> = {
   inspection: "Inspección",
   adjuster_meeting: "Cita con ajustador",
   installation: "Instalación",
+  visit_homeowner: "Visitar HO",
+  reinspection: "Re inspección",
 };
 const taskCategoryLabels: Record<NonNullable<TaskItem["category"]>, string> = {
   general: "General",
@@ -73,7 +75,23 @@ const taskCategoryLabels: Record<NonNullable<TaskItem["category"]>, string> = {
   visit_homeowner: "Visitar HO",
   call_homeowner: "Llamar HO",
   call_adjuster: "Llamar ADJ",
+  prepare_supplement: "Preparar Suplemento",
+  prepare_estimate: "Preparar Estimado",
+  itel_followup: "Esperando o enviar ITEL",
+  panel_contract_followup: "Esperando o enviar Contrato de Paneles",
+  pending_coc: "Pendiente enviar COC",
+  request_depreciation: "Pendiente Solicitar Depreciación",
+  other: "Otro",
 };
+const taskCategoryOptions = [
+  { value: "prepare_supplement", label: "Preparar Suplemento" },
+  { value: "prepare_estimate", label: "Preparar Estimado" },
+  { value: "itel_followup", label: "Esperando o enviar ITEL" },
+  { value: "panel_contract_followup", label: "Esperando o enviar Contrato de Paneles" },
+  { value: "pending_coc", label: "Pendiente enviar COC" },
+  { value: "request_depreciation", label: "Pendiente Solicitar Depreciación" },
+  { value: "other", label: "Otro" },
+] as const;
 
 export default function ContractorDashboard({
   claims,
@@ -90,7 +108,7 @@ export default function ContractorDashboard({
   const [taskScope, setTaskScope] = React.useState(defaultTaskScope);
   const [modalMode, setModalMode] = React.useState<ModalMode>(null);
   const [kind, setKind] = React.useState<NonNullable<TaskItem["kind"]>>("task");
-  const [category, setCategory] = React.useState<NonNullable<TaskItem["category"]>>("general");
+  const [category, setCategory] = React.useState<NonNullable<TaskItem["category"]>>(taskCategoryOptions[0].value);
   const [claimId, setClaimId] = React.useState("");
   const [title, setTitle] = React.useState("");
   const [dueDate, setDueDate] = React.useState(defaultDate());
@@ -110,7 +128,7 @@ export default function ContractorDashboard({
     (claim.tasks || []).filter((task) => task.status === "pending" && (taskScope === "all" || isTaskAssignedTo(task, currentUserId))).map((task) => ({ claim, task }))
   ), [activeClaims, taskScope, currentUserId]);
 
-  const dueToday = allTasks.filter(({ task }) => task.kind !== "inspection" && task.kind !== "adjuster_meeting" && task.kind !== "installation" && task.dueDate === today);
+  const dueToday = allTasks.filter(({ task }) => (!task.kind || task.kind === "task") && task.dueDate === today);
   const overdue = allTasks.filter(({ task }) => validDayKey(task.dueDate) && task.dueDate < today);
   const scheduled = allTasks
     .filter(({ task }) => task.kind && task.kind !== "task" && validDayKey(task.dueDate) && task.dueDate >= today && task.dueDate <= dayKey(new Date(new Date().setDate(new Date().getDate() + 6))))
@@ -132,7 +150,7 @@ export default function ContractorDashboard({
   const openComposer = (mode: Exclude<ModalMode, null>, preset: NonNullable<TaskItem["kind"]>) => {
     setModalMode(mode);
     setKind(preset);
-    setCategory("general");
+    setCategory(taskCategoryOptions[0].value);
     setClaimId(activeClaims[0]?.id || "");
     setTitle(preset === "task" ? "" : kindLabels[preset]);
     setDueDate(defaultDate());
@@ -149,8 +167,9 @@ export default function ContractorDashboard({
       setFormError("Selecciona un reclamo para asociar esta actividad.");
       return;
     }
-    if (!title.trim()) {
-      setFormError("Escribe un nombre para la actividad.");
+    const taskTitle = kind === "task" && category !== "other" ? taskCategoryLabels[category] : title.trim();
+    if (!taskTitle) {
+      setFormError(category === "other" ? "Escribe una descripción para la tarea Otro." : "Escribe una descripción para la actividad.");
       return;
     }
     if (kind !== "task" && (!dueDate || !scheduledTime)) {
@@ -160,7 +179,7 @@ export default function ContractorDashboard({
     setSaving(true);
     setFormError("");
     try {
-      await onAddTask(claimId, title.trim(), assignedTo || undefined, {
+      await onAddTask(claimId, taskTitle, assignedTo || undefined, {
         dueDate,
         priority,
         kind,
@@ -330,27 +349,14 @@ export default function ContractorDashboard({
             </div>
             <form onSubmit={submit} className="space-y-4 px-5 py-5 sm:px-6"><RoleFieldGroup>
               {modalMode === "task" ? (
-                <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Tipo de tarea o actividad</span><RoleSelect value={kind === "task" ? category : kind} onChange={(event) => {
-                  const value = event.target.value;
-                  if (value === "general" || value === "pending_document" || value === "visit_homeowner" || value === "call_homeowner" || value === "call_adjuster") {
-                    setCategory(value);
-                    setKind("task");
-                    if (Object.values(kindLabels).includes(title)) setTitle("");
-                    return;
-                  }
-                  const next = value as Exclude<NonNullable<TaskItem["kind"]>, "task">;
-                  setKind(next);
-                  setCategory("general");
-                  if (!title || Object.values(kindLabels).includes(title)) setTitle(kindLabels[next]);
-                }} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15">
-                  <optgroup label="Tareas"><option value="general">Tarea general</option><option value="pending_document">Documento pendiente</option><option value="visit_homeowner">Visitar HO</option><option value="call_homeowner">Llamar HO</option><option value="call_adjuster">Llamar ADJ</option></optgroup>
-                  <optgroup label="Actividades agendadas"><option value="inspection">Inspección</option><option value="adjuster_meeting">Cita con ajustador</option><option value="installation">Instalación</option></optgroup>
+                <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Tipo de tarea</span><RoleSelect value={category} onChange={(event) => { setCategory(event.target.value as NonNullable<TaskItem["category"]>); setTitle(""); }} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15">
+                  {taskCategoryOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </RoleSelect></RoleField>
               ) : (
-                <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Tipo de actividad</span><RoleSelect value={kind} onChange={(event) => { const next = event.target.value as Exclude<NonNullable<TaskItem["kind"]>, "task">; setKind(next); if (!title || Object.values(kindLabels).includes(title)) setTitle(kindLabels[next]); }} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15"><option value="inspection">Inspección</option><option value="adjuster_meeting">Cita con ajustador</option><option value="installation">Instalación</option></RoleSelect></RoleField>
+                <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Tipo de actividad</span><RoleSelect value={kind} onChange={(event) => { const next = event.target.value as Exclude<NonNullable<TaskItem["kind"]>, "task">; setKind(next); if (!title || Object.values(kindLabels).includes(title)) setTitle(kindLabels[next]); }} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15"><option value="inspection">Inspección</option><option value="adjuster_meeting">Cita con ajustador</option><option value="installation">Instalación</option><option value="visit_homeowner">Visitar HO</option><option value="reinspection">Re inspección</option></RoleSelect></RoleField>
               )}
               <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Reclamo</span><RoleSelect value={claimId} onChange={(event) => setClaimId(event.target.value)} required className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15"><option value="">Selecciona un reclamo</option>{activeClaims.map((claim) => <option key={claim.id} value={claim.id}>{claim.name}{claim.address ? ` · ${claim.address}` : ""}</option>)}</RoleSelect></RoleField>
-              <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Descripción</span><RoleInput value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={120} placeholder={kind === "task" ? "Ej. Confirmar fecha con el ajustador" : `Ej. ${kindLabels[kind]} inicial`} className="w-full rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></RoleField>
+              {(modalMode === "activity" || category === "other") && <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Descripción</span><RoleInput value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={120} placeholder={kind === "task" ? "Describe la tarea" : `Ej. ${kindLabels[kind]} inicial`} className="w-full rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none placeholder:text-slate-400 focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></RoleField>}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">{kind === "task" ? "Fecha límite" : "Fecha"}</span><RoleInput type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} required={kind !== "task"} className="w-full rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></RoleField>
                 {kind === "task" ? <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Prioridad</span><RoleSelect value={priority} onChange={(event) => setPriority(event.target.value as typeof priority)} className="w-full rounded-xl border border-[#DCE4EB] bg-white px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15"><option value="high">Alta</option><option value="medium">Normal</option><option value="low">Baja</option></RoleSelect></RoleField> : <RoleField><span className="mb-1.5 block text-[11px] font-bold text-[#465D70]">Hora</span><RoleInput type="time" value={scheduledTime} onChange={(event) => setScheduledTime(event.target.value)} required className="w-full rounded-xl border border-[#DCE4EB] px-3 py-2.5 text-sm text-[#102A46] outline-none focus:border-[#755613] focus:ring-2 focus:ring-[#755613]/15" /></RoleField>}

@@ -140,8 +140,10 @@ export interface TaskItem {
   dueDate: string;
   status: "pending" | "completed";
   priority?: "high" | "medium" | "low";
-  kind?: "task" | "inspection" | "adjuster_meeting" | "installation";
-  category?: "general" | "pending_document" | "visit_homeowner" | "call_homeowner" | "call_adjuster";
+  kind?: "task" | "inspection" | "adjuster_meeting" | "installation" | "visit_homeowner" | "reinspection";
+  category?: "general" | "pending_document" | "visit_homeowner" | "call_homeowner" | "call_adjuster"
+    | "prepare_supplement" | "prepare_estimate" | "itel_followup" | "panel_contract_followup"
+    | "pending_coc" | "request_depreciation" | "other";
   scheduledTime?: string;
   assignedTo?: string;
   assignedToId?: string;
