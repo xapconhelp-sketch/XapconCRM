@@ -13,6 +13,8 @@
 - Comprobación HTTP de una copia: descarga firmada 200, acceso público sin firma 400 y solicitud de firma anónima rechazada.
 - Comprobación con identidad contratista en PostgreSQL (transacción terminada con rollback): cero filas privadas y cero casos fuera de sus permisos; escritura directa de documentos, tareas y timeline denegada.
 - SMTP personalizado ya habilitado; no se cambió su configuración ni se enviaron correos.
+- Segunda simulación después de migrar: cero expedientes y cero referencias históricas pendientes.
+- Preview de Vercel carecía de variables Supabase: se añadieron exclusivamente `VITE_SUPABASE_URL` y la clave pública `anon` como Config para Preview; las variables existentes de producción se conservaron. La clave administrativa no se subió a Vercel.
 
 ## En curso
 
