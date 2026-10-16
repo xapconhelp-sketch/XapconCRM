@@ -16,10 +16,13 @@
 - Segunda simulación después de migrar: cero expedientes y cero referencias históricas pendientes.
 - Preview de Vercel carecía de variables Supabase: se añadieron exclusivamente `VITE_SUPABASE_URL` y la clave pública `anon` como Config para Preview; las variables existentes de producción se conservaron. La clave administrativa no se subió a Vercel.
 - El runtime remoto del clima reveló una importación sin extensión (`requestCache`), incompatible con Node ESM. Se corrigió a `requestCache.js` y se añadió una prueba que ejecuta JavaScript compilado con la resolución nativa de Node.
+- Código publicado en `main`: `3c71a87`. [Despliegue de producción verificado](https://vercel.com/xapcon-groups-projects/xapcon-crm/FcP91rabeSG1TrnZarwHiKNYMRyU), estado Ready, asignado al dominio principal.
+- Verificación HTTP en el dominio principal: acceso y ruta SPA correctos; clima sin dirección devuelve JSON 400, POST devuelve 405 y dirección pública válida devuelve clima 200; los archivos del servidor y su mapa no exponen código.
+- Credencial administrativa temporal retirada del disco al terminar la migración. Manifiesto de recuperación conservado en `.audit-local/`, fuera de Git.
 
-## En curso
+## Pendiente de comprobación interactiva
 
-- Publicación y verificación del nuevo código.
+- Inicio de sesión en el CRM y apertura de expedientes con las cuentas reales de ambos roles. El acceso a Supabase y Vercel no equivale a una sesión de usuario del CRM.
 
 ## Validación local
 
@@ -32,4 +35,4 @@ TypeScript y compilación correctos. La suite completa pasó con 59 pruebas, nin
 - URLs aprobadas de términos y privacidad, si existen.
 - Retirada irreversible de los originales públicos: requiere aprobación específica después de verificar las copias y coordinar el cierre de sesiones antiguas.
 
-Las credenciales administrativas temporales se mantienen fuera de Git y del frontend y se retiran al terminar la ejecución.
+Las credenciales administrativas no se incluyeron en Git ni en el frontend.

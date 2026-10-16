@@ -145,4 +145,4 @@ Se verificaron TypeScript, compilación y pruebas de PostgreSQL local/RLS: prese
 
 Se inspeccionó el acceso de producción local a 1280 × 720 y 390 × 844 y el registro de contratistas/colaboradores en móvil: imágenes WebP cargadas, etiquetas asociadas a sus controles, ningún enlace `#` en el acceso y sin desbordamiento horizontal en las pantallas revisadas. No se enviaron formularios ni se crearon cuentas. Se restauró el tamaño del navegador y se cerró la pestaña temporal.
 
-La integración remota de Supabase Storage, la ejecución completa de la herramienta contra tus archivos y las funciones desplegadas en Vercel siguen pendientes de los pasos anteriores. La prueba local no sustituye esas verificaciones.
+La activación posterior verificó Supabase Storage, migró los 46 archivos referenciados por 10 expedientes y publicó las correcciones en Vercel. También se comprobó el clima real y el rechazo de accesos públicos/anónimos a una copia privada. Consulta el [estado de activación](estado-activacion-2026-10-16.md) para distinguir lo verificado de las pruebas interactivas pendientes y la retirada de originales que aún requiere aprobación específica.
