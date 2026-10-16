@@ -1,51 +1,35 @@
 import express from "express";
 import path from "path";
-import fs from "fs";
-import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { contractorWeatherMiddleware } from "./server/contractorWeather";
+import { createProductionApp } from "./server/productionApp";
 
 dotenv.config();
 
-const app = express();
-const PORT = 3001;
-
-app.use("/api/contractor-weather", contractorWeatherMiddleware);
+const app = process.env.NODE_ENV === 'production'
+  ? createProductionApp(path.join(process.cwd(), 'dist', 'client'))
+  : express();
+const PORT = Number(process.env.PORT || 3001);
+const HOST = process.env.HOST || "0.0.0.0";
 
 // Configure Vite or serve production bundle
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     console.log("Starting server in development mode with Vite middleware...");
+    app.use("/api/contractor-weather", contractorWeatherMiddleware);
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-    
-    // Explicitly fallback to index.html for any remaining requests in SPA mode
-    app.use('*', async (req, res, next) => {
-      try {
-        const url = req.originalUrl;
-        let template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
-        template = await vite.transformIndexHtml(url, template);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
-      } catch (e) {
-        vite.ssrFixStacktrace(e as Error);
-        next(e);
-      }
-    });
   } else {
     console.log("Starting server in production mode...");
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, HOST, () => {
     console.log(`Server running at http://localhost:${PORT}`);
   });
 }
 
-startServer();
+startServer().catch(error => { console.error('No se pudo iniciar el servidor:', error); process.exitCode = 1; });

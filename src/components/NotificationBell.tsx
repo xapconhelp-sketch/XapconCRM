@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { AlertTriangle, Bell, Check, Clock3, House, Phone, PhoneCall } from 'lucide-react';
 import { notificationService } from '../services/notificationService';
 import { supabase } from '../lib/supabase';
+import { backgroundRefresh } from '../lib/backgroundRefresh.js';
 import { Notification } from '../types/notifications';
 import { Lead } from '../types';
 
@@ -42,6 +43,7 @@ export function NotificationBell({
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [errorMessage, setErrorMessage] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const refreshNotificationsRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const interval = window.setInterval(() => setCurrentTime(Date.now()), 60_000);
@@ -122,7 +124,7 @@ export function NotificationBell({
 
   useEffect(() => {
     let cancelled = false;
-    const fetchNotifications = async () => {
+    const notificationRefresh = backgroundRefresh(async () => {
       if (!userId) return;
       try {
         const data = await notificationService.getUnread(userId, organizationId);
@@ -130,22 +132,31 @@ export function NotificationBell({
       } catch {
         if (!cancelled) setErrorMessage('No se pudieron cargar las notificaciones. Se intentará nuevamente.');
       }
-    };
+    });
+    const fetchNotifications = notificationRefresh.refresh;
+    refreshNotificationsRef.current = fetchNotifications;
     setNotifications([]); setUnreadCount(0);
     void fetchNotifications();
-    const interval = setInterval(fetchNotifications, isOpen ? 5000 : 30000);
+    const interval = setInterval(fetchNotifications, 30000);
     window.addEventListener('focus', fetchNotifications);
+    document.addEventListener('visibilitychange', fetchNotifications);
     window.addEventListener('xapcon-notifications-changed', fetchNotifications);
     const channel = supabase.channel(`notifications-${userId}-${organizationId || 'personal'}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, fetchNotifications)
       .subscribe();
     return () => {
-      cancelled = true; clearInterval(interval);
+      cancelled = true; notificationRefresh.stop(); clearInterval(interval);
+      refreshNotificationsRef.current = () => {};
+      document.removeEventListener("visibilitychange", fetchNotifications);
       window.removeEventListener('focus', fetchNotifications);
       window.removeEventListener('xapcon-notifications-changed', fetchNotifications);
       void supabase.removeChannel(channel);
     };
-  }, [userId, organizationId, isOpen]);
+  }, [userId, organizationId]);
+
+  useEffect(() => {
+    if (isOpen) refreshNotificationsRef.current();
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

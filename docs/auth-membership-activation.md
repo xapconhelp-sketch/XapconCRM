@@ -4,6 +4,8 @@
 
 En el SQL Editor del proyecto Supabase del CRM, ejecutar `schema_auth_membership_complete.sql` completo. Requiere las tablas base del CRM e incluye las dependencias de seguridad, invitaciones y notificaciones antes de la actualización de cuentas. El script usa una transacción: un fallo revierte la actualización completa. Es reutilizable y conserva empresas, casos, tareas y cuentas existentes.
 
+Para actualizar una instalación que ya tiene el RPC de tareas, ejecutar también `schema_task_workflow.sql` en el SQL Editor de Supabase antes de crear tareas con las nuevas opciones. Esta migración conserva las tareas existentes y amplía las categorías aceptadas y las actividades agendadas (`Visitar HO` y `Re inspección`). En instalaciones nuevas, el script completo ya incluye esos valores.
+
 Si `schema_auth_membership_tasks.sql` produjo `relation "public.user_invitations" does not exist`, faltaba una dependencia previa. Ejecutar el archivo completo indicado arriba; no crear manualmente una tabla incompleta. El script que falló usa una transacción y no llegó a confirmar sus cambios.
 
 Si hay códigos duplicados o roles fuera de los valores admitidos, la actualización se detiene con un error; no elimina datos para resolverlo. Las cuentas antiguas con vínculos incompletos se reparan al iniciar sesión solo cuando se puede verificar su pertenencia. No se puede aplicar esta migración con la clave pública de la aplicación.

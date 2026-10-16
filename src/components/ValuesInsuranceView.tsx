@@ -1,3 +1,4 @@
+import { queryAll } from "../lib/queryAll.js";
 import React, { useEffect, useMemo, useState } from "react";
 import { AlertCircle, BadgeDollarSign, BarChart3, CalendarDays, Check, CheckCircle2, ChevronRight, CircleDollarSign, FileCheck2, FilePlus2, LoaderCircle, Plus, Search, ShieldCheck, Trash2, TrendingUp } from "lucide-react";
 import { Lead } from "../types";
@@ -176,8 +177,8 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
     const load = async () => {
       setLoading(true);
       const [valueResult, financeResult] = await Promise.all([
-        supabase.from("admin_insurance_values").select("lead_id,record_type,entry_number,amount,event_date,estimate_sent"),
-        supabase.from("contractor_claim_financials").select("claim_id,rcv,acv"),
+        queryAll((from, to) => supabase.from("admin_insurance_values").select("lead_id,record_type,entry_number,amount,event_date,estimate_sent").order("id").range(from, to)),
+        queryAll((from, to) => supabase.from("contractor_claim_financials").select("claim_id,rcv,acv").order("claim_id").range(from, to)),
       ]);
       if (cancelled) return;
       const nextErrors: string[] = [];

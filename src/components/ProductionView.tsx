@@ -1,5 +1,4 @@
 import { RoleSectionIcon, RoleIconTile } from "./contractor/DesignSystem";
-import React from "react";
 import { Lead } from "../types";
 import {
   ArrowRight,

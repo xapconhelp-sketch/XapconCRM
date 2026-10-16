@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { backgroundRefresh } from '../lib/backgroundRefresh.js';
 import { Session, User } from '@supabase/supabase-js';
 
 export interface UserProfile {
@@ -44,7 +45,7 @@ interface AuthContextType {
   organizations: Organization[];
   setOrganizations: React.Dispatch<React.SetStateAction<Organization[]>>;
   activeOrganization: Organization | null;
-  setActiveOrganization: (org: Organization | null) => void;
+  setActiveOrganization: React.Dispatch<React.SetStateAction<Organization | null>>;
   signOut: () => Promise<void>;
   loading: boolean;
   accountError: string | null;
@@ -242,12 +243,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!session?.user.id) return;
     const userId = session.user.id;
-    const refresh = () => void fetchProfileData(userId, true);
+    const membershipRefresh = backgroundRefresh(() => fetchProfileData(userId, true));
+    const refresh = membershipRefresh.refresh;
+    document.addEventListener("visibilitychange", refresh);
     const interval = setInterval(refresh, 60000);
     const channel = supabase.channel(`my-memberships-${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_organizations', filter: `user_id=eq.${userId}` }, refresh)
       .subscribe();
-    return () => { clearInterval(interval); void supabase.removeChannel(channel); };
+    return () => { membershipRefresh.stop(); clearInterval(interval); document.removeEventListener("visibilitychange", refresh); void supabase.removeChannel(channel); };
   }, [session?.user.id]);
 
   const signOut = async () => {

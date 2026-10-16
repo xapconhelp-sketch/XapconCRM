@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { createRequestCache, RequestCapacityError } from './requestCache';
 
 export interface ContractorWeatherResult {
   location: string;
@@ -18,8 +19,6 @@ class WeatherLookupError extends Error {
   }
 }
 
-const weatherCache = new Map<string, { expiresAt: number; value: ContractorWeatherResult }>();
-
 async function fetchJson(url: string) {
   const response = await fetch(url, {
     headers: {
@@ -32,11 +31,7 @@ async function fetchJson(url: string) {
   return response.json();
 }
 
-async function lookupContractorWeather(address: string): Promise<ContractorWeatherResult> {
-  const cacheKey = address.toLocaleLowerCase();
-  const cached = weatherCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.value;
-
+async function fetchContractorWeather(address: string): Promise<ContractorWeatherResult> {
   try {
     const geocoderUrl = new URL("https://geocoding.geo.census.gov/geocoder/locations/onelineaddress");
     geocoderUrl.searchParams.set("address", address);
@@ -51,7 +46,7 @@ async function lookupContractorWeather(address: string): Promise<ContractorWeath
     const { x: longitude, y: latitude } = match.coordinates;
     const pointsData = await fetchJson(`https://api.weather.gov/points/${latitude},${longitude}`);
     const forecastUrl = pointsData?.properties?.forecastHourly;
-    if (typeof forecastUrl !== "string" || new URL(forecastUrl).hostname !== "api.weather.gov") {
+    if (typeof forecastUrl !== "string" || new URL(forecastUrl).hostname !== "api.weather.gov" || new URL(forecastUrl).protocol !== 'https:') {
       throw new Error("NWS forecast URL was unavailable");
     }
 
@@ -69,7 +64,6 @@ async function lookupContractorWeather(address: string): Promise<ContractorWeath
       updatedAt: new Date().toISOString(),
     };
 
-    weatherCache.set(cacheKey, { expiresAt: Date.now() + 30 * 60 * 1000, value: weather });
     return weather;
   } catch (error) {
     if (error instanceof WeatherLookupError) throw error;
@@ -78,10 +72,19 @@ async function lookupContractorWeather(address: string): Promise<ContractorWeath
   }
 }
 
-export function contractorWeatherMiddleware(req: IncomingMessage, res: ServerResponse, next: () => void) {
-  if (req.method !== "GET") return next();
+const weatherCache = createRequestCache(fetchContractorWeather);
 
-  const requestUrl = new URL(req.url || "/", "http://localhost");
+export async function contractorWeatherMiddleware(req: IncomingMessage, res: ServerResponse, next: () => void) {
+  if (req.method !== "GET") { next(); return; }
+
+  let requestUrl: URL;
+  try { requestUrl = new URL(req.url || "/", "http://localhost"); }
+  catch {
+    res.statusCode = 400;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify({ error: 'URL no válida.' }));
+    return;
+  }
   const address = requestUrl.searchParams.get("address")?.trim() || "";
   if (!address || address.length > 200) {
     res.statusCode = 400;
@@ -90,18 +93,18 @@ export function contractorWeatherMiddleware(req: IncomingMessage, res: ServerRes
     return;
   }
 
-  void lookupContractorWeather(address)
-    .then(weather => {
+  try {
+      const weather = await weatherCache.get(address.toLocaleLowerCase().replace(/\s+/g, ' '));
       res.statusCode = 200;
       res.setHeader("Content-Type", "application/json; charset=utf-8");
       res.setHeader("Cache-Control", "private, max-age=900");
       res.end(JSON.stringify(weather));
-    })
-    .catch(error => {
-      const status = error instanceof WeatherLookupError ? error.status : 502;
+    } catch (error) {
+      const status = error instanceof RequestCapacityError ? 429 : error instanceof WeatherLookupError ? error.status : 502;
+      if (status === 429) res.setHeader('Retry-After', '5');
       const message = error instanceof Error ? error.message : "El clima no está disponible en este momento.";
       res.statusCode = status;
       res.setHeader("Content-Type", "application/json; charset=utf-8");
       res.end(JSON.stringify({ error: message }));
-    });
+    }
 }

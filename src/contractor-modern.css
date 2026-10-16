@@ -58,12 +58,12 @@
     --color-gold-light: var(--accent);
     background: #f5f7f6;
     color: var(--foreground);
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'DM Sans Variable', sans-serif;
     font-size: 14px;
     accent-color: var(--primary);
   }
   .contractor-app ::selection { background: #cbe7dc; color: #164b40; }
-  .contractor-app :is(h1,h2,h3) { font-family: 'Manrope', sans-serif; letter-spacing: -.035em; }
+  .contractor-app :is(h1,h2,h3) { font-family: 'Manrope Variable', sans-serif; letter-spacing: -.035em; }
   .contractor-app h1 { font-size: clamp(25px, 2.3vw, 34px); font-weight: 700; line-height: 1.25; }
   .contractor-app :is(button,a,input,textarea,select):focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
   .contractor-app button { cursor: pointer; transition: background-color .15s, border-color .15s, box-shadow .15s; }
@@ -340,7 +340,7 @@
   .contractor-app .claim-case-sidebar .claim-profile-card-header > div > svg { display:none; }
   .contractor-app .claim-case-sidebar .claim-profile-card-header button { padding:5px 10px; border-radius:7px; background:#ffffff20; color:white !important; font-size:11px; }
   .contractor-app .claim-case-sidebar .claim-profile-card-header button:hover { background:#ffffff35; }
-  .contractor-app .case-profile-editorial { margin:0; font-family:'DM Sans',sans-serif; text-align:left; }
+  .contractor-app .case-profile-editorial { margin:0; font-family:'DM Sans Variable',sans-serif; text-align:left; }
   .contractor-app :is(.case-person-identity,.case-insurer-identity) { display:flex; align-items:center; gap:14px; padding-bottom:20px; }
   .contractor-app :is(.case-person-identity,.case-insurer-identity) > div { min-width:0; }
   .contractor-app :is(.case-person-identity,.case-insurer-identity) p { font-size:11px; color:#6a7c74; margin:0 0 5px; }

@@ -27,12 +27,12 @@
     --crm-muted: var(--muted-foreground);
     color: var(--foreground);
     background: var(--crm-canvas);
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'DM Sans Variable', sans-serif;
     font-size: 14px;
     accent-color: var(--primary);
   }
 
-  .admin-app :is(h1,h2,h3) { font-family: 'Manrope', sans-serif; letter-spacing: -.035em; }
+  .admin-app :is(h1,h2,h3) { font-family: 'Manrope Variable', sans-serif; letter-spacing: -.035em; }
   .admin-app h1 { font-size: clamp(25px, 2.3vw, 34px); font-weight: 700; line-height: 1.25; }
   .admin-app :is(button,a,input,textarea,select):focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
   .admin-app button { cursor: pointer; transition: background-color .15s, border-color .15s, box-shadow .15s, color .15s, transform .15s; }
@@ -357,7 +357,7 @@
   .admin-app .contractor-profile-card .claim-profile-data > .contractor-profile-identity { border:1px solid var(--ui-border) !important; border-left:1px solid var(--ui-border) !important; background:#fff !important; }
   .admin-app .claim-case-sidebar > .contractor-profile-card .claim-profile-data > .contractor-profile-identity::before { display:none !important; content:none !important; }
   .admin-app .contractor-profile-mark { border-color:var(--ui-border) !important; color:var(--primary) !important; background:var(--secondary) !important; box-shadow:none !important; }
-  .admin-app .claim-case-sidebar .case-profile-editorial { margin:0; font-family:'DM Sans',sans-serif; text-align:left; }
+  .admin-app .claim-case-sidebar .case-profile-editorial { margin:0; font-family:'DM Sans Variable',sans-serif; text-align:left; }
   .admin-app .claim-case-sidebar :is(.case-person-identity,.case-insurer-identity) { display:flex; align-items:center; gap:14px; padding-bottom:20px; }
   .admin-app .claim-case-sidebar :is(.case-person-identity,.case-insurer-identity) > div { min-width:0; }
   .admin-app .claim-case-sidebar :is(.case-person-identity,.case-insurer-identity) p { margin:0 0 5px; color:#6a7c74; font-size:11px; }

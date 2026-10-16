@@ -1,7 +1,11 @@
 import React, { useState, useRef } from "react";
-import logoXapcon from "../../LogoXapcon.png";
-import windDamageImg from "../../Winddamage.jpg";
+import logoXapcon from "../assets/optimized/logo-xapcon.webp";
+import windDamageImg from "../assets/optimized/wind-damage.webp";
 import { supabase } from "../lib/supabase";
+
+function legalUrl(value?: string) {
+  try { return new URL(value || "").protocol === "https:" ? value : undefined; } catch { return undefined; }
+}
 
 export default function LoginView() {
   const [activeTab, setActiveTab] = useState<"admin" | "contractor">("admin");
@@ -236,17 +240,17 @@ export default function LoginView() {
             </div>
 
             {errorText && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-red-600 animate-shake">
+              <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-red-600 animate-shake">
                 ⚠️ {errorText}
               </div>
             )}
 
             <div className="space-y-5">
               <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1.5">
-                <label className="block text-[10px] uppercase tracking-wider font-bold text-[#566A7E] mb-1">
+                <label htmlFor="login-email" className="block text-[10px] uppercase tracking-wider font-bold text-[#566A7E] mb-1">
                   Email
                 </label>
-                <input
+                <input id="login-email" autoComplete="username"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -257,10 +261,10 @@ export default function LoginView() {
               </div>
 
               <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1.5">
-                <label className="block text-[10px] uppercase tracking-wider font-bold text-[#566A7E] mb-1">
+                <label htmlFor="login-password" className="block text-[10px] uppercase tracking-wider font-bold text-[#566A7E] mb-1">
                   Password
                 </label>
-                <input
+                <input id="login-password" autoComplete="current-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -357,7 +361,7 @@ export default function LoginView() {
             </div>
 
             {errorText && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-red-600 animate-shake">
+              <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-red-600 animate-shake">
                 ⚠️ {errorText}
               </div>
             )}
@@ -370,10 +374,10 @@ export default function LoginView() {
 
             <div className="space-y-3.5">
               <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1">
-                <label className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
+                <label htmlFor="register-name" className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
                   Nombre Completo
                 </label>
-                <input
+                <input id="register-name" autoComplete="name"
                   type="text"
                   required
                   value={regName}
@@ -384,10 +388,10 @@ export default function LoginView() {
               </div>
 
               <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1">
-                <label className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
+                <label htmlFor="register-email" className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
                   Correo Electrónico
                 </label>
-                <input
+                <input id="register-email" autoComplete="email"
                   type="email"
                   required
                   value={regEmail}
@@ -398,10 +402,10 @@ export default function LoginView() {
               </div>
 
               <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1">
-                <label className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
+                <label htmlFor="register-password" className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
                   Contraseña
                 </label>
-                <input
+                <input id="register-password"
                   type="password"
                   required
                   value={regPassword}
@@ -415,10 +419,10 @@ export default function LoginView() {
 
               {regType === "owner" ? (
                 <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1">
-                  <label className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
+                  <label htmlFor="register-company" className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
                     Nombre de la Empresa
                   </label>
-                  <input
+                  <input id="register-company" autoComplete="organization"
                     type="text"
                     required
                     value={regCompanyName}
@@ -430,10 +434,10 @@ export default function LoginView() {
               ) : (
                 <>
                   <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1">
-                    <label className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
+                    <label htmlFor="register-role" className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
                       Rol / Cargo
                     </label>
-                    <select
+                    <select id="register-role"
                       required
                       value={regRole}
                       onChange={(e) => setRegRole(e.target.value)}
@@ -451,10 +455,10 @@ export default function LoginView() {
                   </div>
 
                   <div className="relative border-b border-gray-200 focus-within:border-[#0ea5e9] transition-all py-1">
-                    <label className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
+                    <label htmlFor="register-code" className="block text-[9px] uppercase tracking-wider font-bold text-[#566A7E] mb-0.5">
                       Código de Invitación de la Empresa (XAP-…)
                     </label>
-                    <input
+                    <input id="register-code"
                       type="text"
                       required
                       value={regCompanyId}
@@ -500,10 +504,9 @@ export default function LoginView() {
 
         <div className="text-[11px]">
           <p className="text-[#566A7E] leading-relaxed">
-            Al iniciar sesión, aceptas el{" "}
-            <a href="#" className="text-[#664A14] hover:underline">Acuerdo de licencia</a>
-            {" "}y la{" "}
-            <a href="#" className="text-[#664A14] hover:underline">Política de privacidad</a>.
+            Acceso reservado a usuarios autorizados.
+            {legalUrl(import.meta.env.VITE_TERMS_URL) && <> <a href={legalUrl(import.meta.env.VITE_TERMS_URL)} className="text-[#664A14] underline">Acuerdo de licencia</a>.</>}
+            {legalUrl(import.meta.env.VITE_PRIVACY_URL) && <> <a href={legalUrl(import.meta.env.VITE_PRIVACY_URL)} className="text-[#664A14] underline">Política de privacidad</a>.</>}
           </p>
         </div>
 

@@ -1,5 +1,9 @@
 {
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/client",
+  "functions": { "api/contractor-weather.ts": { "maxDuration": 30 } },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/:path((?!api(?:/|$)).*)", "destination": "/index.html" }
   ]
 }

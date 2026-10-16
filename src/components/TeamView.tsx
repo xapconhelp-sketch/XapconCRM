@@ -491,11 +491,11 @@ export default function TeamView({
                   <>
                     <div>
                       <span className="text-[#566A7E] font-medium block text-[10px]">Leads Asignados</span>
-                      <span className="font-sans font-bold text-[#102A46]">{m.activeLeads || 0} prospectos</span>
+                      <span className="font-sans font-bold text-[#102A46]">{m.activeLeads == null ? "Sin datos" : `${m.activeLeads} prospectos`}</span>
                     </div>
                     <div>
                       <span className="text-[#566A7E] font-medium block text-[10px]">Cierre de Ventas</span>
-                      <span className="font-sans font-bold text-yellow-600">{m.closeRate || 0}%</span>
+                      <span className="font-sans font-bold text-yellow-600">{m.closeRate == null ? "Sin datos" : `${m.closeRate}%`}</span>
                     </div>
                   </>
                 )}

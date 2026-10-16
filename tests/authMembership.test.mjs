@@ -60,6 +60,7 @@ test('PostgreSQL account, company, task and notification integration', async t =
       INSERT INTO public.profiles(id,email,full_name,role) VALUES('${admin}','root@test.invalid','Root','super_admin');
     `);
     await db.exec(await readFile(new URL('../schema_auth_membership_complete.sql', import.meta.url), 'utf8'));
+    await db.exec(await readFile(new URL('../schema_task_workflow.sql', import.meta.url), 'utf8'));
     await db.exec(`
       CREATE FUNCTION auth.create_profile() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN
         INSERT INTO public.profiles(id,email,full_name) VALUES(NEW.id,NEW.email,NEW.raw_user_meta_data->>'full_name'); RETURN NEW; END $$;
@@ -173,6 +174,39 @@ test('PostgreSQL account, company, task and notification integration', async t =
       assert.equal((await sql('SELECT tasks FROM leads WHERE id=$1', [claim]))[0].tasks.length, 1);
       await actor(outsider, () => assert.rejects(sql("SELECT add_xapcon_task($1,'No access')", [claim]), /acceso/i));
     });
+    await t.test('new task categories and scheduled activities are accepted by the workflow RPC', async () => {
+      const workflowClaim = '10000000-0000-4000-8000-000000000002';
+      await sql('INSERT INTO leads(id,name,organization_id) VALUES($1,$2,$3)', [workflowClaim, 'Workflow test case', company]);
+      const categories = [
+        'prepare_supplement', 'prepare_estimate', 'itel_followup', 'panel_contract_followup',
+        'pending_coc', 'request_depreciation', 'other'
+      ];
+      const savedCategories = await actor(saul, async () => {
+        const saved = [];
+        for (const [index, category] of categories.entries()) {
+          const [row] = await sql('SELECT add_xapcon_task($1,$2,NULL,$3) tasks', [
+            workflowClaim, `Workflow category ${index}`, { kind: 'task', category, dueDate: '2026-10-16' }
+          ]);
+          saved.push(row.tasks.at(-1).category);
+        }
+        return saved;
+      });
+      assert.deepEqual(savedCategories, categories);
+
+      const activities = ['visit_homeowner', 'reinspection'];
+      const savedActivities = await actor(saul, async () => {
+        const saved = [];
+        for (const [index, kind] of activities.entries()) {
+          const [row] = await sql('SELECT add_xapcon_task($1,$2,NULL,$3) tasks', [
+            workflowClaim, `Workflow activity ${index}`, { kind, category: 'general', dueDate: '2026-10-17', scheduledTime: '10:30' }
+          ]);
+          const activity = row.tasks.at(-1);
+          saved.push({ kind: activity.kind, scheduledTime: activity.scheduledTime });
+        }
+        return saved;
+      });
+      assert.deepEqual(savedActivities, activities.map(kind => ({ kind, scheduledTime: '10:30' })));
+    });
     await t.test('direct task writes are denied and a notification failure rolls back the task', async () => {
       await actor(saul, () => assert.rejects(sql("UPDATE leads SET tasks='[]' WHERE id=$1", [claim]), /permission denied/i));
       await actor(saul, () => assert.rejects(sql("INSERT INTO notifications(user_id,organization_id,created_by,type,title) VALUES($1,$2,$3,'mention','Fake author')", [jonathan, company, saul]), /permission denied/i));
@@ -228,6 +262,21 @@ test('PostgreSQL account, company, task and notification integration', async t =
       await db.exec(await readFile(new URL('../schema_auth_membership_complete.sql', import.meta.url), 'utf8'));
       assert.equal((await sql('SELECT id FROM organizations WHERE is_internal')).length, 1);
       assert.equal((await sql('SELECT * FROM user_organizations WHERE user_id=$1 AND organization_id=$2', [saul, company])).length, 1);
+    });
+    await t.test('audit migration composes with the actual account and task upgrade', async () => {
+      await db.exec(`CREATE SCHEMA storage;
+        CREATE TABLE storage.buckets(id TEXT PRIMARY KEY,name TEXT,public BOOLEAN,file_size_limit BIGINT);
+        CREATE TABLE storage.objects(id UUID PRIMARY KEY DEFAULT gen_random_uuid(),bucket_id TEXT,name TEXT);
+        ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;`);
+      const before = (await sql('SELECT tasks,timeline FROM leads WHERE id=$1', [claim]))[0];
+      await db.exec(await readFile(new URL('../schema_crm_audit_fixes.sql', import.meta.url), 'utf8'));
+      await actor(admin, () => sql('UPDATE leads SET estimate=$1 WHERE id=$2', [JSON.stringify({ total: 100, profitMargin: 30 }), claim]));
+      const visible = await actor(jonathan, () => sql('SELECT estimate FROM leads WHERE id=$1', [claim]));
+      assert.deepEqual(visible[0].estimate, { total: 100 });
+      assert.equal((await actor(jonathan, () => sql('SELECT * FROM admin_estimate_private'))).length, 0);
+      await assert.rejects(actor(jonathan, () => sql("UPDATE leads SET documents='[]' WHERE id=$1", [claim])), /permission denied/i);
+      await assert.rejects(actor(jonathan, () => sql("UPDATE leads SET tasks='[]' WHERE id=$1", [claim])), /permission denied/i);
+      assert.deepEqual((await sql('SELECT tasks,timeline FROM leads WHERE id=$1', [claim]))[0], before);
     });
   } finally { await db.close(); }
 });

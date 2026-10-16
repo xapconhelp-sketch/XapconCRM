@@ -1,3 +1,4 @@
+import { queryAll } from "../lib/queryAll.js";
 import { Lead, InsuranceCompanyStats } from "../types";
 
 export interface MasterInsuranceCompany {
@@ -317,10 +318,10 @@ export function saveCustomContact(companyIdOrName: string, contact: { email?: st
 
 export async function fetchDbInsuranceCompanies(): Promise<DbInsuranceCompany[]> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await queryAll((from, to) => supabase
       .from('insurance_directory')
       .select('*')
-      .order('name', { ascending: true });
+      .order('name', { ascending: true }).order('id').range(from, to));
 
     if (error) {
       // Table might not be created yet; keep local cache seamlessly

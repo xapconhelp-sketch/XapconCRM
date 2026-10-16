@@ -3,6 +3,7 @@ import { RoleInput, RoleSelect, RoleTextarea } from "./contractor/DesignSystem";
 import React from "react";
 import { Check, CircleAlert, Clock3, DollarSign, ExternalLink, FileText, LoaderCircle, Paperclip, Pencil, Plus, ReceiptText, Trash2, X } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { queryAll } from "../lib/queryAll.js";
 import { calculateClaimFinanceTotals, parseFinanceAmount, validateClaimFinanceAmounts, validateClaimFinancePayment } from "../lib/claimFinance.js";
 
 type ClaimAmounts = {
@@ -91,7 +92,7 @@ export default function ClaimFinances({ claimId, organizationId }: { claimId: st
     setErrorMessage("");
     const [amountResult, paymentResult] = await Promise.all([
       supabase.from("contractor_claim_financials").select("*").eq("claim_id", claimId).eq("organization_id", organizationId).maybeSingle(),
-      supabase.from("contractor_claim_payments").select("*").eq("claim_id", claimId).eq("organization_id", organizationId).order("status", { ascending: true }).order("expected_date", { ascending: true, nullsFirst: false }).order("received_date", { ascending: false, nullsFirst: false }),
+      queryAll((from, to) => supabase.from("contractor_claim_payments").select("*").eq("claim_id", claimId).eq("organization_id", organizationId).order("status", { ascending: true }).order("expected_date", { ascending: true, nullsFirst: false }).order("received_date", { ascending: false, nullsFirst: false }).order("id").range(from, to)),
     ]);
     if (amountResult.error || paymentResult.error) {
       setErrorMessage(`No se pudieron cargar las finanzas del reclamo. ${amountResult.error?.message || paymentResult.error?.message || ""}`.trim());

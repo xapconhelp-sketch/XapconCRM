@@ -9,3 +9,4 @@ coverage/
 .agents/
 .antigravity/
 skills-lock.json
+.audit-local/

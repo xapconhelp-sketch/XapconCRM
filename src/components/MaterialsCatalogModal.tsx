@@ -1,6 +1,6 @@
 import { RoleModal } from "./contractor/DesignSystem";
 import { RoleInput } from "./contractor/DesignSystem";
-import React, { useState } from "react";
+import { useState } from "react";
 import { MaterialItem } from "../types";
 import globalMaterials from "../data/materials.json";
 import { 

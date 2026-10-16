@@ -132,6 +132,7 @@ export interface DocumentItem {
   category: "Reporte" | "Contrato" | "Foto" | "Seguro";
   url?: string;
   filePath?: string;
+  storageBucket?: 'documents' | 'case-files';
 }
 
 export interface TaskItem {
@@ -182,7 +183,7 @@ export interface Estimate {
   taxRate: number; // e.g., 0.0825
   taxAmount: number;
   total: number;
-  profitMargin: number; // e.g., 24.5
+  profitMargin?: number; // Private: only hydrated for superadmin.
   termsAndCommitment?: string;
   warrantyType?: string;
   warrantyTypes?: string[];

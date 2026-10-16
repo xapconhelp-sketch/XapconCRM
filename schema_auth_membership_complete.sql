@@ -852,9 +852,12 @@ BEGIN
   SELECT * INTO l FROM public.leads WHERE id = p_lead_id FOR UPDATE;
   IF NOT FOUND OR NOT public.can_access_xapcon_org(l.organization_id) THEN RAISE EXCEPTION 'No tienes acceso a este caso.'; END IF;
   IF nullif(trim(p_title), '') IS NULL OR length(trim(p_title)) > 120 THEN RAISE EXCEPTION 'La descripción debe tener entre 1 y 120 caracteres.'; END IF;
-  IF kind NOT IN ('task', 'inspection', 'adjuster_meeting', 'installation')
+  IF kind NOT IN ('task', 'inspection', 'adjuster_meeting', 'installation', 'visit_homeowner', 'reinspection')
     OR coalesce(p_details ->> 'priority', 'medium') NOT IN ('high', 'medium', 'low')
-    OR coalesce(p_details ->> 'category', 'general') NOT IN ('general', 'pending_document', 'visit_homeowner', 'call_homeowner', 'call_adjuster')
+    OR coalesce(p_details ->> 'category', 'general') NOT IN (
+      'general', 'pending_document', 'visit_homeowner', 'call_homeowner', 'call_adjuster',
+      'prepare_supplement', 'prepare_estimate', 'itel_followup', 'panel_contract_followup',
+      'pending_coc', 'request_depreciation', 'other')
     THEN RAISE EXCEPTION 'Tipo, categoría o prioridad no válidos.'; END IF;
   IF due_date !~ '^\d{4}-\d{2}-\d{2}$' THEN RAISE EXCEPTION 'La fecha debe usar el formato AAAA-MM-DD.'; END IF;
   PERFORM due_date::date;

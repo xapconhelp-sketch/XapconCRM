@@ -22,6 +22,19 @@ export default defineConfig(() => {
         '@': path.resolve(projectRoot, '.'),
       },
     },
+    build: {
+      outDir: 'dist/client',
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return;
+            if (id.includes('@supabase/')) return 'supabase';
+            if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react';
+            if (id.includes('@radix-ui/') || id.includes('/radix-ui/')) return 'ui';
+          },
+        },
+      },
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.

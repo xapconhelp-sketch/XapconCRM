@@ -1,5 +1,4 @@
-import XLSX from "xlsx";
-const { readFile, utils } = XLSX;
+import { readSheet } from "read-excel-file/node";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -13,7 +12,7 @@ interface MaterialItem {
   originalDescription?: string;
 }
 
-function run() {
+async function run() {
   try {
     const excelPath = path.resolve(process.cwd(), "listamateriales.xlsx");
     if (!fs.existsSync(excelPath)) {
@@ -21,10 +20,7 @@ function run() {
       process.exit(1);
     }
 
-    const workbook = readFile(excelPath);
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
-    const rows = utils.sheet_to_json<any>(worksheet, { header: 1 });
+    const rows = await readSheet(excelPath);
 
     if (rows.length < 2) {
       console.error("Error: El archivo Excel debe contener al menos una fila de cabecera y una de datos.");
@@ -138,7 +134,7 @@ function run() {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const outputPath = path.join(outputDir, "materials.json");
+    const outputPath = process.argv[2] ? path.resolve(process.argv[2]) : path.join(outputDir, "materials.json");
     fs.writeFileSync(outputPath, JSON.stringify(parsedItems, null, 2), "utf8");
 
     console.log(`¡Éxito! Se generó el catálogo en ${outputPath}`);

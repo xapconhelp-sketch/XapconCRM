@@ -1,10 +1,12 @@
+import "@fontsource-variable/inter";
+import "@fontsource-variable/plus-jakarta-sans";
 import { RoleSectionIcon } from "./contractor/DesignSystem";
 import { RoleModal } from "./contractor/DesignSystem";
 import { RoleInput, RoleSelect, RoleTextarea } from "./contractor/DesignSystem";
 import React, { useState, useEffect } from "react";
 import { Estimate, EstimateItem, Lead, MaterialItem } from "../types";
 import { useAuth } from "../contexts/AuthContext";
-import logoXapcon from "../../LogoXapcon.png";
+import logoXapcon from "../assets/optimized/logo-xapcon.webp";
 import MaterialsCatalogModal from "./MaterialsCatalogModal";
 import globalMaterials from "../data/materials.json";
 import { retailDefaults, calculateRetailPricing } from '../lib/retailPricing.js';
@@ -105,6 +107,8 @@ export default function EstimatorView({
     items = items.map(item => ({ ...item, total: item.qty * item.unitPrice }));
     const pricing = calculateRetailPricing(items, currentEst);
     const subGross = pricing.subtotalGross;
+
+    if (userRole !== "admin") return { ...currentEst, items, ...pricing, profitMargin: undefined };
 
     // Calculate realistic cost based on materials and crew labor costs
     let totalCost = 0;
@@ -303,13 +307,13 @@ export default function EstimatorView({
     (l.address && l.address.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const isMarginUnderStandard = activeEstimate.profitMargin < 30;
+  const isMarginUnderStandard = (activeEstimate.profitMargin ?? 0) < 30;
 
   return (
     <div className="retail-estimator flex-1 flex h-screen overflow-hidden bg-[#F4F6F8]">
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
 
         @media print {
           /* Reset screen-only styles */
@@ -348,7 +352,7 @@ export default function EstimatorView({
             margin: 0px !important;
             background: white !important;
             color: #1e293b !important;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+            font-family: 'Inter Variable', system-ui, -apple-system, sans-serif !important;
             font-size: 11px !important;
             line-height: 1.6 !important;
           }
@@ -365,7 +369,7 @@ export default function EstimatorView({
 
           /* Clean typography */
           h1, h2, h3, h4 {
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+            font-family: 'Plus Jakarta Sans Variable', system-ui, -apple-system, sans-serif !important;
             color: #102A46 !important;
           }
 
@@ -384,7 +388,7 @@ export default function EstimatorView({
             letter-spacing: 0.05em !important;
             margin-bottom: 4px !important;
             display: block !important;
-            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            font-family: 'Plus Jakarta Sans Variable', sans-serif !important;
           }
 
           #print-area input {
@@ -421,7 +425,7 @@ export default function EstimatorView({
             text-transform: uppercase !important;
             font-size: 8px !important;
             letter-spacing: 0.08em !important;
-            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            font-family: 'Plus Jakarta Sans Variable', sans-serif !important;
             border-bottom: none !important;
             padding: 10px 12px !important;
           }
@@ -1324,7 +1328,7 @@ export default function EstimatorView({
                     <div className="w-full bg-[#E6ECF1] rounded-full h-2 overflow-hidden mb-3">
                       <div
                         className={`h-full rounded-full transition-all duration-300 ${isMarginUnderStandard ? "bg-amber-500" : "bg-[#8C6A22]"}`}
-                        style={{ width: `${Math.min(100, (activeEstimate.profitMargin / 50) * 100)}%` }}
+                        style={{ width: `${Math.min(100, ((activeEstimate.profitMargin ?? 0) / 50) * 100)}%` }}
                       ></div>
                     </div>
 

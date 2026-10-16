@@ -1,3 +1,5 @@
+import CasePhoto from "./CasePhoto";
+import { caseFileService } from "../services/caseFileService";
 import { HomeownerProfile, InsuranceProfile } from "./contractor/CaseProfiles";
 import { RoleIconTile, RoleSectionIcon, RoleCloseIcon, RoleTabIcon } from "./contractor/DesignSystem";
 import { RoleModal } from "./contractor/DesignSystem";
@@ -466,13 +468,15 @@ function InsuranceCallsPanel({
 
 interface LeadsViewProps {
   leads: Lead[];
+  documentsLoading?: boolean;
+  documentsError?: string;
   selectedLeadId: string;
   onSelectLead: (leadId: string) => void;
   onAddTimelineEvent: (leadId: string, event: Omit<TimelineEvent, "id" | "timestamp">) => Promise<void> | void;
   onAddLead: (lead: Omit<Lead, "id" | "timeline" | "documents" | "tasks" | "createdAt">) => void;
   onUploadDocuments?: (leadId: string, files: File[], category?: string) => Promise<boolean>;
   onDeleteDocument?: (leadId: string, docId: string, filePath?: string) => Promise<boolean>;
-  onUploadImageForTimeline?: (file: File) => Promise<string | null>;
+  onUploadImageForTimeline?: (file: File, claimId: string) => Promise<string | null>;
   onDeleteTimelineEvent?: (leadId: string, eventId: string) => Promise<void> | void;
   viewTitle?: string;
   viewSubtitle?: string;
@@ -497,6 +501,8 @@ interface LeadsViewProps {
 export default function LeadsView({
   leads,
   selectedLeadId,
+  documentsLoading = false,
+  documentsError = "",
   onSelectLead,
   onAddTimelineEvent,
   onAddLead,
@@ -800,12 +806,23 @@ export default function LeadsView({
     }
   };
 
+  const handleOpenFile = async (doc: DocumentItem) => {
+    const preview = window.open("about:blank", "_blank");
+    if (preview) preview.opener = null;
+    try {
+      const url = await caseFileService.url(doc);
+      if (preview) preview.location.href = url;
+      else window.location.href = url;
+    } catch (error) {
+      preview?.close();
+      alert(error instanceof Error ? error.message : "No se pudo abrir el documento.");
+    }
+  };
+
   const handleDownloadFile = async (e: React.MouseEvent, doc: DocumentItem) => {
     e.stopPropagation();
-    if (!doc.url) return;
     try {
-      const response = await fetch(doc.url);
-      const blob = await response.blob();
+      const blob = await caseFileService.download(doc);
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = downloadUrl;
@@ -816,7 +833,7 @@ export default function LeadsView({
       window.URL.revokeObjectURL(downloadUrl);
     } catch (err) {
       console.error("Error downloading file:", err);
-      window.open(doc.url, "_blank");
+      alert(err instanceof Error ? err.message : "No se pudo descargar el archivo.");
     }
   };
 
@@ -1116,12 +1133,12 @@ export default function LeadsView({
 
     setIsUploadingNote(true);
     setNoteError('');
+    const uploadedUrls: string[] = [];
     try {
-      let uploadedUrls: string[] = [];
 
       if (pastedImages.length > 0 && onUploadImageForTimeline) {
         for (const file of pastedImages) {
-          const url = await onUploadImageForTimeline(file);
+          const url = await onUploadImageForTimeline(file, selectedLead.id);
           if (url) uploadedUrls.push(url);
         }
       }
@@ -1142,7 +1159,11 @@ export default function LeadsView({
       setNewNote("");
       setMentionedMembers([]);
       setPastedImages([]);
-    } catch (error) { setNoteError((error as Error).message || 'No se pudo guardar la nota.'); }
+    } catch (error) {
+      await caseFileService.queueOrphans(selectedLead.id, uploadedUrls.map(url => ({ url })));
+      void caseFileService.flushCleanup();
+      setNoteError((error as Error).message || 'No se pudo guardar la nota.');
+    }
     finally { setIsUploadingNote(false); }
 
   };
@@ -2187,12 +2208,7 @@ export default function LeadsView({
                               <div className="flex gap-2 mt-2">
                                 {ev.photos.map((ph, idx) => (
                                   <div key={idx} className="relative group overflow-hidden rounded-lg w-16 h-16 border border-[#DCE4EB]/30 bg-slate-100">
-                                    <img
-                                      src={ph}
-                                      alt={`Inspection ${idx}`}
-                                      referrerPolicy="no-referrer"
-                                      className="w-full h-full object-cover group-hover:scale-105 transition-all"
-                                    />
+                                    <CasePhoto reference={ph} alt={`Foto de inspección ${idx + 1}`} />
                                   </div>
                                 ))}
                                 <div className="w-16 h-16 rounded-lg bg-[#E6ECF1] border border-dashed border-[#DCE4EB] flex items-center justify-center text-[#566A7E] text-xs font-bold shrink-0 cursor-pointer hover:bg-slate-100 transition-colors">
@@ -2235,17 +2251,17 @@ export default function LeadsView({
                   </div>
 
                   <div className="claim-document-list space-y-2">
-                    {selectedLead.documents.length === 0 ? (
+                    {documentsLoading ? <p role="status" className="p-4 text-sm text-slate-500">Cargando documentos del caso…</p> : documentsError ? <p role="alert" className="p-4 text-sm text-red-700">{documentsError}</p> : selectedLead.documents.length === 0 ? (
                       <div className="claim-document-empty"><FileText className="w-5 h-5" /><p>No hay documentos cargados en el expediente.</p></div>
                     ) : (
                       selectedLead.documents.map((doc) => (
-                        <div key={doc.id} onClick={() => window.open(doc.url, "_blank")} className="claim-document-item p-3 bg-white border border-[#DCE4EB]/30 rounded-xl flex items-center justify-between hover:bg-[#F4F6F8] transition-all cursor-pointer">
+                        <div key={doc.id} onClick={() => void handleOpenFile(doc)} className="claim-document-item p-3 bg-white border border-[#DCE4EB]/30 rounded-xl flex items-center justify-between hover:bg-[#F4F6F8] transition-all cursor-pointer">
                           <div className="claim-document-details flex items-center gap-2.5">
                             <div className="claim-document-icon w-8 h-8 rounded bg-[#f2f4f6] text-[#664A14] flex items-center justify-center font-bold text-xs shrink-0 border">
                               <FileText className="w-4 h-4" />
                             </div>
                             <div className="claim-document-name space-y-0.5">
-                              <span className="text-xs font-bold text-[#191c1e] block truncate max-w-[200px] hover:text-[#664A14] transition-colors">{doc.name}</span>
+                              <button type="button" onClick={e => { e.stopPropagation(); void handleOpenFile(doc); }} className="text-left text-xs font-bold text-[#191c1e] block truncate max-w-[200px] hover:text-[#664A14] transition-colors">{doc.name}</button>
                               <span className="text-[10px] text-[#566A7E] font-medium block">{doc.size} • {doc.category}</span>
                             </div>
                           </div>
@@ -2274,7 +2290,9 @@ export default function LeadsView({
               )}
 
               {userRole === "contractor" && activeTab === "finances" && selectedLead && (
-                <ClaimFinances claimId={selectedLead.id} organizationId={selectedLead.organizationId || activeOrganizationId} />
+                <div key={`${selectedLead.id}:${selectedLead.organizationId || activeOrganizationId}`}>
+                  <ClaimFinances claimId={selectedLead.id} organizationId={selectedLead.organizationId || activeOrganizationId} />
+                </div>
               )}
             </div>
           </div>

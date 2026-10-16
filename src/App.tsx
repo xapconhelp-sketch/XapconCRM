@@ -1,8 +1,13 @@
 import React, { lazy, Suspense, useState, useEffect, useMemo, useRef } from "react";
 import logo from "../LogoNegativo-copia.png";
-import { ViewType, Lead, Estimate, TeamMember, TimelineEvent, TaskItem, AdminClaimActivity, AdminClaimRecord, AdminHomeownerContact } from "./types";
+import { ViewType, Lead, Estimate, TeamMember, TimelineEvent, TaskItem, DocumentItem, AdminClaimActivity, AdminClaimRecord, AdminHomeownerContact } from "./types";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
+import { queryAll } from "./lib/queryAll.js";
+import { publicEstimate } from "./lib/estimatePrivacy.js";
+import { leadSummarySelect, preserveCaseDocuments } from "./lib/leadQueries.js";
+import { caseFileService } from "./services/caseFileService";
+import { backgroundRefresh } from "./lib/backgroundRefresh.js";
 
 import Sidebar from "./components/Sidebar";
 import ContractorNavigation from "./components/contractor/Navigation";
@@ -17,10 +22,10 @@ const ValuesInsuranceView = lazy(() => import("./components/ValuesInsuranceView"
 import { fetchDbInsuranceCompanies, getAllInsuranceCompanyNames } from "./data/insuranceDirectoryData";
 const TeamView = lazy(() => import("./components/TeamView"));
 const SettingsView = lazy(() => import("./components/SettingsView"));
-import LoginView from "./components/LoginView";
+const LoginView = lazy(() => import("./components/LoginView"));
 import { NotificationBell } from "./components/NotificationBell";
 import { eligibleCaseMembers, memberBelongsToOrganization } from "./lib/teamAccess.js";
-import PasswordRecoveryView from "./components/PasswordRecoveryView";
+const PasswordRecoveryView = lazy(() => import("./components/PasswordRecoveryView"));
 import ContractorWeather from "./components/ContractorWeather";
 
 import { Menu, X, Search, ChevronRight, ChevronDown, Building2, Check } from "lucide-react";
@@ -126,7 +131,7 @@ export default function App() {
   const userRole = profile?.role === 'super_admin' ? 'admin' : 'contractor';
   const canManageTeam = profile?.role === "super_admin" || activeOrganization?.membership_role === "owner";
   const dataContext = useRef('');
-  dataContext.current = `${session?.user.id || ''}:${activeOrganization?.id || ''}:${userRole}`;
+  const caseDocumentCache = useRef(new Map<string, DocumentItem[]>());
   const contractorCompany = activeOrganization?.name || "Desconocida";
   const selectedCompanyFilter = activeOrganization?.name || "Todas";
 
@@ -134,6 +139,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>(() =>
     parseAppRoute(window.location.pathname).view || ViewType.DASHBOARD
   );
+  dataContext.current = `${session?.user.id || ""}:${activeOrganization?.id || ""}:${userRole}:${currentView}`;
   const navigateToView = (requestedView: ViewType, organizationId: string | null | undefined = activeOrganization?.id) => {
     const nextView = normalizeViewForRole(requestedView, userRole);
     const nextPath = buildAppPath(nextView, userRole, organizationId);
@@ -237,7 +243,7 @@ export default function App() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [insuranceClaims, setInsuranceClaims] = useState<Lead[]>([]);
   const [selectedInsuranceClaimId, setSelectedInsuranceClaimId] = useState<string>(() => {
-    return localStorage.getItem("crm_selected_claim_id") || "";
+    try { return localStorage.getItem("crm_selected_claim_id") || ""; } catch { return ""; }
   });
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [insuranceRefreshKey, setInsuranceRefreshKey] = useState(0);
@@ -246,16 +252,20 @@ export default function App() {
   useEffect(() => {
     if (!session) return;
     let cancelled = false;
-    const refreshDirectory = async () => {
+    const directoryRefresh = backgroundRefresh(async () => {
       await fetchDbInsuranceCompanies();
       if (cancelled) return;
       setInsuranceRefreshKey(k => k + 1);
-    };
+    });
+    const refreshDirectory = directoryRefresh.refresh;
     void refreshDirectory();
     const interval = window.setInterval(() => void refreshDirectory(), 30000);
     window.addEventListener("focus", refreshDirectory);
+    document.addEventListener("visibilitychange", refreshDirectory);
     return () => {
       cancelled = true;
+      directoryRefresh.stop();
+      document.removeEventListener("visibilitychange", refreshDirectory);
       window.clearInterval(interval);
       window.removeEventListener("focus", refreshDirectory);
     };
@@ -266,13 +276,25 @@ export default function App() {
   }, [leads, insuranceClaims, insuranceRefreshKey]);
 
   useEffect(() => {
-    localStorage.setItem("crm_selected_claim_id", selectedInsuranceClaimId);
+    try { localStorage.setItem("crm_selected_claim_id", selectedInsuranceClaimId); } catch { /* Storage can be unavailable. */ }
   }, [selectedInsuranceClaimId]);
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [estimatePrivacyError, setEstimatePrivacyError] = useState("");
+  const [leadDataContext, setLeadDataContext] = useState("");
+  const [leadLoadError, setLeadLoadError] = useState("");
+
   useEffect(() => {
-    setLeads([]); setInsuranceClaims([]); setTeamMembers([]);
-  }, [session?.user.id, activeOrganization?.id]);
+    if (!session?.user.id) return;
+    const cleanup = backgroundRefresh(() => caseFileService.flushCleanup());
+    void cleanup.refresh();
+    const timer = setInterval(() => void cleanup.refresh(), 60_000);
+    document.addEventListener("visibilitychange", cleanup.refresh);
+    return () => { cleanup.stop(); clearInterval(timer); document.removeEventListener("visibilitychange", cleanup.refresh); };
+  }, [session?.user.id]);
+  useEffect(() => {
+    setLeads([]); setInsuranceClaims([]); setTeamMembers([]); caseDocumentCache.current.clear();
+  }, [session?.user.id, activeOrganization?.id, userRole]);
 
   // Carga asíncrona de datos desde Supabase
   const fetchLeads = async () => {
@@ -281,8 +303,8 @@ export default function App() {
 
     let query = supabase
       .from('leads')
-      .select('*, organizations(name)')
-      .order('created_at', { ascending: false });
+      .select(leadSummarySelect(currentView === ViewType.CLAIMS))
+      .order('created_at', { ascending: false }).order('id');
 
     if (userRole === 'contractor') {
       if (activeOrganization) {
@@ -301,22 +323,45 @@ export default function App() {
       }
     }
 
-    const { data, error } = await query;
+    const { data, error } = await queryAll((from, to) => query.range(from, to));
+    if (context !== dataContext.current) return;
     if (error) {
       console.error("Error al obtener leads:", error.message);
+      setLeadLoadError("No se pudieron cargar los casos. Revisa la conexión y vuelve a intentarlo.");
       return;
     }
 
     if (data) {
+      const privateEstimates = new Map<string, Record<string, unknown>>();
+      if (userRole === "admin") {
+        const result = await queryAll((from, to) => {
+          let privateQuery = supabase.from("admin_estimate_private").select("lead_id,private_fields,leads!inner(organization_id)").order("lead_id");
+          if (activeOrganization) privateQuery = privateQuery.eq("leads.organization_id", activeOrganization.id);
+          return privateQuery.range(from, to);
+        });
+        if (context !== dataContext.current) return;
+        setEstimatePrivacyError(result.error ? "No se pudo cargar la información privada de estimaciones. Verifica la migración schema_crm_audit_fixes.sql y los permisos de Supabase." : "");
+        for (const row of result.data || []) privateEstimates.set(row.lead_id, row.private_fields);
+      } else setEstimatePrivacyError("");
       const adminActivityByLead = new Map<string, AdminClaimActivity>();
       const adminClaimRecordsByLead = new Map<string, AdminClaimRecord[]>();
       const adminHomeownerContactsByLead = new Map<string, AdminHomeownerContact[]>();
-      const insuranceClaimIds = data.filter((item: any) => item.is_insurance_claim).map((item: any) => item.id);
-      if (userRole === "admin" && insuranceClaimIds.length > 0) {
-        const { data: activityRows, error: activityError } = await supabase
-          .from("admin_claim_activity")
-          .select("lead_id, last_insurance_response_at, last_documents_sent_at, sent_document_types")
-          .in("lead_id", insuranceClaimIds);
+      if (userRole === "admin" && data.some((item: any) => item.is_insurance_claim)) {
+        const scopeAdminQuery = (query: any) => activeOrganization ? query.eq("organization_id", activeOrganization.id) : query;
+        const [activityResult, claimRecordResult, contactResult] = await Promise.all([
+          queryAll((from, to) => scopeAdminQuery(supabase.from("admin_claim_activity")
+            .select("lead_id, last_insurance_response_at, last_documents_sent_at, sent_document_types")
+            ).order("lead_id").range(from, to)),
+          queryAll((from, to) => scopeAdminQuery(supabase.from("admin_claim_records")
+            .select("id, lead_id, record_type, recorded_at, note, document_types, created_at")
+            ).order("recorded_at", { ascending: false })
+            .order("created_at", { ascending: false }).order("id").range(from, to)),
+          queryAll((from, to) => scopeAdminQuery(supabase.from("admin_homeowner_contacts")
+            .select("id, lead_id, contacted_at, channels, note, created_at")
+            ).order("contacted_at", { ascending: false })
+            .order("created_at", { ascending: false }).order("id").range(from, to)),
+        ]);
+        const { data: activityRows, error: activityError } = activityResult;
         if (activityError) {
           console.error("Error al obtener el seguimiento interno de casos:", activityError.message);
         } else {
@@ -327,12 +372,7 @@ export default function App() {
           }));
         }
 
-        const { data: claimRecordRows, error: claimRecordError } = await supabase
-          .from("admin_claim_records")
-          .select("id, lead_id, record_type, recorded_at, note, document_types, created_at")
-          .in("lead_id", insuranceClaimIds)
-          .order("recorded_at", { ascending: false })
-          .order("created_at", { ascending: false });
+        const { data: claimRecordRows, error: claimRecordError } = claimRecordResult;
         if (claimRecordError) {
           console.error("Error al obtener el historial de registros del caso:", claimRecordError.message);
         } else {
@@ -350,12 +390,7 @@ export default function App() {
           });
         }
 
-        const { data: contactRows, error: contactError } = await supabase
-          .from("admin_homeowner_contacts")
-          .select("id, lead_id, contacted_at, channels, note, created_at")
-          .in("lead_id", insuranceClaimIds)
-          .order("contacted_at", { ascending: false })
-          .order("created_at", { ascending: false });
+        const { data: contactRows, error: contactError } = contactResult;
         if (contactError) {
           console.error("Error al obtener el historial de servicio al homeowner:", contactError.message);
         } else {
@@ -373,7 +408,7 @@ export default function App() {
         }
       }
 
-      const mappedLeads: Lead[] = await Promise.all(data.map(async (item: any) => {
+      const mappedLeads: Lead[] = data.map((item: any) => {
         const caseTasks = item.tasks || [];
 
         return {
@@ -409,21 +444,23 @@ export default function App() {
           company: item.organizations?.name || "Desconocida",
           organizationId: item.organization_id,
           is_insurance_claim: item.is_insurance_claim,
-          estimate: item.estimate || null,
+          estimate: item.estimate ? { ...publicEstimate(item.estimate), ...(userRole === "admin" ? (privateEstimates.get(item.id) || { profitMargin: item.estimate.profitMargin }) : {}) } as Estimate : null,
           ...(userRole === "admin" && item.is_insurance_claim ? {
             adminActivity: adminActivityByLead.get(item.id),
             adminClaimRecords: adminClaimRecordsByLead.get(item.id) || [],
             adminHomeownerContacts: adminHomeownerContactsByLead.get(item.id) || [],
           } : {})
         };
-      }));
+      });
 
       const normalLeads = mappedLeads.filter(l => !l.is_insurance_claim);
       const claims = mappedLeads.filter(l => l.is_insurance_claim);
 
       if (context !== dataContext.current) return;
-      setLeads(normalLeads);
-      setInsuranceClaims(claims);
+      setLeadLoadError("");
+      setLeadDataContext(context);
+      setLeads(prev => preserveCaseDocuments(prev, normalLeads, caseDocumentCache.current));
+      setInsuranceClaims(prev => preserveCaseDocuments(prev, claims, caseDocumentCache.current));
     }
   };
 
@@ -544,7 +581,7 @@ export default function App() {
     const context = dataContext.current;
 
     // Fetch all profiles from Supabase, including their organization details
-    const { data, error } = await supabase
+    const { data, error } = await queryAll((from, to) => supabase
       .from('profiles')
       .select(`
         id,
@@ -569,7 +606,7 @@ export default function App() {
             invite_code
           )
         )
-      `);
+      `).order("id").range(from, to));
 
     if (error) {
       console.error("Error al obtener perfiles de equipo:", error.message);
@@ -632,8 +669,7 @@ export default function App() {
           companyWebsite: item.company_website || "",
           registrationNumber: item.registration_number || "",
           licenseNumber: item.license_number || "",
-          activeLeads: Math.floor(Math.random() * 5),
-          closeRate: 50 + Math.floor(Math.random() * 40)
+
         };
       });
 
@@ -658,16 +694,52 @@ export default function App() {
 
   useEffect(() => {
     if (!session || !profile || accountError) return;
-    const refresh = () => { void fetchLeads(); void fetchTeamMembers(); };
+    const leadRefresh = backgroundRefresh(fetchLeads);
+    const teamRefresh = backgroundRefresh(fetchTeamMembers);
+    const refresh = () => { void leadRefresh.refresh(); void teamRefresh.refresh(); };
     refresh();
     const interval = setInterval(refresh, 30000);
     window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
     const channel = supabase.channel(`company-members-${session.user.id}-${activeOrganization?.id || 'all'}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void fetchTeamMembers())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_organizations' }, () => void fetchTeamMembers())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => void fetchLeads()).subscribe();
-    return () => { clearInterval(interval); window.removeEventListener('focus', refresh); void supabase.removeChannel(channel); };
-  }, [session?.user.id, profile?.id, activeOrganization?.id, userRole, accountError]);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void teamRefresh.refresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_organizations' }, () => void teamRefresh.refresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => void leadRefresh.refresh()).subscribe();
+    return () => { leadRefresh.stop(); teamRefresh.stop(); clearInterval(interval); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); void supabase.removeChannel(channel); };
+  }, [session?.user.id, profile?.id, activeOrganization?.id, userRole, accountError, currentView]);
+
+  const [caseDocumentsLoading, setCaseDocumentsLoading] = useState(false);
+  const [caseDocumentsError, setCaseDocumentsError] = useState("");
+  const documentRevisions = useRef(new Map<string, number>());
+  useEffect(() => {
+    if (!session || currentView !== ViewType.INSURANCE_CLAIM || !selectedInsuranceClaimId || accountError) return;
+    let cancelled = false;
+    const context = dataContext.current;
+    setCaseDocumentsLoading(true); setCaseDocumentsError("");
+    const refresher = backgroundRefresh(async () => {
+      const revision = documentRevisions.current.get(selectedInsuranceClaimId) || 0;
+      let query = supabase.from("leads").select("documents").eq("id", selectedInsuranceClaimId);
+      if (userRole === "contractor") {
+        if (!activeOrganization) { if (!cancelled) setCaseDocumentsLoading(false); return; }
+        query = query.eq("organization_id", activeOrganization.id);
+      }
+      const { data, error } = await query.maybeSingle();
+      if (cancelled || context !== dataContext.current) return;
+      if (revision !== (documentRevisions.current.get(selectedInsuranceClaimId) || 0)) { void refresher.refresh(); return; }
+      setCaseDocumentsLoading(false);
+      if (error) { setCaseDocumentsError("No se pudieron cargar los documentos del caso. Se reintentará automáticamente."); return; }
+      setCaseDocumentsError("");
+      if (!data) return;
+      caseDocumentCache.current.set(selectedInsuranceClaimId, data.documents || []);
+      setInsuranceClaims(prev => prev.map(claim => claim.id === selectedInsuranceClaimId ? { ...claim, documents: data.documents || [] } : claim));
+    });
+    void refresher.refresh();
+    const interval = setInterval(() => void refresher.refresh(), 30_000);
+    document.addEventListener("visibilitychange", refresher.refresh);
+    const channel = supabase.channel(`case-documents-${session.user.id}-${selectedInsuranceClaimId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "leads", filter: `id=eq.${selectedInsuranceClaimId}` }, refresher.refresh).subscribe();
+    return () => { cancelled = true; refresher.stop(); clearInterval(interval); document.removeEventListener("visibilitychange", refresher.refresh); void supabase.removeChannel(channel); };
+  }, [session?.user.id, activeOrganization?.id, userRole, currentView, selectedInsuranceClaimId, accountError]);
 
   // Filtered lists (fallback logic for local rendering)
   const filteredInsuranceClaims = insuranceClaims;
@@ -945,7 +1017,11 @@ export default function App() {
 
   const handleAddInsuranceClaimTimelineEvent = async (claimId: string, event: Omit<TimelineEvent, "id" | "timestamp">) => {
     const { data, error } = await supabase.rpc('add_xapcon_timeline_event', { p_lead_id: claimId, p_event: event });
-    if (error) throw new Error(error.message);
+    if (error) {
+      await caseFileService.queueOrphans(claimId, (event.photos || []).map(url => ({ url })));
+      void caseFileService.flushCleanup();
+      throw new Error(error.message);
+    }
     const timeline = data as TimelineEvent[];
     setInsuranceClaims(prev => prev.map(l => l.id === claimId ? { ...l, timeline } : l));
     setLeads(prev => prev.map(l => l.id === claimId ? { ...l, timeline } : l));
@@ -1065,103 +1141,56 @@ export default function App() {
 
   // Actions: Document Management
   const handleUploadDocuments = async (leadId: string, files: File[], category: string = "Reporte") => {
-    if (!session) return false;
-
-    const targetLead = leads.find(l => l.id === leadId) || insuranceClaims.find(c => c.id === leadId);
-    if (!targetLead) return false;
-
-    const newDocs: any[] = [];
-
-    for (const file of files) {
-      // Preserve original name using a subfolder with timestamp and short random suffix to prevent collisions
-      const randomSuffix = Math.random().toString(36).substring(2, 5);
-      const filePath = `${leadId}/${Date.now()}_${randomSuffix}/${file.name}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        alert(`Error al subir archivo "${file.name}": ` + uploadError.message);
-        continue;
-      }
-
-      const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
-      const sizeInMB = (file.size / (1024 * 1024)).toFixed(1);
-
-      newDocs.push({
-        id: `doc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-        name: file.name,
-        size: `${sizeInMB} MB`,
-        category: category as any,
-        url: publicUrl,
-        filePath: filePath
-      });
-    }
-
-    if (newDocs.length === 0) return false;
-
-    const updatedDocs = [...newDocs, ...targetLead.documents];
-
-    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, documents: updatedDocs } : l));
-    setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, documents: updatedDocs } : l));
-
-    const { error: dbError } = await supabase.from('leads').update({ documents: updatedDocs }).eq('id', leadId);
-    if (dbError) {
-      alert("Error al guardar cambios en base de datos: " + dbError.message);
+    if (!session || files.length === 0) return false;
+    if (files.length > 20) { alert("Selecciona como máximo 20 archivos por carga."); return false; }
+    const uploaded: any[] = [];
+    try {
+      for (const file of files) uploaded.push(await caseFileService.upload(leadId, file, category));
+      const documents = await caseFileService.append(leadId, uploaded);
+      caseDocumentCache.current.set(leadId, documents);
+      documentRevisions.current.set(leadId, (documentRevisions.current.get(leadId) || 0) + 1);
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, documents } : l));
+      setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, documents } : l));
+      return true;
+    } catch (error) {
+      // The RPC may have committed even if its response was lost. The server
+      // checks references under a row lock before scheduling any orphan cleanup.
+      await caseFileService.queueOrphans(leadId, uploaded);
+      await caseFileService.flushCleanup();
+      alert(error instanceof Error ? error.message : "No se pudieron guardar los documentos.");
       return false;
     }
-    return true;
   };
 
-  const handleDeleteDocument = async (leadId: string, docId: string, filePath?: string) => {
+  const handleDeleteDocument = async (leadId: string, docId: string) => {
     if (!session) return false;
-
-    if (filePath) {
-      const { error } = await supabase.storage.from('documents').remove([filePath]);
-      if (error) {
-        alert("Error al eliminar de Storage: " + error.message);
-        return false;
-      }
+    try {
+      const result = await caseFileService.remove(leadId, docId);
+      caseDocumentCache.current.set(leadId, result.documents);
+      documentRevisions.current.set(leadId, (documentRevisions.current.get(leadId) || 0) + 1);
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, documents: result.documents } : l));
+      setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, documents: result.documents } : l));
+      // A durable database queue retains failed Storage deletions for retry.
+      void caseFileService.flushCleanup();
+      return true;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "No se pudo eliminar el documento.");
+      return false;
     }
-
-    const targetLead = leads.find(l => l.id === leadId) || insuranceClaims.find(c => c.id === leadId);
-    if (!targetLead) return false;
-
-    const updatedDocs = targetLead.documents.filter(d => d.id !== docId);
-
-    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, documents: updatedDocs } : l));
-    setInsuranceClaims(prev => prev.map(l => l.id === leadId ? { ...l, documents: updatedDocs } : l));
-
-    await supabase.from('leads').update({ documents: updatedDocs }).eq('id', leadId);
-    return true;
   };
 
-  const handleUploadImageForTimeline = async (file: File) => {
+  const handleUploadImageForTimeline = async (file: File, claimId: string) => {
     if (!session) return null;
-    const fileExt = file.name.split('.').pop() || 'png';
-    const fileName = `timeline_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-    const filePath = `timeline_images/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('documents')
-      .upload(filePath, file);
-
-    if (uploadError) {
-      console.error("Error uploading image:", uploadError);
-      return null;
-    }
-    const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath);
-    return publicUrl;
+    const uploaded = await caseFileService.upload(claimId, file, "Foto");
+    return `storage://case-files/${uploaded.filePath}`;
   };
-
 
 
   // Actions: Claims Estimator View (Persisted in Supabase Leads)
   const handleUpdateLeadEstimate = async (leadId: string, updatedEstimate: Estimate) => {
     const { error } = await supabase
       .from('leads')
-      .update({ estimate: updatedEstimate })
+      .update({ estimate: userRole === "admin" ? updatedEstimate : publicEstimate(updatedEstimate) })
       .eq('id', leadId);
 
     if (error) {
@@ -1310,13 +1339,13 @@ export default function App() {
       }
     }
   };
-  if (passwordRecovery && session) return <PasswordRecoveryView onComplete={finishPasswordRecovery} />;
+  if (passwordRecovery && session) return <Suspense fallback={<p role="status">Cargando…</p>}><PasswordRecoveryView onComplete={finishPasswordRecovery} /></Suspense>;
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-[#102A46] text-white">Cargando plataforma...</div>;
   }
 
   if (!session) {
-    return <LoginView />;
+    return <Suspense fallback={<p role="status">Cargando…</p>}><LoginView /></Suspense>;
   }
 
   if (accountError || !profile) return (
@@ -1702,6 +1731,8 @@ export default function App() {
 
         {/* View selections viewport */}
         <div className="crm-content flex flex-col flex-1 overflow-hidden">
+          {leadLoadError && <div role="alert" className="bg-amber-50 p-3 text-sm text-amber-900">{leadLoadError} <button type="button" onClick={() => void fetchLeads()} className="underline">Reintentar</button></div>}
+          {userRole === "admin" && estimatePrivacyError && <p role="alert" className="bg-amber-50 p-3 text-sm text-amber-900">{estimatePrivacyError}</p>}
           <Suspense fallback={<div className="flex flex-1 items-center justify-center text-sm font-medium text-slate-500">Cargando sección…</div>}>
           {currentView === ViewType.DASHBOARD && (
             userRole === "contractor" ? (
@@ -1745,6 +1776,8 @@ export default function App() {
             <ErrorBoundary>
               <LeadsView
                 leads={filteredInsuranceClaims}
+                documentsLoading={caseDocumentsLoading}
+                documentsError={caseDocumentsError}
                 selectedLeadId={activeInsuranceClaimId}
                 onSelectLead={handleSelectInsuranceClaim}
                 onAddTimelineEvent={handleAddInsuranceClaimTimelineEvent}
@@ -1775,7 +1808,8 @@ export default function App() {
             </ErrorBoundary>
           )}
 
-          {currentView === ViewType.CLAIMS && userRole === "contractor" && (
+          {currentView === ViewType.CLAIMS && userRole === "contractor" && leadDataContext !== dataContext.current && <p role="status" className="p-6 text-sm text-slate-500">{leadLoadError ? "Los presupuestos no están disponibles." : "Cargando presupuestos…"}</p>}
+          {currentView === ViewType.CLAIMS && userRole === "contractor" && leadDataContext === dataContext.current && (
             <EstimatorView
               leads={leads}
               onUpdateLeadEstimate={handleUpdateLeadEstimate}
