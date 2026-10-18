@@ -287,9 +287,9 @@ export default function ClaimFinances({ claimId, organizationId }: { claimId: st
     <section className="overflow-hidden rounded-2xl border border-[#DCE3E5] bg-white shadow-sm">
       <div className="flex flex-col gap-3 border-b border-[#EEF2F5] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#755613]">Finanzas del proyecto</p><h3 className="mt-1 text-base font-bold text-[#102A46]">Montos del reclamo</h3><p className="mt-1 text-xs text-slate-500">Captura valores de seguro y seguimiento de cobros. Los totales se calculan con los pagos registrados.</p></div>
-        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#EEF5F1] px-3 py-1.5 text-[10px] font-bold text-[#36705E]"><DollarSign className="h-3.5 w-3.5" /> USD</span>
+        <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#EEF2F5] px-3 py-1.5 text-[10px] font-bold text-[#102A46]"><DollarSign className="h-3.5 w-3.5" /> USD</span>
       </div>
-      <div className="grid gap-3 border-b border-[#EEF2F5] bg-[#FAFBFA] p-4 sm:grid-cols-3 sm:p-5">
+      <div className="grid gap-3 border-b border-[#EEF2F5] bg-[#FAFBFC] p-4 sm:grid-cols-3 sm:p-5">
         <TotalCard label="RCV aprobado" value={money(parseFinanceAmount(amounts.rcv))} icon={<ReceiptText className="h-4 w-4" />} />
         <TotalCard label="Pagos recibidos" value={money(totals.received)} icon={<Check className="h-4 w-4" />} />
         <TotalCard label="Cobros por recibir" value={money(totals.expected)} icon={<Clock3 className="h-4 w-4" />} />

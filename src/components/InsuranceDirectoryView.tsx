@@ -478,7 +478,7 @@ function DetailMetric({ label, value }: { label: string; value: number }) {
 }
 
 function CompanyMark({ active = false, large = false }: { active?: boolean; large?: boolean }) {
-  return <span className={`flex shrink-0 items-center justify-center border border-[#D5E7DE] bg-[#EAF3EF] text-[#14665B] ${large ? "h-14 w-14 rounded-2xl" : "h-10 w-10 rounded-xl"} ${active ? "ring-1 ring-[#14665B]/15" : ""}`}>
+  return <span className={`flex shrink-0 items-center justify-center border border-[#D5DDE7] bg-[#EAF0F3] text-[#102A46] ${large ? "h-14 w-14 rounded-2xl" : "h-10 w-10 rounded-xl"} ${active ? "ring-1 ring-[#102A46]/15" : ""}`}>
     <ShieldCheck aria-hidden="true" className={large ? "h-7 w-7" : "h-5 w-5"} strokeWidth={1.8} />
   </span>;
 }

@@ -3,6 +3,12 @@
 @import "@fontsource-variable/manrope";
 @import "tailwindcss";
 
+/* Shared Xapcon logo blue for both role themes and their portaled dialogs. */
+:root {
+  --xapcon-blue: #102A46;
+  --xapcon-blue-hover: #193856;
+}
+
 @theme {
   --font-sans: "DM Sans Variable", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;

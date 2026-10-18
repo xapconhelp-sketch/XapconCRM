@@ -226,7 +226,7 @@ export default function MainDashboard({
           <section className="overflow-hidden rounded-2xl border border-[#E0E5E8] bg-white shadow-[0_5px_22px_rgba(23,49,74,0.045)] xl:col-span-5" aria-labelledby="followup-heading">
             <div className="admin-followup-heading border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] px-4 py-3 sm:px-5">
               <div className="flex items-center gap-3">
-                <span className="admin-followup-icon contractor-illustration" style={{ "--icon-accent": "#14665b" } as React.CSSProperties}><Activity className="h-5 w-5" /></span>
+                <span className="admin-followup-icon contractor-illustration" style={{ "--icon-accent": "var(--xapcon-blue)" } as React.CSSProperties}><Activity className="h-5 w-5" /></span>
                 <div className="min-w-0 flex-1"><h2 id="followup-heading" className="text-sm font-bold text-white">Seguimiento de expedientes</h2><p className="mt-0.5 text-[10px] text-[#CBD6DE]">Casos sin movimiento reciente</p></div>
                 <span className="rounded-full border border-[#D3B566]/20 bg-[#8C6A22]/15 px-2.5 py-1 text-[10px] font-bold tabular-nums text-[#D8C68A]">{visibleClaims.length}</span>
               </div>
@@ -277,7 +277,7 @@ function FilterButton({ active, onClick, children, dark = false }: { key?: React
 
 function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return <div className="flex min-h-[185px] flex-col items-center justify-center px-5 py-8 text-center">
-    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3EF] text-[#53836F]">{icon}</span>
+    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF0F5] text-[#102A46]">{icon}</span>
     <p className="mt-3 text-xs font-bold text-[#2F5270]">{title}</p>
     <p className="mt-1 max-w-[270px] text-[10px] leading-4 text-slate-500">{description}</p>
   </div>;

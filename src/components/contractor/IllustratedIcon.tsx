@@ -3,18 +3,18 @@ import { House, Files, Calculator, HardHat, UsersRound, ShieldCheck, SlidersHori
 
 export type Illustration = 'home' | 'claim' | 'estimate' | 'production' | 'team' | 'insurance' | 'settings' | 'calendar' | 'alert' | 'logout' | 'finance' | 'tasks' | 'success' | 'activity' | 'clock' | 'declined' | 'mail';
 const icons: Record<Illustration, { icon: LucideIcon; color: string }> = {
-  home: { icon: House, color: '#147d70' },
+  home: { icon: House, color: 'var(--xapcon-blue)' },
   claim: { icon: Files, color: '#367ac2' },
   estimate: { icon: Calculator, color: '#886327' },
   production: { icon: HardHat, color: '#b37924' },
   team: { icon: UsersRound, color: '#7962b0' },
-  insurance: { icon: ShieldCheck, color: '#278775' },
+  insurance: { icon: ShieldCheck, color: 'var(--xapcon-blue)' },
   settings: { icon: SlidersHorizontal, color: '#5c7491' },
   calendar: { icon: CalendarDays, color: '#367ac2' },
   alert: { icon: TriangleAlert, color: '#c26452' },
   logout: { icon: LogOut, color: '#bc6159' },
-  finance: { icon: CircleDollarSign, color: '#147d70' },
-  tasks: { icon: ListChecks, color: '#147d70' },
+  finance: { icon: CircleDollarSign, color: 'var(--xapcon-blue)' },
+  tasks: { icon: ListChecks, color: 'var(--xapcon-blue)' },
   success: { icon: CheckCircle2, color: '#278574' },
   activity: { icon: Activity, color: '#367ac2' },
   clock: { icon: Clock3, color: '#a4742d' },

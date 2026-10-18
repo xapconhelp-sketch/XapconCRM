@@ -241,7 +241,7 @@ export default function ContractorDashboard({
             ) : (
               <div className="divide-y divide-[#F0F2F2]">
                 {scheduled.slice(0, 6).map(({ claim, task }) => (
-                  <button key={`${claim.id}-${task.id}`} onClick={() => onNavigateToLead(claim.id)} className="group flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-[#FAFBFA] sm:px-6">
+                  <button key={`${claim.id}-${task.id}`} onClick={() => onNavigateToLead(claim.id)} className="group flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-[#FAFBFC] sm:px-6">
                     <div className="flex w-[62px] shrink-0 flex-col items-center rounded-xl bg-[#F1F4F7] px-2 py-2 text-center group-hover:bg-white">
                       <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{formatDate(task.dueDate, { weekday: "short" })}</span>
                       <span className="mt-0.5 text-[14px] font-extrabold leading-none text-[#102A46]">{formatDate(task.dueDate, { day: "numeric" })}</span>
@@ -281,7 +281,7 @@ export default function ContractorDashboard({
                   const isToday = task.dueDate === today;
                   return (
                     <div key={`${claim.id}-${task.id}`} className={`flex items-start gap-3 px-5 py-3.5 sm:px-6 ${isLate ? "bg-[#FFF9F7]" : ""}`}>
-                      <button onClick={() => onToggleTask(claim.id, task.id)} className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${isLate ? "border-[#D06B55] text-[#D06B55] hover:bg-[#D06B55] hover:text-white" : "border-[#C8D2D6] text-transparent hover:border-[#3C856F] hover:bg-[#3C856F] hover:text-white"}`} aria-label={`Completar tarea: ${task.title}`}><Check className="h-3 w-3" /></button>
+                      <button onClick={() => onToggleTask(claim.id, task.id)} className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${isLate ? "border-[#D06B55] text-[#D06B55] hover:bg-[#D06B55] hover:text-white" : "border-[#C8D2D6] text-transparent hover:border-[#102A46] hover:bg-[#102A46] hover:text-white"}`} aria-label={`Completar tarea: ${task.title}`}><Check className="h-3 w-3" /></button>
                       <div className="min-w-0 flex-1">
                         <button onClick={() => onNavigateToLead(claim.id)} className="block max-w-full truncate text-left text-xs font-bold text-[#102A46] hover:text-[#755613]">{task.title}</button>
                         {task.category && task.category !== "general" && <span className="mt-1 inline-flex rounded-md bg-[#F7F4E9] px-1.5 py-0.5 text-[9px] font-bold text-[#905A39]">{taskCategoryLabels[task.category]}</span>}
@@ -313,7 +313,7 @@ export default function ContractorDashboard({
             ) : (
               <div className="divide-y divide-[#F0F2F2]">
                 {inactivity.map(({ claim, days }) => (
-                  <button key={claim.id} onClick={() => onNavigateToLead(claim.id)} className="group flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-[#FAFBFA] sm:px-6">
+                  <button key={claim.id} onClick={() => onNavigateToLead(claim.id)} className="group flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-[#FAFBFC] sm:px-6">
                     <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${days >= 14 ? "bg-[#C45645]" : "bg-[#D29447]"}`} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-bold text-[#102A46] group-hover:text-[#755613]">{claim.name}</p>

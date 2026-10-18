@@ -2031,7 +2031,7 @@ export default function LeadsView({
                       <h3 className="text-sm font-bold tracking-tight text-[#102A46]">Seguimiento del caso</h3>
                       <p className="mt-1 text-[11px] text-[#718096]">Elige el área para consultar o guardar una actividad.</p>
                     </div>
-                    <span className="hidden rounded-full border border-[#E5E8E5] bg-[#F8F9F7] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#74818A] sm:inline-flex">3 áreas</span>
+                    <span className="hidden rounded-full border border-[#E5E7E8] bg-[#F7F8F9] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#74818A] sm:inline-flex">3 áreas</span>
                   </div>
                   <div className="claim-record-tabs grid grid-cols-1 gap-2 sm:grid-cols-3" role="tablist" aria-label="Categorías de registros">
                     {([
@@ -2047,9 +2047,9 @@ export default function LeadsView({
                           role="tab"
                           aria-selected={active}
                           onClick={() => setActiveRecordTab(tab)}
-                          className={`group flex min-h-[62px] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8C6A22] sm:min-h-[70px] ${active ? "border-[#D6C89F] bg-[#FFFEFA] shadow-[0_3px_10px_rgba(83,66,29,0.07)]" : "border-[#E3E8E9] bg-white hover:border-[#C9D2D4] hover:bg-[#FAFBFA]"}`}
+                          className={`group flex min-h-[62px] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8C6A22] sm:min-h-[70px] ${active ? "border-[#D6C89F] bg-[#FFFEFA] shadow-[0_3px_10px_rgba(83,66,29,0.07)]" : "border-[#E3E8E9] bg-white hover:border-[#C9D2D4] hover:bg-[#FAFBFC]"}`}
                         >
-                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors ${active ? "border-[#E7DAB8] bg-[#F6F1E4] text-[#755613]" : "border-[#E8ECEB] bg-[#F5F7F6] text-[#667984] group-hover:text-[#2F5270]"}`}><Icon className="h-4 w-4" /></span>
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors ${active ? "border-[#E7DAB8] bg-[#F6F1E4] text-[#755613]" : "border-[#E8EAEC] bg-[#F5F6F7] text-[#667984] group-hover:text-[#2F5270]"}`}><Icon className="h-4 w-4" /></span>
                           <span className="min-w-0 flex-1">
                             <span className={`block truncate text-xs font-bold ${active ? "text-[#102A46]" : "text-[#42586A]"}`}>{label}</span>
                             <span className="mt-1 line-clamp-2 text-[9px] font-medium leading-3 text-[#77858C]">{description}</span>

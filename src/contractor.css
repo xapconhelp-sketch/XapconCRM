@@ -2,26 +2,26 @@
 @media screen {
   .admin-app {
     --background: #ffffff;
-    --foreground: #203532;
+    --foreground: #202a35;
     --card: #ffffff;
-    --card-foreground: #203532;
+    --card-foreground: #202a35;
     --popover: #ffffff;
-    --popover-foreground: #203532;
-    --primary: #14665b;
+    --popover-foreground: #202a35;
+    --primary: var(--xapcon-blue);
     --primary-foreground: #ffffff;
-    --secondary: #edf4f1;
-    --secondary-foreground: #28564d;
-    --muted: #f1f5f3;
-    --muted-foreground: #647770;
-    --accent: #e4f1ec;
-    --accent-foreground: #155e52;
+    --secondary: #edf0f4;
+    --secondary-foreground: #283d56;
+    --muted: #f1f3f5;
+    --muted-foreground: #646d77;
+    --accent: #e4eaf1;
+    --accent-foreground: #15375e;
     --destructive: #bc4146;
-    --ui-border: #dde7e2;
-    --input: #d4e0d9;
-    --ring: #2b8a76;
+    --ui-border: #dde2e7;
+    --input: #d4dae0;
+    --ring: #2b578a;
     --radius: .75rem;
     --crm-ink: var(--foreground);
-    --crm-canvas: #f5f7f6;
+    --crm-canvas: #f5f6f7;
     --crm-line: var(--ui-border);
     --crm-gold: var(--primary);
     --crm-muted: var(--muted-foreground);
@@ -52,7 +52,7 @@
     color:var(--foreground) !important;
     background:#fff !important;
     border-right:1px solid var(--ui-border) !important;
-    box-shadow:2px 0 12px #20353208;
+    box-shadow:2px 0 12px #202a3508;
   }
   .admin-app .crm-sidebar[data-collapsed="true"] { width:76px !important; }
   .admin-app .crm-sidebar > div:first-child {
@@ -60,7 +60,7 @@
     padding:30px 12px 14px;
     justify-content:center;
     position:relative;
-    background:linear-gradient(145deg,#fff,#edf4f1);
+    background:linear-gradient(145deg,#fff,#edf0f4);
     border-color:var(--ui-border) !important;
   }
   .admin-app .crm-sidebar[data-collapsed="true"] > div:first-child { min-height:76px; padding:20px; }
@@ -69,14 +69,14 @@
   .admin-app .crm-sidebar > div:nth-child(2) { padding:14px 12px; }
   .admin-app .crm-sidebar > div:last-child { border-color:var(--ui-border) !important; }
   .admin-app .crm-sidebar p { color:var(--muted-foreground) !important; }
-  .admin-app .crm-sidebar button { min-height:43px; border-radius:10px; color:#63736c; }
-  .admin-app .crm-sidebar button:not(.nav-item-active):hover { color:var(--foreground); background:#f2f6f4; }
+  .admin-app .crm-sidebar button { min-height:43px; border-radius:10px; color:#636a73; }
+  .admin-app .crm-sidebar button:not(.nav-item-active):hover { color:var(--foreground); background:#f2f4f6; }
   .admin-app .crm-sidebar .nav-item-active { color:var(--primary) !important; background:var(--accent) !important; border-left:3px solid var(--primary); font-weight:650; }
   .admin-app .crm-sidebar .nav-item-active .contractor-illustration { --icon-accent:var(--primary) !important; }
   .admin-app .crm-sidebar .contractor-illustration { width:34px; height:34px; padding:7px; border-radius:10px; }
   .admin-app .crm-sidebar[data-collapsed="true"] .contractor-illustration { width:38px; height:38px; padding:8px; }
   .admin-app .crm-sidebar .contractor-illustration svg { width:100%; height:100%; }
-  .admin-app .contractor-illustration { display:inline-flex; align-items:center; justify-content:center; width:56px; height:56px; padding:14px; border-radius:16px; flex-shrink:0; color:var(--icon-accent); background:linear-gradient(145deg,#fff,color-mix(in srgb,var(--icon-accent) 12%,white)); border:1px solid color-mix(in srgb,var(--icon-accent) 18%,white); box-shadow:inset 0 1px 0 #fff,0 3px 8px #20353208; vertical-align:middle; }
+  .admin-app .contractor-illustration { display:inline-flex; align-items:center; justify-content:center; width:56px; height:56px; padding:14px; border-radius:16px; flex-shrink:0; color:var(--icon-accent); background:linear-gradient(145deg,#fff,color-mix(in srgb,var(--icon-accent) 12%,white)); border:1px solid color-mix(in srgb,var(--icon-accent) 18%,white); box-shadow:inset 0 1px 0 #fff,0 3px 8px #202a3508; vertical-align:middle; }
   .admin-app .contractor-illustration svg { width:100%; height:100%; max-width:none; flex-shrink:0; }
   .admin-app .contractor-section-art { display:inline-flex; width:52px; height:52px; padding:12px; border-radius:14px; }
   .admin-app .crm-sidebar [class*="text-[#EF4444]"] { color:#bc6159 !important; }
@@ -96,10 +96,10 @@
     color:var(--foreground);
     background:#fff !important;
     border-top:1px solid var(--ui-border);
-    box-shadow:0 14px 35px #20353216;
+    box-shadow:0 14px 35px #202a3516;
   }
-  .admin-app > .md\:hidden.fixed.inset-0 button { color:#63736c; border-radius:10px; }
-  .admin-app > .md\:hidden.fixed.inset-0 button:hover { background:#f2f6f4; color:var(--foreground); }
+  .admin-app > .md\:hidden.fixed.inset-0 button { color:#636a73; border-radius:10px; }
+  .admin-app > .md\:hidden.fixed.inset-0 button:hover { background:#f2f4f6; color:var(--foreground); }
   .admin-app > .md\:hidden.fixed.inset-0 button[class*="bg-[#8C6A22]"] { background:var(--accent) !important; color:var(--primary) !important; }
   .admin-app > .md\:hidden.fixed.inset-0 button:last-child { border-color:var(--ui-border); color:#bc6159; }
 
@@ -113,8 +113,8 @@
     box-shadow:none !important;
   }
   .admin-app .admin-topbar > div:first-child { gap:14px; }
-  .admin-app .admin-topbar > div:first-child > div:first-child > span:first-child { color:#203532 !important; font-size:16px !important; font-weight:700 !important; line-height:1.25; letter-spacing:-.025em; }
-  .admin-app .admin-topbar > div:first-child > div:first-child > span:last-child { color:#647770 !important; font-size:10px !important; font-weight:500; line-height:1.35; }
+  .admin-app .admin-topbar > div:first-child > div:first-child > span:first-child { color:#202a35 !important; font-size:16px !important; font-weight:700 !important; line-height:1.25; letter-spacing:-.025em; }
+  .admin-app .admin-topbar > div:first-child > div:first-child > span:last-child { color:#646d77 !important; font-size:10px !important; font-weight:500; line-height:1.35; }
   .admin-app .admin-topbar input:not([type="checkbox"]),
   .admin-app .admin-topbar select {
     min-height:40px;
@@ -126,58 +126,58 @@
     box-shadow:none !important;
   }
   .admin-app .admin-topbar input:focus,
-  .admin-app .admin-topbar select:focus { border-color:var(--primary) !important; box-shadow:0 0 0 3px #14665b1b !important; }
+  .admin-app .admin-topbar select:focus { border-color:var(--primary) !important; box-shadow:0 0 0 3px #102a461b !important; }
   .admin-app .admin-company-filter { position:relative; z-index:40; }
-  .admin-app .admin-company-filter-trigger { display:flex; width:232px; min-height:44px; align-items:center; gap:10px; padding:5px 10px 5px 6px; border:1px solid var(--ui-border); border-radius:12px; background:linear-gradient(180deg,#fff,#fbfdfc); color:var(--foreground); text-align:left; box-shadow:0 2px 5px #20353208,inset 0 1px 0 #fff; }
+  .admin-app .admin-company-filter-trigger { display:flex; width:232px; min-height:44px; align-items:center; gap:10px; padding:5px 10px 5px 6px; border:1px solid var(--ui-border); border-radius:12px; background:linear-gradient(180deg,#fff,#fbfcfd); color:var(--foreground); text-align:left; box-shadow:0 2px 5px #202a3508,inset 0 1px 0 #fff; }
   .admin-app .admin-company-filter-trigger:hover,
-  .admin-app .admin-company-filter-trigger[aria-expanded="true"] { border-color:#9fc4b5; background:#fff; box-shadow:0 0 0 3px #14665b12,0 4px 12px #2035320a; }
-  .admin-app .admin-company-filter-icon { display:grid; width:32px; height:32px; flex:0 0 32px; place-items:center; border:1px solid #cfe1d7; border-radius:9px; background:#edf4f1; color:var(--primary); }
+  .admin-app .admin-company-filter-trigger[aria-expanded="true"] { border-color:#9fb0c4; background:#fff; box-shadow:0 0 0 3px #102a4612,0 4px 12px #202a350a; }
+  .admin-app .admin-company-filter-icon { display:grid; width:32px; height:32px; flex:0 0 32px; place-items:center; border:1px solid #cfd7e1; border-radius:9px; background:#edf0f4; color:var(--primary); }
   .admin-app .admin-company-filter-icon svg { width:16px; height:16px; stroke-width:1.8; }
   .admin-app .admin-company-filter-copy { display:flex; min-width:0; flex:1; flex-direction:column; gap:2px; }
   .admin-app .admin-company-filter-name { overflow:hidden; color:var(--foreground); font-size:11px; font-weight:700; line-height:1.25; text-overflow:ellipsis; white-space:nowrap; }
   .admin-app .admin-company-filter-caption { color:var(--muted-foreground); font-size:9px; font-weight:500; line-height:1.2; }
-  .admin-app .admin-company-filter-chevron { width:15px; height:15px; flex:0 0 15px; color:#71847b; transition:transform .18s ease; }
+  .admin-app .admin-company-filter-chevron { width:15px; height:15px; flex:0 0 15px; color:#717a84; transition:transform .18s ease; }
   .admin-app .admin-company-filter-chevron.is-open { transform:rotate(180deg); color:var(--primary); }
-  .admin-app .admin-company-filter-menu { position:absolute; top:calc(100% + 9px); left:0; z-index:80; width:min(340px,calc(100vw - 32px)); overflow:hidden; border:1px solid #dce8e2; border-radius:16px; background:#fff; box-shadow:0 18px 48px #173d3024,0 3px 10px #173d3010; animation:admin-company-menu-in .16s ease-out; transform-origin:top left; }
-  .admin-app .admin-company-filter-options { max-height:min(310px,45vh); overflow-y:auto; padding:2px 8px 8px; scrollbar-color:#bad6c7 transparent; scrollbar-width:thin; }
+  .admin-app .admin-company-filter-menu { position:absolute; top:calc(100% + 9px); left:0; z-index:80; width:min(340px,calc(100vw - 32px)); overflow:hidden; border:1px solid #dce2e8; border-radius:16px; background:#fff; box-shadow:0 18px 48px #17293d24,0 3px 10px #17293d10; animation:admin-company-menu-in .16s ease-out; transform-origin:top left; }
+  .admin-app .admin-company-filter-options { max-height:min(310px,45vh); overflow-y:auto; padding:2px 8px 8px; scrollbar-color:#bac7d6 transparent; scrollbar-width:thin; }
   .admin-app .admin-company-filter-option { display:flex; width:100%; min-height:49px; align-items:center; gap:10px; padding:6px 8px; border:1px solid transparent; border-radius:10px; background:#fff; color:var(--foreground); text-align:left; }
-  .admin-app .admin-company-filter-option:hover { border-color:#e4eee9; background:#f7faf8; }
-  .admin-app .admin-company-filter-option.is-selected { border-color:#d6e8df; background:#eff6f2; }
-  .admin-app .admin-company-filter-option-icon { display:grid; width:31px; height:31px; flex:0 0 31px; place-items:center; border:1px solid #e4ece8; border-radius:9px; background:#f7faf8; color:#71877d; }
-  .admin-app .admin-company-filter-option.is-selected .admin-company-filter-option-icon { border-color:#c8dfd3; background:#fff; color:var(--primary); }
+  .admin-app .admin-company-filter-option:hover { border-color:#e4e9ee; background:#f7f8fa; }
+  .admin-app .admin-company-filter-option.is-selected { border-color:#d6dee8; background:#eff2f6; }
+  .admin-app .admin-company-filter-option-icon { display:grid; width:31px; height:31px; flex:0 0 31px; place-items:center; border:1px solid #e4e8ec; border-radius:9px; background:#f7f8fa; color:#717b87; }
+  .admin-app .admin-company-filter-option.is-selected .admin-company-filter-option-icon { border-color:#c8d3df; background:#fff; color:var(--primary); }
   .admin-app .admin-company-filter-option-icon svg { width:15px; height:15px; stroke-width:1.8; }
   .admin-app .admin-company-filter-option-copy { display:flex; min-width:0; flex:1; flex-direction:column; gap:2px; }
-  .admin-app .admin-company-filter-option-copy strong { overflow:hidden; color:#263d36; font-size:11px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
-  .admin-app .admin-company-filter-option-copy small { color:#829189; font-size:9px; }
+  .admin-app .admin-company-filter-option-copy strong { overflow:hidden; color:#26313d; font-size:11px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
+  .admin-app .admin-company-filter-option-copy small { color:#828991; font-size:9px; }
   .admin-app .admin-company-filter-option-check { width:15px; height:15px; flex:0 0 15px; color:var(--primary); stroke-width:2.4; }
   @keyframes admin-company-menu-in { from { opacity:0; transform:translateY(-4px) scale(.99); } to { opacity:1; transform:translateY(0) scale(1); } }
   .admin-app .admin-topbar .lucide-bell { width:22px; height:22px; color:var(--primary); }
-  .admin-app .admin-topbar .superadmin-notification-trigger { display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; border-radius:11px !important; border-color:#cfe1d7 !important; background:#edf4f1 !important; color:#14665b !important; }
-  .admin-app .admin-topbar .superadmin-notification-trigger:hover { background:#e4f1ec !important; color:#0c5047 !important; }
+  .admin-app .admin-topbar .superadmin-notification-trigger { display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; border-radius:11px !important; border-color:#cfd7e1 !important; background:#edf0f4 !important; color:var(--xapcon-blue) !important; }
+  .admin-app .admin-topbar .superadmin-notification-trigger:hover { background:#e4eaf1 !important; color:var(--xapcon-blue-hover) !important; }
   .admin-app .admin-topbar .superadmin-notification-trigger .lucide { width:20px; height:20px; color:currentColor !important; stroke-width:1.75; }
-  .admin-app .admin-topbar .superadmin-alert-count { min-width:17px; height:17px; padding-inline:4px; border:2px solid #fff; background:#bc4146 !important; color:#fff !important; font-size:9px; line-height:1; box-shadow:0 1px 3px #20353224; }
-  .admin-app .admin-topbar .notification-popover { border-color:var(--ui-border); border-radius:14px; box-shadow:0 14px 36px #2035321f; }
-  .admin-app .admin-topbar .notification-popover > div:first-child { border-color:var(--ui-border); background:#f1f6f3; }
+  .admin-app .admin-topbar .superadmin-alert-count { min-width:17px; height:17px; padding-inline:4px; border:2px solid #fff; background:#bc4146 !important; color:#fff !important; font-size:9px; line-height:1; box-shadow:0 1px 3px #202a3524; }
+  .admin-app .admin-topbar .notification-popover { border-color:var(--ui-border); border-radius:14px; box-shadow:0 14px 36px #202a351f; }
+  .admin-app .admin-topbar .notification-popover > div:first-child { border-color:var(--ui-border); background:#f1f3f6; }
   .admin-app .admin-topbar .notification-popover > div:first-child h3 { color:var(--foreground); }
-  .admin-app .admin-topbar .notification-popover button:hover { background-color:#f3f8f5; }
+  .admin-app .admin-topbar .notification-popover button:hover { background-color:#f3f5f8; }
   .admin-app .admin-topbar > div:last-child > span[class*="bg-amber-50"] { color:var(--primary) !important; background:var(--secondary) !important; border-color:var(--ui-border) !important; }
   .admin-app .admin-topbar > div:last-child > span[class*="bg-amber-50"] > span { background:var(--primary) !important; }
-  .admin-app .admin-topbar button[class*="border-amber-"] { border-color:#cfe1d7 !important; background:#edf4f1 !important; color:var(--primary) !important; }
-  .admin-app .admin-topbar button[class*="border-sky-"] { border-color:#cfe1d7 !important; background:#edf4f1 !important; color:var(--primary) !important; }
+  .admin-app .admin-topbar button[class*="border-amber-"] { border-color:#cfd7e1 !important; background:#edf0f4 !important; color:var(--primary) !important; }
+  .admin-app .admin-topbar button[class*="border-sky-"] { border-color:#cfd7e1 !important; background:#edf0f4 !important; color:var(--primary) !important; }
   .admin-app .admin-topbar button[class*="border-amber-"]:hover,
-  .admin-app .admin-topbar button[class*="border-sky-"]:hover { background:#e4f1ec !important; }
-  .admin-app .admin-topbar .absolute.right-0.mt-2 { border-color:var(--ui-border); border-radius:14px; box-shadow:0 12px 32px #20353216; }
+  .admin-app .admin-topbar button[class*="border-sky-"]:hover { background:#e4eaf1 !important; }
+  .admin-app .admin-topbar .absolute.right-0.mt-2 { border-color:var(--ui-border); border-radius:14px; box-shadow:0 12px 32px #202a3516; }
   .admin-app .crm-content { color:var(--foreground); }
   .admin-app .crm-content :is([class*="text-[#102A46]"],[class*="text-[#191c1e]"],[class*="text-[#1e293b]"]) { color:var(--foreground) !important; }
   .admin-app .crm-content :is([class*="text-[#566A7E]"],[class*="text-[#596D80]"],[class*="text-[#465D70]"],.text-slate-500,.text-gray-500) { color:var(--muted-foreground) !important; }
   .admin-app .crm-content :is([class*="text-[#664A14]"],[class*="text-[#755613]"],[class*="text-[#8C6A22]"]) { color:var(--primary) !important; }
   .admin-app .crm-content .bg-white:is(.rounded-xl,.rounded-2xl,.rounded-3xl),
   .admin-app .crm-content :is(section,article).bg-white:is(.rounded-xl,.rounded-2xl,.rounded-3xl),
-  .admin-app [data-slot="card"] { border-color:var(--ui-border); border-radius:14px; box-shadow:0 2px 5px #163e2c03; }
+  .admin-app [data-slot="card"] { border-color:var(--ui-border); border-radius:14px; box-shadow:0 2px 5px #16293e03; }
   .admin-app [data-slot="button"] { border-color:var(--ui-border); }
   .admin-app .crm-content :is(div,section,article,header,aside)[class*="bg-[#102A46]"],
   .admin-app .crm-content :is(div,section,article,header,aside)[class*="bg-[#173449]"],
-  .admin-app .crm-content :is(div,section,article,header,aside)[class*="bg-[#193856]"] { background-color:#edf5f1 !important; color:var(--foreground); }
+  .admin-app .crm-content :is(div,section,article,header,aside)[class*="bg-[#193856]"] { background-color:#edf1f5 !important; color:var(--foreground); }
   .admin-app .crm-content :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="hidden"]),
   .admin-app .contractor-dialog :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]):not([type="color"]) {
     min-height:40px;
@@ -186,10 +186,10 @@
     background:#fff;
     color:var(--foreground);
     font-size:13px;
-    box-shadow:0 1px 2px #102a1605;
+    box-shadow:0 1px 2px #101c2a05;
     text-transform:none;
   }
-  .admin-app .crm-content :is(input,textarea)::placeholder { color:#819089; opacity:1; }
+  .admin-app .crm-content :is(input,textarea)::placeholder { color:#818890; opacity:1; }
   .admin-app .crm-content :is(button,a).btn-responsive,
   .admin-app .crm-content button { border-radius:10px; }
   .admin-app .crm-content button:focus-visible,
@@ -215,11 +215,11 @@
   .admin-app .crm-content :is(button,a).btn-gold-3d:hover,
   .admin-app .crm-content :is(button,a).admin-primary-3d:hover,
   .admin-app .crm-content button:is([class*="bg-[#102A46]"],[class*="bg-[#173449]"],[class*="bg-[#193856]"]):hover:not(:disabled),
-  .admin-app .crm-content a:is([class*="bg-[#102A46]"],[class*="bg-[#173449]"],[class*="bg-[#193856]"]):hover { background:#0c5047 !important; }
+  .admin-app .crm-content a:is([class*="bg-[#102A46]"],[class*="bg-[#173449]"],[class*="bg-[#193856]"]):hover { background:var(--xapcon-blue-hover) !important; }
   .admin-app .crm-content button[class*="border"]:not(.btn-gold-3d):not(.admin-primary-3d):not([class*="rose-"]):not([class*="red-"]):not([class*="emerald-"]):not([class*="bg-[#102A46]"]):not([class*="bg-[#173449]"]):not([class*="bg-[#193856]"]),
-  .admin-app .crm-content a.btn-responsive:not(.btn-gold-3d):not(.admin-primary-3d):not([class*="bg-[#102A46]"]) { border-color:var(--ui-border); box-shadow:0 1px 3px #20353208; }
+  .admin-app .crm-content a.btn-responsive:not(.btn-gold-3d):not(.admin-primary-3d):not([class*="bg-[#102A46]"]) { border-color:var(--ui-border); box-shadow:0 1px 3px #202a3508; }
   .admin-app .crm-content button[class*="border"]:not(.btn-gold-3d):not(.admin-primary-3d):not([class*="rose-"]):not([class*="red-"]):not([class*="emerald-"]):not([class*="bg-[#102A46]"]):not([class*="bg-[#173449]"]):not([class*="bg-[#193856]"]):hover:not(:disabled),
-  .admin-app .crm-content a.btn-responsive:not(.btn-gold-3d):not(.admin-primary-3d):hover { border-color:#b6d0c2; box-shadow:0 3px 8px #163e2c0b; }
+  .admin-app .crm-content a.btn-responsive:not(.btn-gold-3d):not(.admin-primary-3d):hover { border-color:#b6c2d0; box-shadow:0 3px 8px #16293e0b; }
   .admin-app .crm-content button:has(> .lucide:only-child):not([class*="rose-"]):not([class*="red-"]):not([class*="emerald-"]):not([class*="bg-[#102A46]"]):not(.btn-gold-3d) { border-radius:9px; }
   .admin-app .crm-content button:has(> .lucide:only-child) > .lucide { width:16px; height:16px; }
   .admin-app .crm-content :is(span,div)[class*="w-8"]:has(> .lucide),
@@ -248,7 +248,7 @@
   /* Admin dashboard keeps all of its metrics while adopting the contractor spacing and surfaces. */
   .admin-app .admin-dashboard-hero {
     padding:8px 18px;
-    border:1px solid #cddfd4;
+    border:1px solid #cdd5df;
     border-radius:16px;
     background:#F7F1E3 !important;
     color:var(--foreground) !important;
@@ -262,59 +262,59 @@
   .admin-app .admin-dashboard-composer { gap:8px; }
   .admin-app .admin-dashboard-composer > div { display:contents; }
   .admin-app .admin-dashboard-composer button:first-child { background:var(--primary) !important; color:#fff !important; border:1px solid var(--primary) !important; border-radius:8px; box-shadow:none !important; }
-  .admin-app .admin-dashboard-composer button:first-child:hover { background:#0c5047 !important; }
+  .admin-app .admin-dashboard-composer button:first-child:hover { background:var(--xapcon-blue-hover) !important; }
   .admin-app .admin-dashboard-composer button:last-child { background:#fff; color:var(--foreground); border:1px solid var(--ui-border); border-radius:8px; box-shadow:none; }
-  .admin-app .admin-dashboard-composer button:last-child:hover { background:#f3f8f5; }
-  .admin-app .admin-metric-card { border-color:var(--ui-border); border-radius:14px; box-shadow:0 2px 5px #163e2c03; }
-  .admin-app .admin-metric-card:hover { border-color:#b6d0c2; box-shadow:0 8px 20px #2035320c; }
+  .admin-app .admin-dashboard-composer button:last-child:hover { background:#f3f5f8; }
+  .admin-app .admin-metric-card { border-color:var(--ui-border); border-radius:14px; box-shadow:0 2px 5px #16293e03; }
+  .admin-app .admin-metric-card:hover { border-color:#b6c2d0; box-shadow:0 8px 20px #202a350c; }
   .admin-app .admin-metric-card > span:first-child { background:var(--primary) !important; }
   .admin-app .admin-metric-card > span:nth-child(2) { border:1px solid var(--ui-border); border-radius:12px !important; background:var(--secondary) !important; color:var(--primary) !important; box-shadow:none; }
   .admin-app .admin-metric-card > span:nth-child(2) .lucide { color:currentColor !important; stroke-width:1.75; }
-  .admin-app .admin-metric-card > span.admin-metric-accent:first-child { height:2px; border:0; border-radius:0; background:linear-gradient(90deg,#14665b,#9bc8b5) !important; }
-  .admin-app .admin-metric-card > span.admin-metric-illustration:nth-child(2) { width:38px; height:38px; padding:9px; border:1px solid color-mix(in srgb,var(--icon-accent) 20%,white) !important; border-radius:11px !important; background:linear-gradient(145deg,#fff,color-mix(in srgb,var(--icon-accent) 12%,white)) !important; color:var(--icon-accent) !important; box-shadow:inset 0 1px 0 #fff,0 2px 5px #20353208 !important; }
+  .admin-app .admin-metric-card > span.admin-metric-accent:first-child { height:2px; border:0; border-radius:0; background:linear-gradient(90deg,var(--xapcon-blue),#9bb0c8) !important; }
+  .admin-app .admin-metric-card > span.admin-metric-illustration:nth-child(2) { width:38px; height:38px; padding:9px; border:1px solid color-mix(in srgb,var(--icon-accent) 20%,white) !important; border-radius:11px !important; background:linear-gradient(145deg,#fff,color-mix(in srgb,var(--icon-accent) 12%,white)) !important; color:var(--icon-accent) !important; box-shadow:inset 0 1px 0 #fff,0 2px 5px #202a3508 !important; }
   .admin-app .admin-metric-card > span.admin-metric-illustration:nth-child(2) svg { width:100%; height:100%; stroke-width:1.7; }
-  .admin-app .admin-task-panel-heading { background:#14665b !important; border-color:#ffffff26 !important; color:#fff; }
+  .admin-app .admin-task-panel-heading { background:var(--xapcon-blue) !important; border-color:#ffffff26 !important; color:#fff; }
   .admin-app .admin-task-panel-heading :is(h2,p) { color:#fff !important; }
-  .admin-app .admin-task-panel-heading p { color:#d9eee5 !important; }
+  .admin-app .admin-task-panel-heading p { color:#d9e3ee !important; }
   .admin-app .crm-content .admin-task-panel-heading h2,
   .admin-app .crm-content .admin-task-panel-heading p { color:#fff !important; }
-  .admin-app .admin-task-panel-heading .admin-task-heading-icon { width:36px; height:36px; padding:8px; border:1px solid #ffffff42; border-radius:10px; background:#ffffff1a; color:#d9eee5; }
+  .admin-app .admin-task-panel-heading .admin-task-heading-icon { width:36px; height:36px; padding:8px; border:1px solid #ffffff42; border-radius:10px; background:#ffffff1a; color:#d9e3ee; }
   .admin-app .admin-task-panel-heading [role="group"] { border-color:#ffffff48; background:#ffffff12; box-shadow:none; }
-  .admin-app .admin-task-panel-heading [role="group"] button:not([aria-pressed="true"]) { color:#e1f0e9; }
+  .admin-app .admin-task-panel-heading [role="group"] button:not([aria-pressed="true"]) { color:#e1e8f0; }
   .admin-app .admin-task-panel-heading [role="group"] button:not([aria-pressed="true"]):hover { background:#ffffff1a; color:#fff; }
-  .admin-app .admin-followup-heading { background:#14665b !important; border-color:#ffffff26 !important; }
+  .admin-app .admin-followup-heading { background:var(--xapcon-blue) !important; border-color:#ffffff26 !important; }
   .admin-app .admin-followup-heading { padding-block:10px; }
   .admin-app .admin-followup-heading :is(h2,p) { color:#fff !important; }
-  .admin-app .admin-followup-icon { display:inline-flex; width:40px; height:40px; padding:9px; border-radius:12px; background:linear-gradient(145deg,#fff,#e4f1ec); border:1px solid #ffffff45; color:#14665b; }
-  .admin-app .admin-followup-icon svg { width:100%; height:100%; color:#14665b !important; }
-  .admin-app .admin-followup-heading > div:first-child > span:last-child { color:#14665b !important; background:#e4f1ec !important; border-color:#ffffff55 !important; }
+  .admin-app .admin-followup-icon { display:inline-flex; width:40px; height:40px; padding:9px; border-radius:12px; background:linear-gradient(145deg,#fff,#e4eaf1); border:1px solid #ffffff45; color:var(--xapcon-blue); }
+  .admin-app .admin-followup-icon svg { width:100%; height:100%; color:var(--xapcon-blue) !important; }
+  .admin-app .admin-followup-heading > div:first-child > span:last-child { color:var(--xapcon-blue) !important; background:#e4eaf1 !important; border-color:#ffffff55 !important; }
   .admin-app .admin-icon-well { border-color:var(--ui-border); background:var(--secondary) !important; color:var(--primary) !important; box-shadow:none !important; }
   .admin-app .admin-icon-well .lucide { color:currentColor !important; stroke-width:1.75; }
   .admin-app .admin-icon-well-light { border-color:var(--ui-border); background:var(--secondary) !important; color:var(--primary) !important; }
   .admin-app .admin-claim-heading-icon { border:1px solid var(--ui-border); border-radius:12px !important; background:var(--secondary) !important; color:var(--primary) !important; box-shadow:none !important; }
   .admin-app .admin-claim-heading-icon .lucide { width:22px; height:22px; color:currentColor !important; }
   .admin-app .admin-primary-3d { border-color:var(--primary) !important; border-radius:8px !important; background:var(--primary) !important; color:#fff !important; box-shadow:none !important; }
-  .admin-app .admin-primary-3d:hover { background:#0c5047 !important; }
+  .admin-app .admin-primary-3d:hover { background:var(--xapcon-blue-hover) !important; }
 
   /* Insurance claim tabs share the same soft segmented control and active treatment. */
-  .admin-app .claim-admin-tabs { width:100%; flex-wrap:nowrap; gap:4px; padding:4px; border:1px solid var(--ui-border); border-radius:10px; background:#f0f5f2; }
+  .admin-app .claim-admin-tabs { width:100%; flex-wrap:nowrap; gap:4px; padding:4px; border:1px solid var(--ui-border); border-radius:10px; background:#f0f2f5; }
   .admin-app .claim-admin-tabs button { display:inline-flex; min-height:39px; align-items:center; justify-content:center; gap:7px; padding:8px 13px; border:1px solid transparent; border-radius:8px; color:var(--muted-foreground); font-size:12px; font-weight:600; }
-  .admin-app .claim-admin-tabs button[aria-selected="true"] { border-color:var(--ui-border); background:#fff; color:var(--primary); box-shadow:0 1px 3px #14332610; }
-  .admin-app .claim-admin-tabs button[aria-selected="false"]:hover { background:#f5faf7; color:var(--foreground); }
+  .admin-app .claim-admin-tabs button[aria-selected="true"] { border-color:var(--ui-border); background:#fff; color:var(--primary); box-shadow:0 1px 3px #14223310; }
+  .admin-app .claim-admin-tabs button[aria-selected="false"]:hover { background:#f5f7fa; color:var(--foreground); }
   .admin-app .claim-record-tabs button { min-width:0; border-radius:10px; box-shadow:none; }
-  .admin-app .crm-content .claim-record-tabs button[class*="border"][aria-selected="true"] { border-color:#b6d0c2; background:#f7fbf8; box-shadow:0 2px 7px #163e2c08; }
+  .admin-app .crm-content .claim-record-tabs button[class*="border"][aria-selected="true"] { border-color:#b6c2d0; background:#f7f9fb; box-shadow:0 2px 7px #16293e08; }
   .admin-app .crm-content .claim-record-tabs button[class*="border"][aria-selected="false"] { border-color:var(--ui-border); background:#fff; }
-  .admin-app .crm-content .claim-record-tabs button[class*="border"][aria-selected="false"]:hover { border-color:#b6d0c2; background:#f7fbf8; }
+  .admin-app .crm-content .claim-record-tabs button[class*="border"][aria-selected="false"]:hover { border-color:#b6c2d0; background:#f7f9fb; }
 
   /* Other admin-only screens retain their content and gain the same card, hero and icon surfaces. */
   .admin-app .insurance-directory-hero,
-  .admin-app .settings-hero { background:#F7F1E3 !important; color:var(--foreground) !important; border:1px solid #cddfd4; border-radius:16px; box-shadow:none !important; }
+  .admin-app .settings-hero { background:#F7F1E3 !important; color:var(--foreground) !important; border:1px solid #cdd5df; border-radius:16px; box-shadow:none !important; }
   .admin-app .insurance-directory-hero :is(h1,h2,h3,p,.text-white),
   .admin-app .settings-hero :is(h1,h2,h3,p,.text-white) { color:var(--foreground) !important; }
-  .admin-app .insurance-directory-hero { background:#14665b !important; color:#fff !important; border-color:#14665b !important; border-radius:18px; }
+  .admin-app .insurance-directory-hero { background:var(--xapcon-blue) !important; color:#fff !important; border-color:var(--xapcon-blue) !important; border-radius:18px; }
   .admin-app .insurance-directory-hero :is(h1,h2,h3,[class*="text-white"]) { color:#fff !important; }
-  .admin-app .insurance-directory-hero [class*="text-slate-300"] { color:#deeee8 !important; }
-  .admin-app .insurance-directory-hero [class*="bg-white/10"] { background:#ffffff1a !important; color:#c5e5d8 !important; }
+  .admin-app .insurance-directory-hero [class*="text-slate-300"] { color:#dee5ee !important; }
+  .admin-app .insurance-directory-hero [class*="bg-white/10"] { background:#ffffff1a !important; color:#c5d4e5 !important; }
   .admin-app .insurance-directory-hero .contractor-section-art,
   .admin-app .settings-hero .contractor-section-art { width:42px; height:42px; padding:10px; border-radius:12px; }
   .admin-app .insurance-directory-hero { padding-block:12px !important; }
@@ -322,31 +322,31 @@
   .admin-app .insurance-directory-hero h1 { display:flex; align-items:center; gap:12px; }
   .admin-app .insurance-directory-hero > .relative.mt-4 { margin-top:12px; padding-top:12px; }
   .admin-app .insurance-directory-hero button { min-height:38px; }
-  .admin-app .insurance-directory-hero .insurance-summary-icon { width:36px; height:36px; padding:8px; border:1px solid #ffffff48; border-radius:10px; background:#ffffff1a !important; color:#d9eee5 !important; box-shadow:none; }
+  .admin-app .insurance-directory-hero .insurance-summary-icon { width:36px; height:36px; padding:8px; border:1px solid #ffffff48; border-radius:10px; background:#ffffff1a !important; color:#d9e3ee !important; box-shadow:none; }
   .admin-app .insurance-directory-hero .insurance-summary-icon svg { width:100%; height:100%; stroke-width:1.7; }
-  .admin-app .insurance-directory-contact-grid .insurance-status-icon { width:36px; height:36px; padding:8px; border-radius:10px; box-shadow:inset 0 1px 0 #fff,0 2px 5px #20353208; }
+  .admin-app .insurance-directory-contact-grid .insurance-status-icon { width:36px; height:36px; padding:8px; border-radius:10px; box-shadow:inset 0 1px 0 #fff,0 2px 5px #202a3508; }
   .admin-app .insurance-directory-contact-grid .insurance-status-icon svg { width:100%; height:100%; stroke-width:1.7; }
-  .admin-app .production-page > div > section { background:#edf2ef; border-color:var(--ui-border); border-radius:12px; box-shadow:none; }
-  .admin-app .production-page article { border-color:var(--ui-border); border-radius:10px; box-shadow:0 2px 3px #14332604; }
+  .admin-app .production-page > div > section { background:#edeff2; border-color:var(--ui-border); border-radius:12px; box-shadow:none; }
+  .admin-app .production-page article { border-color:var(--ui-border); border-radius:10px; box-shadow:0 2px 3px #14223304; }
   .admin-app :is(.claim-workspace,.claim-profile-card) { border-color:var(--ui-border); border-radius:14px; box-shadow:none; }
-  .admin-app .claim-profile-card-header { background:#eef5f1; border-color:var(--ui-border); color:var(--foreground); box-shadow:none; }
+  .admin-app .claim-profile-card-header { background:#eef1f5; border-color:var(--ui-border); color:var(--foreground); box-shadow:none; }
   .admin-app .claim-profile-card-header :is(h2,svg,button) { color:var(--primary) !important; }
   .admin-app .insurance-list-heading h1 { display:flex; align-items:center; gap:14px; }
-  .admin-app .claim-case-header { background:#edf5f1; border-color:var(--ui-border); color:var(--foreground); box-shadow:none; }
+  .admin-app .claim-case-header { background:#edf1f5; border-color:var(--ui-border); color:var(--foreground); box-shadow:none; }
   .admin-app .claim-case-header :is(h2,.claim-case-back,.claim-stage-back) { color:var(--foreground); }
-  .admin-app .claim-case-header .claim-case-icon { background:#d7eade; border-color:#bad6c7; color:var(--primary); box-shadow:none; }
+  .admin-app .claim-case-header .claim-case-icon { background:#d7e0ea; border-color:#bac7d6; color:var(--primary); box-shadow:none; }
   .admin-app .claim-case-header .claim-number-badge { background:#fff; border:1px solid var(--ui-border); color:var(--primary); }
-  .admin-app .claim-case-header :is(.claim-case-back,.claim-stage-back) { background:#fff; border:1px solid #cddfd4; border-radius:8px; }
+  .admin-app .claim-case-header :is(.claim-case-back,.claim-stage-back) { background:#fff; border:1px solid #cdd5df; border-radius:8px; }
   .admin-app .claim-case-header .claim-stage-next { background:var(--primary); color:#fff; border-radius:8px; }
-  .admin-app .claim-tabs { background:#f0f5f2; border-color:var(--ui-border); border-radius:9px; }
+  .admin-app .claim-tabs { background:#f0f2f5; border-color:var(--ui-border); border-radius:9px; }
   .admin-app .claim-tabs button { color:var(--muted-foreground); }
-  .admin-app .claim-tabs button[aria-selected="true"] { color:var(--primary); background:#fff; box-shadow:0 1px 3px #14332610; }
-  .admin-app .claim-note-composer { background:#f6f9f7; border-color:var(--ui-border); }
+  .admin-app .claim-tabs button[aria-selected="true"] { color:var(--primary); background:#fff; box-shadow:0 1px 3px #14223310; }
+  .admin-app .claim-note-composer { background:#f6f7f9; border-color:var(--ui-border); }
   .admin-app .claim-timeline-entry,.admin-app .claim-document-item { border-color:var(--ui-border); box-shadow:none; border-radius:10px; }
-  .admin-app .claim-document-upload { background:#f3f8f5; border-color:#b6d0c2; border-radius:12px; }
+  .admin-app .claim-document-upload { background:#f3f5f8; border-color:#b6c2d0; border-radius:12px; }
   .admin-app :is(.claim-document-upload-icon,.claim-document-icon) { background:var(--secondary); color:var(--primary); box-shadow:none; border-color:var(--ui-border); }
-  .admin-app .claim-case-sidebar > .contractor-profile-card { width:100%; align-self:flex-start; gap:20px; padding:22px; border:1px solid #e0e8e4; border-radius:20px; background:#fff; box-shadow:0 4px 16px #20353204; }
-  .admin-app .claim-case-sidebar > .contractor-profile-card .claim-profile-card-header { width:calc(100% + 44px) !important; min-height:46px; padding:12px 22px; margin:-22px -22px 0; border:0; border-radius:19px 19px 0 0; background:#14665b; }
+  .admin-app .claim-case-sidebar > .contractor-profile-card { width:100%; align-self:flex-start; gap:20px; padding:22px; border:1px solid #e0e4e8; border-radius:20px; background:#fff; box-shadow:0 4px 16px #202a3504; }
+  .admin-app .claim-case-sidebar > .contractor-profile-card .claim-profile-card-header { width:calc(100% + 44px) !important; min-height:46px; padding:12px 22px; margin:-22px -22px 0; border:0; border-radius:19px 19px 0 0; background:var(--xapcon-blue); }
   .admin-app .claim-case-sidebar > .contractor-profile-card .claim-profile-card-header h2 { color:#fff !important; font-size:12px; font-weight:600; letter-spacing:.02em; text-transform:none; }
   .admin-app .claim-case-sidebar > .contractor-profile-card .claim-profile-card-header > div > svg { display:none; }
   .admin-app .claim-case-sidebar > .contractor-profile-card .claim-profile-card-header button { padding:5px 10px; border-radius:7px; background:#ffffff20; color:#fff !important; font-size:11px; }
@@ -360,85 +360,85 @@
   .admin-app .claim-case-sidebar .case-profile-editorial { margin:0; font-family:'DM Sans Variable',sans-serif; text-align:left; }
   .admin-app .claim-case-sidebar :is(.case-person-identity,.case-insurer-identity) { display:flex; align-items:center; gap:14px; padding-bottom:20px; }
   .admin-app .claim-case-sidebar :is(.case-person-identity,.case-insurer-identity) > div { min-width:0; }
-  .admin-app .claim-case-sidebar :is(.case-person-identity,.case-insurer-identity) p { margin:0 0 5px; color:#6a7c74; font-size:11px; }
+  .admin-app .claim-case-sidebar :is(.case-person-identity,.case-insurer-identity) p { margin:0 0 5px; color:#6a727c; font-size:11px; }
   .admin-app .claim-case-sidebar :is(.case-person-identity,.case-insurer-identity) h3 { margin:0; font-size:21px; font-weight:650; line-height:1.25; letter-spacing:-.04em; overflow-wrap:anywhere; }
-  .admin-app .claim-case-sidebar .case-person-avatar { display:flex; width:54px; height:54px; flex:0 0 54px; align-items:center; justify-content:center; border-radius:50%; background:#dceee5; color:#14665b; font-size:19px; font-weight:600; letter-spacing:-.04em; }
+  .admin-app .claim-case-sidebar .case-person-avatar { display:flex; width:54px; height:54px; flex:0 0 54px; align-items:center; justify-content:center; border-radius:50%; background:#dce4ee; color:var(--xapcon-blue); font-size:19px; font-weight:600; letter-spacing:-.04em; }
   .admin-app .claim-case-sidebar .case-profile-details { margin:0; }
-  .admin-app .claim-case-sidebar .case-profile-row { display:flex; align-items:flex-start; gap:12px; padding:13px 0; border-top:1px solid #edf1ef; }
+  .admin-app .claim-case-sidebar .case-profile-row { display:flex; align-items:flex-start; gap:12px; padding:13px 0; border-top:1px solid #edeff1; }
   .admin-app .claim-case-sidebar .case-profile-row > svg { width:17px; height:17px; flex:0 0 17px; margin-top:3px; color:var(--primary); }
   .admin-app .claim-case-sidebar .case-profile-row > div { min-width:0; flex:1; }
-  .admin-app .claim-case-sidebar .case-profile-row dt { margin-bottom:4px; color:#718078; font-size:11px; font-weight:400; }
-  .admin-app .claim-case-sidebar .case-profile-row dd { margin:0; color:#263e35; font-size:13px; font-weight:500; line-height:1.6; overflow-wrap:anywhere; }
-  .admin-app .claim-case-sidebar .case-profile-row a { color:#14665b; text-decoration:none; }
+  .admin-app .claim-case-sidebar .case-profile-row dt { margin-bottom:4px; color:#717880; font-size:11px; font-weight:400; }
+  .admin-app .claim-case-sidebar .case-profile-row dd { margin:0; color:#26313e; font-size:13px; font-weight:500; line-height:1.6; overflow-wrap:anywhere; }
+  .admin-app .claim-case-sidebar .case-profile-row a { color:var(--xapcon-blue); text-decoration:none; }
   .admin-app .claim-case-sidebar .case-profile-row a:hover { text-decoration:underline; }
   .admin-app .claim-case-sidebar .case-insurer-identity { gap:10px; padding-bottom:12px; }
   .admin-app .claim-case-sidebar .case-insurer-identity .contractor-illustration { width:38px; height:38px; padding:9px; border-radius:10px; }
   .admin-app .claim-case-sidebar .case-insurer-identity h3 { font-size:17px; }
   .admin-app .claim-case-sidebar .case-insurer-identity p { margin-bottom:2px; font-size:10px; }
-  .admin-app .claim-case-sidebar .case-claim-reference { display:flex; flex-direction:column; gap:3px; padding:9px 12px; margin:0 0 8px; border-radius:9px; background:#14665b; color:#fff; }
-  .admin-app .claim-case-sidebar .case-claim-reference span { color:#d4e9df; font-size:11px; }
+  .admin-app .claim-case-sidebar .case-claim-reference { display:flex; flex-direction:column; gap:3px; padding:9px 12px; margin:0 0 8px; border-radius:9px; background:var(--xapcon-blue); color:#fff; }
+  .admin-app .claim-case-sidebar .case-claim-reference span { color:#d4dee9; font-size:11px; }
   .admin-app .claim-case-sidebar .case-claim-reference strong { font-size:14px; font-weight:600; letter-spacing:.01em; overflow-wrap:anywhere; }
-  .admin-app .claim-case-sidebar .case-profile-memo { margin-top:14px; padding:4px 0 4px 14px; border-left:2px solid #a8ccba; }
-  .admin-app .claim-case-sidebar .case-profile-memo h4 { margin-bottom:6px; color:#647770; font-size:11px; font-weight:600; }
-  .admin-app .claim-case-sidebar .case-profile-memo p { color:#42584d; font-size:12px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .admin-app .claim-case-sidebar .case-profile-memo { margin-top:14px; padding:4px 0 4px 14px; border-left:2px solid #a8b9cc; }
+  .admin-app .claim-case-sidebar .case-profile-memo h4 { margin-bottom:6px; color:#646d77; font-size:11px; font-weight:600; }
+  .admin-app .claim-case-sidebar .case-profile-memo p { color:#424c58; font-size:12px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
   .admin-app .case-profile-admin-actions { display:flex; gap:8px; padding-top:14px; border-top:1px solid var(--ui-border); }
-  .admin-app .case-profile-admin-action { min-width:0; flex:1; padding:9px 8px; border:1px solid #cddfd4; border-radius:8px; background:#fff; color:var(--primary); font-size:10px; font-weight:700; line-height:1.35; text-align:center; }
+  .admin-app .case-profile-admin-action { min-width:0; flex:1; padding:9px 8px; border:1px solid #cdd5df; border-radius:8px; background:#fff; color:var(--primary); font-size:10px; font-weight:700; line-height:1.35; text-align:center; }
   .admin-app .case-profile-admin-action:hover { border-color:var(--primary); background:var(--secondary); }
   .admin-app .insurance-directory-detail .insurance-company-summary > div:nth-child(2) { min-height:68px; align-items:center; gap:8px; padding:10px 18px !important; }
   .admin-app .insurance-directory-detail .insurance-company-summary > div:nth-child(2) .contractor-illustration { width:38px; height:38px; padding:9px; border-radius:10px; }
   .admin-app .insurance-directory-detail .insurance-company-summary > div:nth-child(2) h2 { margin-top:2px; font-size:20px; }
   .admin-app .insurance-directory-detail .insurance-company-summary > div:nth-child(2) > div:last-child { gap:8px; }
-  .admin-app .insurance-directory-list button[class*="bg-[#FBF9F2]"] { background:#f5faf7 !important; border-color:#cfe1d7 !important; box-shadow:0 2px 7px #163e2c08 !important; }
-  .admin-app .insurance-directory-list button[class*="bg-[#FBF9F2]"] > span:first-of-type { background:#edf4f1 !important; color:var(--primary) !important; }
+  .admin-app .insurance-directory-list button[class*="bg-[#FBF9F2]"] { background:#f5f7fa !important; border-color:#cfd7e1 !important; box-shadow:0 2px 7px #16293e08 !important; }
+  .admin-app .insurance-directory-list button[class*="bg-[#FBF9F2]"] > span:first-of-type { background:#edf0f4 !important; color:var(--primary) !important; }
   .admin-app .insurance-directory-list button[class*="bg-[#FBF9F2]"] > span.absolute { background:var(--primary) !important; }
   .admin-app .values-page-header,
   .admin-app .values-selected-case,
   .admin-app .values-selector-heading,
-  .admin-app .values-analytics-heading { background:#14665b !important; color:#fff !important; border-color:#14665b !important; }
+  .admin-app .values-analytics-heading { background:var(--xapcon-blue) !important; color:#fff !important; border-color:var(--xapcon-blue) !important; }
   .admin-app .values-page-header > div.flex > span:first-child,
   .admin-app .values-page-header > div.flex > div > span:first-child,
-  .admin-app .values-selected-case > div > div > span:first-child { border-color:#ffffff35 !important; background:#ffffff1a !important; color:#e4f1ec !important; box-shadow:none !important; }
-  .admin-app :is(.values-page-header,.values-selected-case) .admin-values-header-icon { width:40px; height:40px; padding:9px; border:1px solid #ffffff35; border-radius:12px; background:#ffffff1a !important; color:#d9eee5 !important; box-shadow:none; }
+  .admin-app .values-selected-case > div > div > span:first-child { border-color:#ffffff35 !important; background:#ffffff1a !important; color:#e4eaf1 !important; box-shadow:none !important; }
+  .admin-app :is(.values-page-header,.values-selected-case) .admin-values-header-icon { width:40px; height:40px; padding:9px; border:1px solid #ffffff35; border-radius:12px; background:#ffffff1a !important; color:#d9e3ee !important; box-shadow:none; }
   .admin-app :is(.values-page-header,.values-selected-case) .admin-values-header-icon svg { width:100%; height:100%; stroke-width:1.7; }
   .admin-app .values-page-header > div.flex > div > div > p,
-  .admin-app .values-analytics-heading :is(p,svg) { color:#c5e5d8 !important; }
+  .admin-app .values-analytics-heading :is(p,svg) { color:#c5d4e5 !important; }
   .admin-app .values-page-header > div.flex > div > span:first-child svg,
-  .admin-app .values-selected-case .lucide { color:#d9eee5 !important; }
-  .admin-app .values-page-header > span { border-color:#ffffff35 !important; background:#ffffff1a !important; color:#e4f1ec !important; }
-  .admin-app .values-page-header > span > span { background:#9fd1bb !important; }
-  .admin-app .values-selected-case > div > div > p { color:#d9eee5 !important; }
-  .admin-app .values-selected-case > div > span { border-color:#ffffff35 !important; background:#ffffff1a !important; color:#e4f1ec !important; }
+  .admin-app .values-selected-case .lucide { color:#d9e3ee !important; }
+  .admin-app .values-page-header > span { border-color:#ffffff35 !important; background:#ffffff1a !important; color:#e4eaf1 !important; }
+  .admin-app .values-page-header > span > span { background:#9fb6d1 !important; }
+  .admin-app .values-selected-case > div > div > p { color:#d9e3ee !important; }
+  .admin-app .values-selected-case > div > span { border-color:#ffffff35 !important; background:#ffffff1a !important; color:#e4eaf1 !important; }
   .admin-app .values-selector-heading label > svg { color:var(--primary) !important; }
-  .admin-app .values-selector-heading label > input { border-color:#d4e0d9 !important; background:#fff !important; color:var(--foreground) !important; }
-  .admin-app .values-selector-heading label > input::placeholder { color:#819089 !important; }
-  .admin-app .values-analytics-heading input { border-color:#d4e0d9 !important; }
-  .admin-app .values-page-header :is([class*="text-[#D3B566]"],[class*="text-[#D8C68A]"],[class*="text-[#D5BF7A]"]) { color:#c5e5d8 !important; }
+  .admin-app .values-selector-heading label > input { border-color:#d4dae0 !important; background:#fff !important; color:var(--foreground) !important; }
+  .admin-app .values-selector-heading label > input::placeholder { color:#818890 !important; }
+  .admin-app .values-analytics-heading input { border-color:#d4dae0 !important; }
+  .admin-app .values-page-header :is([class*="text-[#D3B566]"],[class*="text-[#D8C68A]"],[class*="text-[#D5BF7A]"]) { color:#c5d4e5 !important; }
   .admin-app .values-page-header :is([class*="border-[#D3B566]"],[class*="border-[#D8C68A]"],[class*="border-[#29465D]"]) { border-color:#ffffff35 !important; }
-  .admin-app .values-page-header > div.flex > span { background:#ffffff1a !important; color:#e4f1ec !important; border-color:#ffffff35 !important; }
-  .admin-app .values-page-header > div.flex > span > span { background:#9fd1bb !important; }
-  .admin-app .values-selected-case :is([class*="text-[#D3B566]"],[class*="text-[#D8C68A]"],[class*="text-[#D5BF7A]"]) { color:#c5e5d8 !important; }
+  .admin-app .values-page-header > div.flex > span { background:#ffffff1a !important; color:#e4eaf1 !important; border-color:#ffffff35 !important; }
+  .admin-app .values-page-header > div.flex > span > span { background:#9fb6d1 !important; }
+  .admin-app .values-selected-case :is([class*="text-[#D3B566]"],[class*="text-[#D8C68A]"],[class*="text-[#D5BF7A]"]) { color:#c5d4e5 !important; }
   .admin-app .values-selected-case :is([class*="border-[#D3B566]"],[class*="border-[#29465D]"]) { border-color:#ffffff35 !important; }
-  .admin-app .values-selected-case > span:first-child { background:#9fd1bb !important; }
-  .admin-app .values-selected-case > div > span { background:#ffffff1a !important; color:#e4f1ec !important; }
-  .admin-app .crm-content .values-selector-heading > div > span { background:#e4f1ec !important; color:#14665b !important; border-color:#ffffff55 !important; }
-  .admin-app .crm-content .values-selector-heading + div > button[class*="bg-[#FBF9F2]"] { background:#f5faf7 !important; border-color:#cfe1d7 !important; box-shadow:0 2px 7px #163e2c08 !important; }
-  .admin-app .crm-content .values-selector-heading + div > button > span:first-of-type { color:#14665b !important; background:#edf4f1 !important; }
+  .admin-app .values-selected-case > span:first-child { background:#9fb6d1 !important; }
+  .admin-app .values-selected-case > div > span { background:#ffffff1a !important; color:#e4eaf1 !important; }
+  .admin-app .crm-content .values-selector-heading > div > span { background:#e4eaf1 !important; color:var(--xapcon-blue) !important; border-color:#ffffff55 !important; }
+  .admin-app .crm-content .values-selector-heading + div > button[class*="bg-[#FBF9F2]"] { background:#f5f7fa !important; border-color:#cfd7e1 !important; box-shadow:0 2px 7px #16293e08 !important; }
+  .admin-app .crm-content .values-selector-heading + div > button > span:first-of-type { color:var(--xapcon-blue) !important; background:#edf0f4 !important; }
   .admin-app .crm-content .values-selector-heading + div > button > span:first-of-type,
   .admin-app .crm-content .values-entry-icon,
   .admin-app .crm-content .values-analytics-icon { border:1px solid var(--ui-border); border-radius:10px; background:var(--secondary) !important; color:var(--primary) !important; box-shadow:none !important; }
   .admin-app .crm-content .values-selector-heading + div > button > span:first-of-type .lucide,
   .admin-app .crm-content .values-entry-icon .lucide,
   .admin-app .crm-content .values-analytics-icon .lucide { color:currentColor !important; stroke-width:1.75; }
-  .admin-app .crm-content .values-selector-heading + div > button > span.absolute { background:#14665b !important; }
-  .admin-app .crm-content :is([class*="border-[#8C6A22]"],[class*="border-[#755613]"],[class*="border-[#664A14]"]) { border-color:#b6d0c2 !important; }
+  .admin-app .crm-content .values-selector-heading + div > button > span.absolute { background:var(--xapcon-blue) !important; }
+  .admin-app .crm-content :is([class*="border-[#8C6A22]"],[class*="border-[#755613]"],[class*="border-[#664A14]"]) { border-color:#b6c2d0 !important; }
   .admin-app .crm-content :is([class*="bg-[#8C6A22]"],[class*="bg-[#755613]"],[class*="bg-[#664A14]"]):not(button) { background-color:var(--secondary) !important; }
   .admin-app .crm-content :is([class*="bg-[#8C6A22]"],[class*="bg-[#755613]"],[class*="bg-[#664A14]"]):is(button,a) { background-color:var(--primary) !important; }
 
-  /* Restore meaning colors and keep finance/status indicators clear in the shared green theme. */
+  /* Restore meaning colors and keep finance/status indicators clear in the shared blue theme. */
   .admin-app .crm-content :is([class*="text-red-"],[class*="text-rose-"]) { color:#bc4146; }
   .admin-app .crm-content :is([class*="text-amber-"],[class*="text-orange-"]) { color:#a4742d; }
   .admin-app .crm-content :is([class*="text-green-"],[class*="text-emerald-"]) { color:#278574; }
-  .admin-app .crm-content :is([class*="bg-[#F4F6F8]"],[class*="bg-[#F8F9FB]"]) { background-color:#f5f7f6 !important; }
+  .admin-app .crm-content :is([class*="bg-[#F4F6F8]"],[class*="bg-[#F8F9FB]"]) { background-color:#f5f6f7 !important; }
   .admin-app .crm-content :is([class*="border-[#DCE4EB]"],[class*="border-[#E6ECF1]"]) { border-color:var(--ui-border) !important; }
 }
 
