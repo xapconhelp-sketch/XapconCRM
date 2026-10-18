@@ -19,10 +19,16 @@
 - Código publicado en `main`: `3c71a87`. [Despliegue de producción verificado](https://vercel.com/xapcon-groups-projects/xapcon-crm/FcP91rabeSG1TrnZarwHiKNYMRyU), estado Ready, asignado al dominio principal.
 - Verificación HTTP en el dominio principal: acceso y ruta SPA correctos; clima sin dirección devuelve JSON 400, POST devuelve 405 y dirección pública válida devuelve clima 200; los archivos del servidor y su mapa no exponen código.
 - Credencial administrativa temporal retirada del disco al terminar la migración. Manifiesto de recuperación conservado en `.audit-local/`, fuera de Git.
+- Sesión real de superadmin verificada: dashboard, lista y detalle de expedientes, visualización de los documentos migrados, apertura de un PDF con enlace privado firmado y descarga autenticada correcta. No se modificaron registros durante esta comprobación.
+- Actualización de documentación publicada como `b3522d8`, sin cambios adicionales de aplicación; [despliegue final Ready](https://vercel.com/xapcon-groups-projects/xapcon-crm/Cs1Y3JaM5uvp1Hn7DRngi7BKm6wB).
+- Cuenta contratista real comprobada antes de la interrupción: dashboard limitado a su empresa, cinco reclamos visibles y documentos privados migrados presentes en un expediente propio; sin navegación administrativa. La descarga quedó interrumpida y no se da por verificada.
+- Revisión del 18 de octubre: `main` conserva `b3522d8`; el dominio, la ruta SPA, las respuestas JSON 400/405 del clima, la consulta real 200 y la ausencia de código del servidor expuesto siguen correctos.
+- Verificación interactiva completada el 18 de octubre con la cuenta contratista real: expediente de su empresa, descarga autenticada terminada y PDF abierto mediante enlace firmado de `case-files`. Sin errores ni advertencias en la consola. No se modificaron expedientes ni se eliminaron archivos.
 
-## Pendiente de comprobación interactiva
+## Alcance de las comprobaciones interactivas
 
-- Inicio de sesión en el CRM y apertura de expedientes con las cuentas reales de ambos roles. El acceso a Supabase y Vercel no equivale a una sesión de usuario del CRM.
+- Superadmin y contratista: inicio de sesión real, dashboard, navegación por expedientes y apertura/descarga de documentos migrados comprobados.
+- No se hicieron cargas o borrados de prueba sobre expedientes reales. Sus operaciones atómicas, validaciones y políticas están cubiertas por las pruebas automatizadas; esto no equivale a haber probado todas las acciones de producción.
 
 ## Validación local
 
@@ -30,7 +36,6 @@ TypeScript y compilación correctos. La suite completa pasó con 59 pruebas, nin
 
 ## Pendiente de comprobación final
 
-- Apertura y descarga con cuentas reales de ambos roles.
 - Correo recibido y recuperación de contraseña con un destinatario de prueba autorizado.
 - URLs aprobadas de términos y privacidad, si existen.
 - Retirada irreversible de los originales públicos: requiere aprobación específica después de verificar las copias y coordinar el cierre de sesiones antiguas.
