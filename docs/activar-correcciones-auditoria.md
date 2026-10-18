@@ -2,6 +2,8 @@
 
 Estado de activación (16 de octubre de 2026): el SQL ya fue aplicado por el propietario y se verificó en el proyecto remoto. El bucket `case-files` es privado, existen los RPC de auditoría y ninguna estimación compartida conserva `profitMargin`. Se corrigió Supabase Auth para usar `https://crm.xapcongroup.com` como Site URL y permitir redirecciones dentro de ese dominio. La migración de archivos y la publicación del código se registran en [el estado de activación](estado-activacion-2026-10-16.md). Los pasos siguientes quedan como referencia; no es necesario repetir los ya verificados.
 
+Actualización del 18 de octubre: con autorización expresa del propietario, se retiraron los 46 originales públicos migrados. Las 46 copias privadas permanecen disponibles y se verificó una descarga real posterior con contratista. El retiro de estos originales ya está completado; no hace falta repetirlo.
+
 ## Corregido en el repositorio
 
 | Hallazgo | Resultado |
@@ -145,4 +147,4 @@ Se verificaron TypeScript, compilación y pruebas de PostgreSQL local/RLS: prese
 
 Se inspeccionó el acceso de producción local a 1280 × 720 y 390 × 844 y el registro de contratistas/colaboradores en móvil: imágenes WebP cargadas, etiquetas asociadas a sus controles, ningún enlace `#` en el acceso y sin desbordamiento horizontal en las pantallas revisadas. No se enviaron formularios ni se crearon cuentas. Se restauró el tamaño del navegador y se cerró la pestaña temporal.
 
-La activación posterior verificó Supabase Storage, migró los 46 archivos referenciados por 10 expedientes y publicó las correcciones en Vercel. También se comprobó el clima real y el rechazo de accesos públicos/anónimos a una copia privada. Consulta el [estado de activación](estado-activacion-2026-10-16.md) para distinguir lo verificado de las pruebas interactivas pendientes y la retirada de originales que aún requiere aprobación específica.
+La activación posterior verificó Supabase Storage, migró los 46 archivos referenciados por 10 expedientes y publicó las correcciones en Vercel. También se comprobaron el clima real, el rechazo de accesos públicos/anónimos a una copia privada, la apertura y descarga con ambos roles y el retiro autorizado de los originales públicos. Consulta el [estado de activación](estado-activacion-2026-10-16.md) para ver las verificaciones y los pendientes de correo y documentación legal.

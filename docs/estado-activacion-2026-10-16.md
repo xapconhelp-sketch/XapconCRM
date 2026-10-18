@@ -34,10 +34,19 @@
 
 TypeScript y compilación correctos. La suite completa pasó con 59 pruebas, ninguna fallida ni omitida, incluyendo la nueva prueba de Node ESM. Se permitió la conexión local que necesita la prueba HTTP del servidor; el primer intento aislado había sido bloqueado por el entorno (`EACCES`), no por una aserción de la aplicación.
 
+## Retiro autorizado de originales — 18 de octubre
+
+- El propietario autorizó expresamente retirar hasta 46 originales públicos y confirmó el cierre de pestañas antiguas.
+- Antes del retiro se verificaron de nuevo los 46 originales contra sus copias privadas: 46 tamaños y 46 ETags idénticos, 46 referencias privadas válidas y ninguna referencia antigua en expedientes, empresas o perfiles.
+- Se retiraron exactamente los 46 originales autorizados mediante el panel de Storage de Supabase, sin acceder a claves administrativas.
+- Resultado posterior: cero originales autorizados presentes, 46 copias privadas presentes y 46 referencias privadas conservadas. Los seis archivos adicionales en las carpetas de origen permanecen intactos; no se tocaron logos ni avatares.
+- Se comprobaron los 46 enlaces públicos antiguos sin credenciales: los 46 rechazan el acceso, ninguno permite descargar el archivo.
+- Tras recargar el CRM, la cuenta contratista pudo descargar nuevamente un adjunto privado. No se eliminaron expedientes ni se modificó su contenido durante el retiro.
+- El manifiesto, las verificaciones y las capturas están en `.audit-local/`, excluido de Git. Los enlaces públicos antiguos dejan de funcionar; los documentos siguen disponibles dentro del CRM.
+
 ## Pendiente de comprobación final
 
 - Correo recibido y recuperación de contraseña con un destinatario de prueba autorizado.
 - URLs aprobadas de términos y privacidad, si existen.
-- Retirada irreversible de los originales públicos: requiere aprobación específica después de verificar las copias y coordinar el cierre de sesiones antiguas.
 
 Las credenciales administrativas no se incluyeron en Git ni en el frontend.
