@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { Activity, Building2, Download, Printer } from "lucide-react";
-import type { Lead } from "../types";
+import { Activity, Building2, CalendarDays, Download, FileText, House, MessageCircle, PhoneCall, Printer, ShieldCheck } from "lucide-react";
+import type { AdminClaimRecord, AdminHomeownerContact, Lead } from "../types";
 import type { Organization } from "../contexts/AuthContext";
 
 interface ContractorCaseReportsViewProps {
@@ -9,39 +9,140 @@ interface ContractorCaseReportsViewProps {
   activeOrganizationId?: string;
 }
 
-const REPORT_PERIOD_DAYS = 8;
+const REPORT_TIME_ZONE = "America/Bogota";
 const EXCLUDED_REPORT_STATUSES = new Set(["finalizado", "cancelado", "cancelados", "negado", "negados"]);
+const DATE_FORMATTER = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeZone: REPORT_TIME_ZONE });
 
 function isIncludedInReport(claim: Lead) {
   return !EXCLUDED_REPORT_STATUSES.has(claim.status.trim().toLocaleLowerCase("es-CO"));
 }
 
-function eventDate(event: Lead["timeline"][number]) {
-  for (const candidate of [event.date, event.timestamp]) {
-    const parsed = candidate ? Date.parse(candidate) : NaN;
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return 0;
+function dateKeyFromDate(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    year: "numeric", month: "2-digit", day: "2-digit", timeZone: REPORT_TIME_ZONE,
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
 }
 
-function lastActivity(claim: Lead) {
-  return (claim.timeline || []).reduce((latest, event) => Math.max(latest, eventDate(event)), 0);
+function dateKey(value?: string) {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? dateKeyFromDate(new Date(parsed)) : "";
 }
 
-function formatDate(value: number | string) {
-  const date = typeof value === "number" ? new Date(value) : new Date(value);
-  return Number.isNaN(date.getTime()) ? "Sin fecha" : new Intl.DateTimeFormat("es-CO", { dateStyle: "medium" }).format(date);
+function shiftDateKey(value: string, days: number) {
+  const [year, month, day] = value.split("-").map(Number);
+  const shifted = new Date(Date.UTC(year, month - 1, day + days, 12));
+  return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, "0")}-${String(shifted.getUTCDate()).padStart(2, "0")}`;
+}
+
+function currentWeekRange(today = new Date()) {
+  const todayKey = dateKeyFromDate(today);
+  const [year, month, day] = todayKey.split("-").map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day, 12)).getUTCDay();
+  const monday = shiftDateKey(todayKey, -((weekday + 6) % 7));
+  return { start: monday, end: shiftDateKey(monday, 6) };
+}
+
+function formatDate(value?: string | number) {
+  if (value === undefined || value === null || value === "") return "Sin registro";
+  const input = String(value);
+  const parsed = typeof value === "number"
+    ? new Date(value)
+    : /^\d{4}-\d{2}-\d{2}$/.test(input)
+      ? new Date(`${input}T12:00:00-05:00`)
+      : new Date(input);
+  return Number.isNaN(parsed.getTime()) ? "Sin registro" : DATE_FORMATTER.format(parsed);
+}
+
+function weekLabel(range: { start: string; end: string }) {
+  return `${formatDate(range.start)} – ${formatDate(range.end)}`;
 }
 
 function csvCell(value: unknown) {
   const text = String(value ?? "");
   const safe = /^[\s]*[=+@-]/.test(text) ? `'${text}` : text;
-  const normalized = safe.replaceAll('"', '""');
-  return `"${normalized}"`;
+  return `"${safe.replaceAll('"', '""')}"`;
 }
 
 function companyLabel(company: Organization) {
   return company.company_name?.trim() || company.name;
+}
+
+function newestRecord(records: AdminClaimRecord[], type: AdminClaimRecord["type"]) {
+  return records
+    .filter((record) => record.type === type && dateKey(record.date))
+    .reduce<AdminClaimRecord | undefined>((latest, record) => {
+      if (!latest) return record;
+      const currentDate = dateKey(record.date);
+      const latestDate = dateKey(latest.date);
+      if (currentDate !== latestDate) return currentDate > latestDate ? record : latest;
+      return (record.createdAt || "") > (latest.createdAt || "") ? record : latest;
+    }, undefined);
+}
+
+function newestHomeownerContact(contacts: AdminHomeownerContact[]) {
+  return contacts
+    .filter((contact) => dateKey(contact.contactedAt))
+    .reduce<AdminHomeownerContact | undefined>((latest, contact) => {
+      if (!latest) return contact;
+      const currentDate = dateKey(contact.contactedAt);
+      const latestDate = dateKey(latest.contactedAt);
+      if (currentDate !== latestDate) return currentDate > latestDate ? contact : latest;
+      return (contact.createdAt || "") > (latest.createdAt || "") ? contact : latest;
+    }, undefined);
+}
+
+function countWeeklyManagement(claim: Lead, range: { start: string; end: string }) {
+  const records = claim.adminClaimRecords || [];
+  const insuranceActivityCount = records.filter((record) =>
+    (record.type === "insurance_call" || record.type === "insurance_response")
+      && dateKey(record.date) >= range.start
+      && dateKey(record.date) <= range.end,
+  ).length;
+  const legacyResponseKey = dateKey(claim.adminActivity?.lastInsuranceResponseAt);
+  const legacyResponseCount = legacyResponseKey >= range.start && legacyResponseKey <= range.end
+    && !records.some((record) => record.type === "insurance_response" && dateKey(record.date) === legacyResponseKey)
+    ? 1
+    : 0;
+  const homeownerContactCount = (claim.adminHomeownerContacts || []).filter((contact) =>
+    dateKey(contact.contactedAt) >= range.start && dateKey(contact.contactedAt) <= range.end,
+  ).length;
+  return insuranceActivityCount + legacyResponseCount + homeownerContactCount;
+}
+
+function activityText(record?: AdminClaimRecord) {
+  if (!record) return "Sin registro";
+  return [formatDate(record.date), record.note.trim()].filter(Boolean).join(" · ");
+}
+
+function lastInsuranceResponseText(claim: Lead) {
+  const record = newestRecord(claim.adminClaimRecords || [], "insurance_response");
+  const legacyDate = claim.adminActivity?.lastInsuranceResponseAt;
+  if (!record) return legacyDate ? formatDate(legacyDate) : "Sin registro";
+  return legacyDate && dateKey(legacyDate) > dateKey(record.date)
+    ? formatDate(legacyDate)
+    : activityText(record);
+}
+
+function homeownerText(contact?: AdminHomeownerContact) {
+  if (!contact) return "Sin registro";
+  const channels: Record<AdminHomeownerContact["channels"][number], string> = {
+    call: "Llamada", email: "Correo", sms: "SMS",
+  };
+  const channelText = contact.channels.map((channel) => channels[channel]).filter(Boolean).join(", ");
+  return [formatDate(contact.contactedAt), channelText, contact.note.trim()].filter(Boolean).join(" · ");
+}
+
+function latestCaseManagementDateKey(claim: Lead) {
+  const keys = [
+    dateKey(newestRecord(claim.adminClaimRecords || [], "insurance_response")?.date),
+    dateKey(newestRecord(claim.adminClaimRecords || [], "insurance_call")?.date),
+    dateKey(newestHomeownerContact(claim.adminHomeownerContacts || [])?.contactedAt),
+  ].filter(Boolean);
+  return keys.sort().at(-1) || "";
 }
 
 export default function ContractorCaseReportsView({ claims, organizations, activeOrganizationId }: ContractorCaseReportsViewProps) {
@@ -52,38 +153,36 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
   const selectedCompany = companies.find((company) => company.id === activeOrganizationId) || null;
   const displayedCompanies = activeOrganizationId ? (selectedCompany ? [selectedCompany] : []) : companies;
   const today = new Date();
-  const periodStart = new Date(today);
-  periodStart.setDate(today.getDate() - (REPORT_PERIOD_DAYS - 1));
-  periodStart.setHours(0, 0, 0, 0);
-  const recentActivityCutoff = periodStart.getTime();
+  const week = currentWeekRange(today);
   const reportDate = formatDate(today.getTime());
-  const reportPeriod = `${formatDate(periodStart.getTime())} – ${reportDate}`;
+  const reportWeek = weekLabel(week);
 
   const reports = useMemo(() => displayedCompanies.map((company) => ({
     company,
     claims: claims
       .filter((claim) => claim.organizationId === company.id && isIncludedInReport(claim))
       .slice()
-      .sort((a, b) => lastActivity(b) - lastActivity(a)),
+      .sort((a, b) => latestCaseManagementDateKey(b).localeCompare(latestCaseManagementDateKey(a))),
   })), [claims, displayedCompanies]);
   const totalCases = reports.reduce((sum, report) => sum + report.claims.length, 0);
-  const recentlyUpdated = reports.reduce((sum, report) => sum + report.claims.filter((claim) => lastActivity(claim) >= recentActivityCutoff).length, 0);
+  const weeklyManagementTotal = reports.reduce((sum, report) => sum + report.claims.reduce((caseSum, claim) => caseSum + countWeeklyManagement(claim, week), 0), 0);
 
   const downloadCsv = () => {
-    const rows = [["Empresa contratista", "Número de caso", "Cliente", "Aseguradora", "Tipo de daño", "Estado", "Última actividad", `Actividad en últimos ${REPORT_PERIOD_DAYS} días`]];
+    const rows = [["Empresa contratista", "Número de Claim", "Campo", "Información"]];
     for (const { company, claims: companyClaims } of reports) {
       for (const claim of companyClaims) {
-        const activity = lastActivity(claim);
-        rows.push([
-          companyLabel(company),
-          claim.claimNumber || claim.id,
-          claim.name,
-          claim.insuranceProvider,
-          claim.damageType || "",
-          claim.status,
-          activity ? formatDate(activity) : "Sin actividad registrada",
-          activity >= recentActivityCutoff ? "Sí" : "No",
-        ]);
+        const fields = [
+          ["Nombre del Homeowner", claim.name || "Sin nombre registrado"],
+          ["Aseguranza", claim.insuranceProvider || "Sin aseguradora registrada"],
+          ["Número de Claim", claim.claimNumber || "Sin número registrado"],
+          [`Gestión semanal (${reportWeek})`, `${countWeeklyManagement(claim, week)} actividades`],
+          ["Última respuesta del seguro", lastInsuranceResponseText(claim)],
+          ["Última llamada al seguro", activityText(newestRecord(claim.adminClaimRecords || [], "insurance_call"))],
+          ["Última actualización al Homeowner", homeownerText(newestHomeownerContact(claim.adminHomeownerContacts || []))],
+        ];
+        fields.forEach(([field, value]) => rows.push([
+          companyLabel(company), claim.claimNumber || "Sin número", field, value,
+        ]));
       }
     }
     const csv = `\uFEFF${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
@@ -100,7 +199,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
   return (
     <div className="case-reports-screen min-h-full overflow-y-auto bg-[#F5F6F7] p-4 sm:p-7 lg:p-9">
       <style>{`
-        @page { size: landscape; margin: 14mm; }
+        @page { size: portrait; margin: 13mm; }
         @media print {
           body * { visibility: hidden !important; }
           .case-report-print, .case-report-print * { visibility: visible !important; }
@@ -110,16 +209,16 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
           .case-report-controls { display: none !important; }
           .case-report-company + .case-report-company { break-before: page; page-break-before: always; }
           .case-report-company { break-inside: auto; }
-          .case-report-table tr { break-inside: avoid; page-break-inside: avoid; }
+          .case-report-card { break-inside: avoid; page-break-inside: avoid; }
         }
       `}</style>
 
-      <div className="case-report-print mx-auto max-w-[1400px]">
+      <div className="case-report-print mx-auto max-w-[920px]">
         <header className="case-report-controls mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#53677B]"><Activity className="h-4 w-4 text-[#102A46]" /> Informes para contratistas</p>
             <h1 className="text-2xl font-bold tracking-tight text-[#102A46] sm:text-3xl">Casos por empresa</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#53677B]">Muestra los casos activos o en gestión de cada empresa y resalta la actividad registrada en los últimos {REPORT_PERIOD_DAYS} días. Los finalizados, cancelados y negados quedan excluidos.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#53677B]">Cada expediente aparece en formato vertical con sus gestiones más recientes. Los casos finalizados, cancelados y negados quedan excluidos.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="mr-2 text-xs font-medium text-[#607286]">{activeOrganizationId ? (selectedCompany ? `Empresa seleccionada: ${selectedCompany.name}` : "La selección actual no es una empresa contratista") : "Empresa seleccionada: todas"}</span>
@@ -131,25 +230,37 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
         <div className="case-report-controls mb-6 grid gap-3 sm:grid-cols-3">
           <SummaryCard label="Empresas en este informe" value={displayedCompanies.length} />
           <SummaryCard label="Casos incluidos" value={totalCases} />
-          <SummaryCard label="Con actividad en 8 días" value={recentlyUpdated} />
+          <SummaryCard label="Gestiones esta semana" value={weeklyManagementTotal} detail={reportWeek} />
         </div>
 
         {!displayedCompanies.length ? <div className="rounded-xl border border-dashed border-[#C7D1DA] bg-white p-10 text-center text-sm text-[#53677B]">Selecciona una empresa contratista o “Todas las empresas” en el filtro superior.</div> : reports.map(({ company, claims: companyClaims }) => (
           <section key={company.id} className="case-report-company mb-6 overflow-hidden rounded-2xl border border-[#DDE2E7] bg-white shadow-sm">
             <header className="flex flex-wrap items-end justify-between gap-4 border-b border-[#DDE2E7] bg-[#EDF0F4] px-5 py-5 sm:px-7">
-              <div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#53677B]">Informe de expedientes · {reportDate}</p><h2 className="mt-1 flex items-center gap-2 text-xl font-bold text-[#102A46]"><Building2 className="h-5 w-5" /> {companyLabel(company)}</h2><p className="mt-1 text-xs text-[#53677B]">Periodo de actividad destacado: {reportPeriod}</p></div>
-              <div className="flex gap-5 text-right"><div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#607286]">Casos</p><p className="text-2xl font-bold tabular-nums text-[#102A46]">{companyClaims.length}</p></div><div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#607286]">Con movimiento</p><p className="text-2xl font-bold tabular-nums text-[#102A46]">{companyClaims.filter((claim) => lastActivity(claim) >= recentActivityCutoff).length}</p></div></div>
+              <div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#53677B]">Informe de expedientes · {reportDate}</p><h2 className="mt-1 flex items-center gap-2 text-xl font-bold text-[#102A46]"><Building2 className="h-5 w-5" /> {companyLabel(company)}</h2><p className="mt-1 text-xs text-[#53677B]">Semana de gestión: lunes a domingo · {reportWeek}</p></div>
+              <div className="flex gap-5 text-right"><div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#607286]">Casos activos</p><p className="text-2xl font-bold tabular-nums text-[#102A46]">{companyClaims.length}</p></div><div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#607286]">Gestiones esta semana</p><p className="text-2xl font-bold tabular-nums text-[#102A46]">{companyClaims.reduce((sum, claim) => sum + countWeeklyManagement(claim, week), 0)}</p></div></div>
             </header>
-            {companyClaims.length ? <div className="overflow-x-auto">
-              <table className="case-report-table w-full min-w-[760px] border-collapse text-left text-xs">
-                <thead><tr className="bg-[#F5F6F7] text-[10px] uppercase tracking-wide text-[#53677B]"><th className="px-4 py-3 font-bold sm:px-6">Caso</th><th className="px-4 py-3 font-bold">Cliente</th><th className="px-4 py-3 font-bold">Aseguradora</th><th className="px-4 py-3 font-bold">Tipo de daño</th><th className="px-4 py-3 font-bold">Estado</th><th className="px-4 py-3 font-bold">Última actividad</th></tr></thead>
-                <tbody>{companyClaims.map((claim) => {
-                  const activity = lastActivity(claim);
-                  const isRecent = activity >= recentActivityCutoff;
-                  return <tr key={claim.id} className="border-t border-[#E5E9ED] align-top"><td className="whitespace-nowrap px-4 py-3.5 font-semibold text-[#102A46] sm:px-6">{claim.claimNumber || "Sin número"}</td><td className="max-w-56 px-4 py-3.5 font-medium text-[#26384A]">{claim.name || "Sin nombre"}</td><td className="max-w-48 px-4 py-3.5 text-[#42566B]">{claim.insuranceProvider || "Sin aseguradora"}</td><td className="max-w-40 px-4 py-3.5 text-[#42566B]">{claim.damageType || "Sin especificar"}</td><td className="px-4 py-3.5"><span className="inline-flex rounded-full bg-[#EDF0F4] px-2.5 py-1 font-semibold text-[#283D56]">{claim.status}</span></td><td className="whitespace-nowrap px-4 py-3.5 text-[#42566B]">{activity ? <>{formatDate(activity)}{isRecent && <span className="ml-2 inline-flex rounded-full bg-[#E4EAF1] px-2 py-0.5 text-[9px] font-bold text-[#15375E]">Últimos 8 días</span>}</> : "Sin actividad registrada"}</td></tr>;
-                })}</tbody>
-              </table>
-              <p className="px-4 py-3 text-[10px] text-[#607286] sm:px-6">Se muestran los casos activos o en gestión. El indicador destaca los casos con actividad reciente.</p>
+            {companyClaims.length ? <div className="space-y-3 p-4 sm:p-6">
+              {companyClaims.map((claim, index) => {
+                const records = claim.adminClaimRecords || [];
+                const weeklyCount = countWeeklyManagement(claim, week);
+                const lastCall = newestRecord(records, "insurance_call");
+                const lastHomeownerUpdate = newestHomeownerContact(claim.adminHomeownerContacts || []);
+                return <article key={claim.id} className="case-report-card overflow-hidden rounded-xl border border-[#DFE5E9] bg-white">
+                  <div className="flex items-center justify-between gap-3 border-b border-[#E7EBEF] bg-[#FAFBFC] px-4 py-3 sm:px-5">
+                    <p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#66798B]">Caso {String(index + 1).padStart(2, "0")}</p>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF0F6] px-2.5 py-1 text-[10px] font-bold text-[#173B60]"><Activity className="h-3.5 w-3.5" /> {weeklyCount} {weeklyCount === 1 ? "gestión" : "gestiones"} esta semana</span>
+                  </div>
+                  <div className="divide-y divide-[#E9EDF0] px-4 sm:px-5">
+                    <ReportField icon={House} label="Nombre del Homeowner" value={claim.name || "Sin nombre registrado"} prominent />
+                    <ReportField icon={ShieldCheck} label="Aseguranza" value={claim.insuranceProvider || "Sin aseguradora registrada"} />
+                    <ReportField icon={FileText} label="Número de Claim" value={claim.claimNumber || "Sin número registrado"} />
+                    <ReportField icon={CalendarDays} label={`Gestión semanal · ${reportWeek}`} value={`${weeklyCount} ${weeklyCount === 1 ? "actividad registrada" : "actividades registradas"}`} detail="Cuenta llamadas y respuestas al seguro, y contactos al Homeowner, de lunes a domingo." />
+                    <ReportField icon={MessageCircle} label="Última respuesta del seguro" value={lastInsuranceResponseText(claim)} />
+                    <ReportField icon={PhoneCall} label="Última llamada al seguro" value={activityText(lastCall)} />
+                    <ReportField icon={House} label="Última actualización al Homeowner" value={homeownerText(lastHomeownerUpdate)} />
+                  </div>
+                </article>;
+              })}
             </div> : <p className="px-6 py-12 text-center text-sm text-[#607286]">No hay casos activos o en gestión para esta empresa.</p>}
           </section>
         ))}
@@ -159,6 +270,17 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: number }) {
-  return <div className="rounded-xl border border-[#DDE2E7] bg-white px-4 py-3 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wide text-[#607286]">{label}</p><p className="mt-1 text-2xl font-bold tabular-nums text-[#102A46]">{value}</p></div>;
+function ReportField({ icon: Icon, label, value, detail, prominent = false }: { icon: typeof Activity; label: string; value: string; detail?: string; prominent?: boolean }) {
+  return <div className="flex gap-3 py-3.5">
+    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2F5] text-[#244B70]"><Icon className="h-4 w-4" /></span>
+    <div className="min-w-0 flex-1">
+      <p className="text-[10px] font-bold uppercase tracking-[.08em] text-[#687B8D]">{label}</p>
+      <p className={`mt-1 whitespace-pre-wrap break-words leading-5 text-[#24384B] ${prominent ? "text-sm font-bold" : "text-xs font-medium"}`}>{value}</p>
+      {detail && <p className="mt-1 text-[10px] leading-4 text-[#748496]">{detail}</p>}
+    </div>
+  </div>;
+}
+
+function SummaryCard({ label, value, detail }: { label: string; value: number; detail?: string }) {
+  return <div className="rounded-xl border border-[#DDE2E7] bg-white px-4 py-3 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wide text-[#607286]">{label}</p><p className="mt-1 text-2xl font-bold tabular-nums text-[#102A46]">{value}</p>{detail && <p className="mt-1 text-[10px] leading-4 text-[#718096]">{detail}</p>}</div>;
 }
