@@ -28,6 +28,7 @@
     "compression": "^1.8.2",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.546.0",
     "radix-ui": "^1.8.1",
     "react": "^19.0.1",

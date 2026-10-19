@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Activity, Building2, CalendarDays, Download, FileText, House, ListTodo, MessageCircle, PhoneCall, Printer, ShieldCheck } from "lucide-react";
+import { jsPDF } from "jspdf";
 import type { AdminClaimRecord, AdminHomeownerContact, Lead } from "../types";
 import type { Organization } from "../contexts/AuthContext";
 import logoXapcon from "../assets/optimized/logo-xapcon.webp";
@@ -45,6 +46,34 @@ function currentWeekRange(today = new Date()) {
   const weekday = new Date(Date.UTC(year, month - 1, day, 12)).getUTCDay();
   const monday = shiftDateKey(todayKey, -((weekday + 6) % 7));
   return { start: monday, end: shiftDateKey(monday, 6) };
+}
+
+function weekRangeFromValue(value: string) {
+  const match = /^(\d{4})-W(\d{2})$/.exec(value);
+  if (!match) return currentWeekRange();
+  const year = Number(match[1]);
+  const weekNumber = Number(match[2]);
+  if (weekNumber < 1 || weekNumber > 53) return currentWeekRange();
+  const januaryFourth = `${year}-01-04`;
+  const [januaryYear, januaryMonth, januaryDay] = januaryFourth.split("-").map(Number);
+  const januaryWeekday = new Date(Date.UTC(januaryYear, januaryMonth - 1, januaryDay, 12)).getUTCDay();
+  const firstMonday = shiftDateKey(januaryFourth, -((januaryWeekday + 6) % 7));
+  const monday = shiftDateKey(firstMonday, (weekNumber - 1) * 7);
+  const thursday = shiftDateKey(monday, 3);
+  if (Number(thursday.slice(0, 4)) !== year) return currentWeekRange();
+  return { start: monday, end: shiftDateKey(monday, 6) };
+}
+
+function weekValueForDate(date = new Date()) {
+  const monday = currentWeekRange(date).start;
+  const thursday = shiftDateKey(monday, 3);
+  const weekYear = Number(thursday.slice(0, 4));
+  const januaryFourth = `${weekYear}-01-04`;
+  const [year, month, day] = januaryFourth.split("-").map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day, 12)).getUTCDay();
+  const firstMonday = shiftDateKey(januaryFourth, -((weekday + 6) % 7));
+  const weekNumber = Math.floor((Date.parse(`${monday}T00:00:00Z`) - Date.parse(`${firstMonday}T00:00:00Z`)) / (7 * 24 * 60 * 60 * 1000)) + 1;
+  return `${weekYear}-W${String(weekNumber).padStart(2, "0")}`;
 }
 
 function formatDate(value?: string | number) {
@@ -147,6 +176,7 @@ function latestCaseManagementDateKey(claim: Lead) {
 }
 
 export default function ContractorCaseReportsView({ claims, organizations, activeOrganizationId }: ContractorCaseReportsViewProps) {
+  const [selectedWeek, setSelectedWeek] = useState(() => weekValueForDate());
   const companies = useMemo(
     () => organizations.filter((organization) => !organization.is_internal && organization.name.trim().toLowerCase() !== "xapcon group").sort((a, b) => a.name.localeCompare(b.name)),
     [organizations],
@@ -154,7 +184,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
   const selectedCompany = companies.find((company) => company.id === activeOrganizationId) || null;
   const displayedCompanies = activeOrganizationId ? (selectedCompany ? [selectedCompany] : []) : companies;
   const today = new Date();
-  const week = currentWeekRange(today);
+  const week = weekRangeFromValue(selectedWeek);
   const reportDate = formatDate(today.getTime());
   const reportWeek = weekLabel(week);
 
@@ -191,11 +221,148 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `informe-casos-${selectedCompany ? selectedCompany.name : "todas-las-empresas"}-${new Date().toISOString().slice(0, 10)}.csv`.replace(/[^\p{L}\p{N}._-]+/gu, "-");
+    anchor.download = `informe-casos-${selectedCompany ? selectedCompany.name : "todas-las-empresas"}-${week.start}-${week.end}.csv`.replace(/[^\p{L}\p{N}._-]+/gu, "-");
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const downloadPdf = async () => {
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 12;
+    const contentWidth = pageWidth - margin * 2;
+    const caseItems = reports.flatMap(({ company, claims: companyClaims }) => companyClaims.map((claim, index) => ({ company, claim, caseNumber: index + 1 })));
+    const fileName = makePdfFileName(selectedCompany ? selectedCompany.name : "todas-las-empresas", week);
+    pdf.setProperties({ title: `Informe de casos ${reportWeek}`, subject: "Seguimiento semanal de casos por empresa contratista", author: "Xapcon Group" });
+
+    let pageNumber = 0;
+    let casesOnPage = 0;
+    let y = margin;
+    const startPage = async () => {
+      if (pageNumber > 0) pdf.addPage();
+      pageNumber += 1;
+      casesOnPage = 0;
+      y = margin;
+      if (pageNumber === 1) {
+        try {
+          const logoData = await imageUrlToPngData(logoXapcon);
+          pdf.addImage(logoData, "PNG", margin, y, 22, 22);
+        } catch (error) {
+          console.error("No se pudo incorporar el logo al informe PDF:", error);
+        }
+        const textX = margin + 27;
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(12);
+        pdf.setTextColor(23, 59, 96);
+        pdf.text("INFORME DE CASOS · XAPCON GROUP", textX, y + 5);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        pdf.setTextColor(66, 86, 107);
+        pdf.text(`Semana: ${reportWeek}`, textX, y + 10);
+        pdf.text("gestion@xapcongroup.com · xapcongroup.com", textX, y + 15);
+        pdf.text("crm.xapcongroup.com · Tel. (601) 881-3663", textX, y + 20);
+        y += 27;
+      } else {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(9);
+        pdf.setTextColor(23, 59, 96);
+        pdf.text(`Informe semanal de casos · ${reportWeek}`, margin, y + 4);
+        y += 9;
+      }
+      pdf.setDrawColor(23, 59, 96);
+      pdf.setLineWidth(0.6);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 5;
+    };
+
+    const drawCase = (item: typeof caseItems[number]) => {
+      const { claim, company, caseNumber } = item;
+      const weeklyCount = countWeeklyManagement(claim, week);
+      const fields: [string, string][] = [
+        ["Nombre del Homeowner", claim.name || "Sin nombre registrado"],
+        ["Aseguranza", claim.insuranceProvider || "Sin aseguradora registrada"],
+        ["Número de Claim", claim.claimNumber || "Sin número registrado"],
+        [`Gestión semanal · ${reportWeek}`, `${weeklyCount} ${weeklyCount === 1 ? "actividad registrada" : "actividades registradas"}`],
+        ["Última respuesta del seguro", lastInsuranceResponseText(claim)],
+        ["Última llamada al seguro", activityText(newestRecord(claim.adminClaimRecords || [], "insurance_call"))],
+        ["Última actualización al Homeowner", homeownerText(newestHomeownerContact(claim.adminHomeownerContacts || []))],
+        ["Tareas pendientes", pendingTasksText(claim)],
+      ];
+      const labelWidth = 48;
+      const valueX = margin + labelWidth + 5;
+      const valueWidth = contentWidth - labelWidth - 9;
+      const rows = fields.map(([label, value]) => {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(7.5);
+        const labelLines = pdf.splitTextToSize(label, labelWidth);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8.2);
+        const valueLines = pdf.splitTextToSize(value || "Sin registro", valueWidth);
+        const lineCount = Math.max(labelLines.length, valueLines.length);
+        return { labelLines, valueLines, height: Math.max(6.2, lineCount * 3.6 + 2) };
+      });
+      const headerHeight = 9;
+      const cardHeight = headerHeight + rows.reduce((height, row) => height + row.height, 0) + 2;
+      pdf.setDrawColor(210, 219, 228);
+      pdf.setLineWidth(0.3);
+      pdf.setFillColor(255, 255, 255);
+      pdf.roundedRect(margin, y, contentWidth, cardHeight, 2, 2, "FD");
+      pdf.setFillColor(237, 242, 247);
+      pdf.roundedRect(margin, y, contentWidth, headerHeight, 2, 2, "F");
+      pdf.rect(margin, y + headerHeight - 2, contentWidth, 2, "F");
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(23, 59, 96);
+      pdf.text(companyLabel(company), margin + 4, y + 5.8, { maxWidth: contentWidth - 36 });
+      pdf.setFontSize(7.5);
+      pdf.text(`CASO ${String(caseNumber).padStart(2, "0")}`, pageWidth - margin - 4, y + 5.8, { align: "right" });
+      let rowY = y + headerHeight + 1;
+      rows.forEach((row, index) => {
+        if (index > 0) {
+          pdf.setDrawColor(232, 237, 241);
+          pdf.line(margin + 3, rowY, pageWidth - margin - 3, rowY);
+        }
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(93, 111, 128);
+        pdf.text(row.labelLines, margin + 4, rowY + 4);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8.2);
+        pdf.setTextColor(36, 56, 75);
+        pdf.text(row.valueLines, valueX, rowY + 4);
+        rowY += row.height;
+      });
+      y += cardHeight + 4;
+    };
+
+    await startPage();
+    if (!caseItems.length) {
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      pdf.setTextColor(66, 86, 107);
+      pdf.text("No hay casos activos o en gestión en este informe.", margin, y + 5);
+    } else {
+      for (const item of caseItems) {
+        if (casesOnPage === 2) await startPage();
+        const estimatedHeight = 71;
+        if (casesOnPage > 0 && y + estimatedHeight > pageHeight - margin) await startPage();
+        drawCase(item);
+        casesOnPage += 1;
+      }
+    }
+
+    const totalPages = pdf.getNumberOfPages();
+    for (let page = 1; page <= totalPages; page += 1) {
+      pdf.setPage(page);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(7);
+      pdf.setTextColor(115, 130, 145);
+      pdf.text(`${page} / ${totalPages}`, pageWidth - margin, pageHeight - 6, { align: "right" });
+    }
+    pdf.save(fileName);
   };
 
   return (
@@ -249,8 +416,10 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="mr-2 text-xs font-medium text-[#607286]">{activeOrganizationId ? (selectedCompany ? `Empresa seleccionada: ${selectedCompany.name}` : "La selección actual no es una empresa contratista") : "Empresa seleccionada: todas"}</span>
+            <label className="flex h-10 items-center gap-2 rounded-lg border border-[#D4DAE0] bg-white px-3 text-xs font-semibold text-[#53677B]">Semana <input aria-label="Semana del informe" type="week" value={selectedWeek} onChange={(event) => setSelectedWeek(event.target.value)} className="w-[132px] bg-transparent text-sm font-semibold text-[#102A46] outline-none" /></label>
             <button type="button" onClick={downloadCsv} disabled={!displayedCompanies.length} className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#D4DAE0] bg-white px-3 text-sm font-semibold text-[#102A46] transition hover:bg-[#EDF0F4] disabled:cursor-not-allowed disabled:opacity-50"><Download className="h-4 w-4" /> Descargar CSV</button>
-            <button type="button" onClick={() => window.print()} disabled={!displayedCompanies.length} className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#102A46] px-3.5 text-sm font-semibold text-white transition hover:bg-[#193856] disabled:cursor-not-allowed disabled:opacity-50"><Printer className="h-4 w-4" /> Imprimir / guardar PDF</button>
+            <button type="button" onClick={() => void downloadPdf()} disabled={!displayedCompanies.length} className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#102A46] px-3.5 text-sm font-semibold text-white transition hover:bg-[#193856] disabled:cursor-not-allowed disabled:opacity-50"><Download className="h-4 w-4" /> Descargar PDF</button>
+            <button type="button" onClick={() => window.print()} disabled={!displayedCompanies.length} className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#D4DAE0] bg-white px-3 text-sm font-semibold text-[#102A46] transition hover:bg-[#EDF0F4] disabled:cursor-not-allowed disabled:opacity-50"><Printer className="h-4 w-4" /> Vista de impresión</button>
           </div>
         </header>
 
@@ -314,6 +483,27 @@ function pendingTasksText(claim: Lead) {
   const pendingTasks = (claim.tasks || []).filter((task) => task.status === "pending");
   if (!pendingTasks.length) return "No tiene tareas pendientes";
   return pendingTasks.map((task) => `${task.title} · ${task.dueDate ? formatDate(task.dueDate) : "Sin fecha límite"}`).join(" | ");
+}
+
+function imageUrlToPngData(url: string) {
+  return new Promise<string>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d");
+      if (!context) return reject(new Error("No se pudo preparar el logo para el PDF."));
+      context.drawImage(image, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    image.onerror = () => reject(new Error("No se pudo cargar el logo de Xapcon."));
+    image.src = url;
+  });
+}
+
+function makePdfFileName(companyName: string, week: { start: string; end: string }) {
+  return `informe-casos-${companyName}-${week.start}-${week.end}.pdf`.replace(/[^\p{L}\p{N}._-]+/gu, "-");
 }
 
 function SummaryCard({ label, value, detail }: { label: string; value: number; detail?: string }) {
