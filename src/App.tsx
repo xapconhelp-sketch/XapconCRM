@@ -19,6 +19,7 @@ const EstimatorView = lazy(() => import("./components/EstimatorView"));
 const ProductionView = lazy(() => import("./components/ProductionView"));
 const InsuranceDirectoryView = lazy(() => import("./components/InsuranceDirectoryView"));
 const ValuesInsuranceView = lazy(() => import("./components/ValuesInsuranceView"));
+const ContractorCaseReportsView = lazy(() => import("./components/ContractorCaseReportsView"));
 import { fetchDbInsuranceCompanies, getAllInsuranceCompanyNames } from "./data/insuranceDirectoryData";
 const TeamView = lazy(() => import("./components/TeamView"));
 const SettingsView = lazy(() => import("./components/SettingsView"));
@@ -58,6 +59,7 @@ function parseAppRoute(pathname: string): AppRoute {
 function normalizeViewForRole(view: ViewType | null, role: AppRole): ViewType {
   if (!view) return ViewType.DASHBOARD;
   if (role === "contractor" && view === ViewType.VALORES_INSURANCE) return ViewType.DASHBOARD;
+  if (role === "contractor" && view === ViewType.CONTRACTOR_CASE_REPORTS) return ViewType.DASHBOARD;
   if (role === "admin" && view === ViewType.CLAIMS) return ViewType.DASHBOARD;
   return view;
 }
@@ -1436,6 +1438,7 @@ export default function App() {
             ...(userRole === "admin" ? [
               { id: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras" },
               { id: ViewType.VALORES_INSURANCE, label: "Valores Insurance" },
+              { id: ViewType.CONTRACTOR_CASE_REPORTS, label: "Informes por empresa" },
             ] : []),
             { id: ViewType.TEAM, label: "Personal & Crews" },
             { id: ViewType.SETTINGS, label: "Configuración" }
@@ -1838,6 +1841,10 @@ export default function App() {
 
           {currentView === ViewType.VALORES_INSURANCE && userRole === "admin" && (
             <ValuesInsuranceView claims={filteredInsuranceClaims} />
+          )}
+
+          {currentView === ViewType.CONTRACTOR_CASE_REPORTS && userRole === "admin" && (
+            <ContractorCaseReportsView claims={filteredInsuranceClaims} organizations={organizations} activeOrganizationId={activeOrganization?.id} />
           )}
 
           {currentView === ViewType.TEAM && (

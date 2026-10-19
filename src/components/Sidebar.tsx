@@ -31,6 +31,7 @@ const SECTION_MANAGEMENT = [
 ];
 
 const SECTION_ADMIN = [
+  { type: ViewType.CONTRACTOR_CASE_REPORTS, label: "Informes por empresa", icon: ChartNoAxesCombined },
   { type: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras",  icon: ShieldCheck },
   { type: ViewType.VALORES_INSURANCE, label: "Valores Insurance", icon: ChartNoAxesCombined },
 ];
@@ -50,6 +51,7 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
       [ViewType.PRODUCTION]: "production",
       [ViewType.INSURANCE_DIRECTORY]: "insurance",
       [ViewType.VALORES_INSURANCE]: "estimate",
+      [ViewType.CONTRACTOR_CASE_REPORTS]: "activity",
       [ViewType.TEAM]: "team",
       [ViewType.SETTINGS]: "settings",
     };
