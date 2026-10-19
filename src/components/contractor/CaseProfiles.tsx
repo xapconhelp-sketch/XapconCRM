@@ -24,8 +24,8 @@ export function HomeownerProfile({ lead }: { lead: Lead }) {
 export function InsuranceProfile({ lead }: { lead: Lead }) {
   return <div className="case-profile-editorial">
     <div className="case-insurer-identity"><IllustratedIcon name="insurance" /><div><p>Aseguradora</p><h3>{lead.insuranceProvider || 'No especificada'}</h3></div></div>
-    <div className="case-claim-reference"><span>Número de claim</span><strong>{lead.claimNumber || 'Sin claim'}</strong></div>
     <dl className="case-profile-details">
+      <Detail icon={FileText} label="Número de claim" value={lead.claimNumber || 'Sin claim'} />
       <Detail icon={FileText} label="Póliza" value={lead.policyNumber} />
       <Detail icon={CloudLightning} label="Tipo de daño" value={lead.damageType} />
       <Detail icon={CalendarDays} label="Fecha de pérdida" value={lead.lossDate || 'No registrada'} />

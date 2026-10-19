@@ -375,9 +375,6 @@
   .admin-app .claim-case-sidebar .case-insurer-identity .contractor-illustration { width:38px; height:38px; padding:9px; border-radius:10px; }
   .admin-app .claim-case-sidebar .case-insurer-identity h3 { font-size:17px; }
   .admin-app .claim-case-sidebar .case-insurer-identity p { margin-bottom:2px; font-size:10px; }
-  .admin-app .claim-case-sidebar .case-claim-reference { display:flex; flex-direction:column; gap:3px; padding:9px 12px; margin:0 0 8px; border-radius:9px; background:var(--xapcon-blue); color:#fff; }
-  .admin-app .claim-case-sidebar .case-claim-reference span { color:#d4dee9; font-size:11px; }
-  .admin-app .claim-case-sidebar .case-claim-reference strong { font-size:14px; font-weight:600; letter-spacing:.01em; overflow-wrap:anywhere; }
   .admin-app .claim-case-sidebar .case-profile-memo { margin-top:14px; padding:4px 0 4px 14px; border-left:2px solid #a8b9cc; }
   .admin-app .claim-case-sidebar .case-profile-memo h4 { margin-bottom:6px; color:#646d77; font-size:11px; font-weight:600; }
   .admin-app .claim-case-sidebar .case-profile-memo p { color:#424c58; font-size:12px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }

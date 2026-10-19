@@ -14,6 +14,7 @@ import {
   Phone,
   Building,
   FileCheck2,
+  CalendarDays,
   Plus,
   CheckCircle2,
   Home,
@@ -394,13 +395,24 @@ function AdminClaimRecordsList({ records, type }: { records: AdminClaimRecord[];
       <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#566A7E]">Registros guardados</p>
       <ul className="space-y-2">
         {filteredRecords.map(record => (
-          <li key={record.id} className="rounded-lg bg-white px-3 py-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-1">
-              <span className="text-[11px] font-bold text-[#102A46]">{formatAdminDate(record.date)}</span>
+          <li key={record.id} className="overflow-hidden rounded-xl border border-[#E1E8EF] bg-white shadow-[0_1px_2px_rgba(16,42,70,0.04)]">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 bg-[#F5F8FB] px-3 py-2.5">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#D9E5F0] bg-white text-[#1F5C91]">
+                  {type === "documents_sent" ? <FileCheck2 aria-hidden="true" className="h-4 w-4" /> : <CalendarDays aria-hidden="true" className="h-4 w-4" />}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#718398]">{type === "documents_sent" ? "Documentos enviados" : type === "insurance_response" ? "Respuesta del seguro" : "Llamada al seguro"}</p>
+                  <p className="mt-0.5 text-xs font-bold text-[#102A46]">{formatAdminDate(record.date)}</p>
+                </div>
+              </div>
               <span className="text-[10px] text-[#718096]">Guardado {formatAdminDate(record.createdAt.slice(0, 10))}</span>
             </div>
-            {record.documentTypes.length > 0 && <div className="mt-1.5 flex flex-wrap gap-1">{record.documentTypes.map(documentType => <span key={documentType} className="rounded-full border border-[#E6D8B3] bg-[#F8F3E7] px-2 py-0.5 text-[10px] font-medium text-[#664A14]">{documentType}</span>)}</div>}
-            {record.note && <p className="mt-1 whitespace-pre-wrap text-[11px] leading-relaxed text-[#566A7E]">{record.note}</p>}
+            <div className="space-y-2.5 px-3 py-3">
+              {record.documentTypes.length > 0 && <div className="flex flex-wrap gap-1.5" aria-label="Tipos de documentos enviados">{record.documentTypes.map(documentType => <span key={documentType} className="inline-flex items-center rounded-md border border-[#D7E3EE] bg-[#F2F7FB] px-2 py-1 text-[10px] font-semibold leading-none text-[#244F75]">{documentType}</span>)}</div>}
+              {record.note && <p className="whitespace-pre-wrap break-words text-[11px] leading-relaxed text-[#465D70]">{record.note}</p>}
+              {!record.note && record.documentTypes.length === 0 && <p className="text-[11px] italic text-[#8795A3]">Sin detalle adicional.</p>}
+            </div>
           </li>
         ))}
       </ul>
