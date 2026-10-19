@@ -1,7 +1,8 @@
 import { useMemo } from "react";
-import { Activity, Building2, CalendarDays, Download, FileText, House, MessageCircle, PhoneCall, Printer, ShieldCheck } from "lucide-react";
+import { Activity, Building2, CalendarDays, Download, FileText, House, ListTodo, MessageCircle, PhoneCall, Printer, ShieldCheck } from "lucide-react";
 import type { AdminClaimRecord, AdminHomeownerContact, Lead } from "../types";
 import type { Organization } from "../contexts/AuthContext";
+import logoXapcon from "../assets/optimized/logo-xapcon.webp";
 
 interface ContractorCaseReportsViewProps {
   claims: Lead[];
@@ -179,6 +180,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
           ["Última respuesta del seguro", lastInsuranceResponseText(claim)],
           ["Última llamada al seguro", activityText(newestRecord(claim.adminClaimRecords || [], "insurance_call"))],
           ["Última actualización al Homeowner", homeownerText(newestHomeownerContact(claim.adminHomeownerContacts || []))],
+          ["Tareas pendientes", pendingTasksText(claim)],
         ];
         fields.forEach(([field, value]) => rows.push([
           companyLabel(company), claim.claimNumber || "Sin número", field, value,
@@ -199,7 +201,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
   return (
     <div className="case-reports-screen min-h-full overflow-y-auto bg-[#F5F6F7] p-4 sm:p-7 lg:p-9">
       <style>{`
-        @page { size: portrait; margin: 13mm; }
+        @page { size: portrait; margin: 10mm; }
         @media print {
           body * { visibility: hidden !important; }
           .case-report-print, .case-report-print * { visibility: visible !important; }
@@ -207,13 +209,38 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
           .case-reports-screen { min-height: 0 !important; height: auto !important; overflow: visible !important; padding: 0 !important; background: white !important; }
           .crm-main, .crm-content { display: block !important; height: auto !important; min-height: 0 !important; overflow: visible !important; }
           .case-report-controls { display: none !important; }
-          .case-report-company + .case-report-company { break-before: page; page-break-before: always; }
-          .case-report-company { break-inside: auto; }
-          .case-report-card { break-inside: avoid; page-break-inside: avoid; }
+          .case-report-branding { display: flex !important; }
+          .case-report-company { break-inside: auto; margin-bottom: 5px !important; border-radius: 0 !important; box-shadow: none !important; }
+          .case-report-company > header { gap: 8px !important; padding: 6px 10px !important; }
+          .case-report-company > header h2 { margin-top: 1px !important; font-size: 12px !important; line-height: 1.2 !important; }
+          .case-report-company > header p { margin-top: 1px !important; font-size: 7px !important; line-height: 1.25 !important; }
+          .case-report-company > header > div:last-child { gap: 10px !important; }
+          .case-report-company > header > div:last-child p { font-size: 7px !important; }
+          .case-report-company > header > div:last-child p.text-2xl { font-size: 12px !important; }
+          .case-report-cases { gap: 5px !important; padding: 5px !important; }
+          .case-report-cases > * + * { margin-top: 0 !important; }
+          .case-report-card { break-inside: avoid; page-break-inside: avoid; border-radius: 7px !important; box-shadow: none !important; }
+          .case-report-card:nth-child(2n + 1):not(:first-child) { break-before: page; page-break-before: always; }
+          .case-report-card-heading { padding: 5px 9px !important; }
+          .case-report-fields { padding-left: 9px !important; padding-right: 9px !important; }
+          .case-report-field { gap: 6px !important; padding-top: 3px !important; padding-bottom: 3px !important; }
+          .case-report-icon { display: none !important; }
+          .case-report-field > div { display: grid !important; grid-template-columns: 112px minmax(0, 1fr); align-items: baseline; column-gap: 8px; }
+          .case-report-field-label { font-size: 8px !important; line-height: 1.15 !important; }
+          .case-report-field-value { margin-top: 0 !important; font-size: 9px !important; line-height: 1.25 !important; }
+          .case-report-field-detail { grid-column: 2; margin-top: 1px !important; font-size: 8px !important; line-height: 1.2 !important; }
         }
       `}</style>
 
       <div className="case-report-print mx-auto max-w-[920px]">
+        <header className="case-report-branding mb-4 hidden items-center gap-3 border-b-2 border-[#173B60] pb-3">
+        <img src={logoXapcon} alt="Xapcon Group" className="h-[50px] w-[50px] shrink-0 object-contain" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] font-bold uppercase tracking-[.16em] text-[#687B8D]">Informe de casos · Xapcon Group</p>
+            <p className="mt-1 text-[9px] leading-4 text-[#42566B]">gestion@xapcongroup.com · xapcongroup.com · crm.xapcongroup.com</p>
+            <p className="text-[9px] leading-4 text-[#42566B]">Tel. (601) 881-3663</p>
+          </div>
+        </header>
         <header className="case-report-controls mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#53677B]"><Activity className="h-4 w-4 text-[#102A46]" /> Informes para contratistas</p>
@@ -239,18 +266,19 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
               <div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#53677B]">Informe de expedientes · {reportDate}</p><h2 className="mt-1 flex items-center gap-2 text-xl font-bold text-[#102A46]"><Building2 className="h-5 w-5" /> {companyLabel(company)}</h2><p className="mt-1 text-xs text-[#53677B]">Semana de gestión: lunes a domingo · {reportWeek}</p></div>
               <div className="flex gap-5 text-right"><div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#607286]">Casos activos</p><p className="text-2xl font-bold tabular-nums text-[#102A46]">{companyClaims.length}</p></div><div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#607286]">Gestiones esta semana</p><p className="text-2xl font-bold tabular-nums text-[#102A46]">{companyClaims.reduce((sum, claim) => sum + countWeeklyManagement(claim, week), 0)}</p></div></div>
             </header>
-            {companyClaims.length ? <div className="space-y-3 p-4 sm:p-6">
+            {companyClaims.length ? <div className="case-report-cases flex flex-col space-y-3 p-4 sm:p-6">
               {companyClaims.map((claim, index) => {
                 const records = claim.adminClaimRecords || [];
                 const weeklyCount = countWeeklyManagement(claim, week);
                 const lastCall = newestRecord(records, "insurance_call");
                 const lastHomeownerUpdate = newestHomeownerContact(claim.adminHomeownerContacts || []);
+                const pendingTasks = (claim.tasks || []).filter((task) => task.status === "pending");
                 return <article key={claim.id} className="case-report-card overflow-hidden rounded-xl border border-[#DFE5E9] bg-white">
-                  <div className="flex items-center justify-between gap-3 border-b border-[#E7EBEF] bg-[#FAFBFC] px-4 py-3 sm:px-5">
+                  <div className="case-report-card-heading flex items-center justify-between gap-3 border-b border-[#E7EBEF] bg-[#FAFBFC] px-4 py-3 sm:px-5">
                     <p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#66798B]">Caso {String(index + 1).padStart(2, "0")}</p>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF0F6] px-2.5 py-1 text-[10px] font-bold text-[#173B60]"><Activity className="h-3.5 w-3.5" /> {weeklyCount} {weeklyCount === 1 ? "gestión" : "gestiones"} esta semana</span>
                   </div>
-                  <div className="divide-y divide-[#E9EDF0] px-4 sm:px-5">
+                  <div className="case-report-fields divide-y divide-[#E9EDF0] px-4 sm:px-5">
                     <ReportField icon={House} label="Nombre del Homeowner" value={claim.name || "Sin nombre registrado"} prominent />
                     <ReportField icon={ShieldCheck} label="Aseguranza" value={claim.insuranceProvider || "Sin aseguradora registrada"} />
                     <ReportField icon={FileText} label="Número de Claim" value={claim.claimNumber || "Sin número registrado"} />
@@ -258,6 +286,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
                     <ReportField icon={MessageCircle} label="Última respuesta del seguro" value={lastInsuranceResponseText(claim)} />
                     <ReportField icon={PhoneCall} label="Última llamada al seguro" value={activityText(lastCall)} />
                     <ReportField icon={House} label="Última actualización al Homeowner" value={homeownerText(lastHomeownerUpdate)} />
+                    <ReportField icon={ListTodo} label="Tareas pendientes" value={pendingTasks.length ? `${pendingTasks.length} ${pendingTasks.length === 1 ? "tarea pendiente" : "tareas pendientes"}` : "No tiene tareas pendientes"} detail={pendingTasks.length ? pendingTasks.map((task) => `${task.title} · ${task.dueDate ? formatDate(task.dueDate) : "Sin fecha límite"}`).join(" | ") : undefined} />
                   </div>
                 </article>;
               })}
@@ -271,14 +300,20 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
 }
 
 function ReportField({ icon: Icon, label, value, detail, prominent = false }: { icon: typeof Activity; label: string; value: string; detail?: string; prominent?: boolean }) {
-  return <div className="flex gap-3 py-3.5">
-    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2F5] text-[#244B70]"><Icon className="h-4 w-4" /></span>
-    <div className="min-w-0 flex-1">
-      <p className="text-[10px] font-bold uppercase tracking-[.08em] text-[#687B8D]">{label}</p>
-      <p className={`mt-1 whitespace-pre-wrap break-words leading-5 text-[#24384B] ${prominent ? "text-sm font-bold" : "text-xs font-medium"}`}>{value}</p>
-      {detail && <p className="mt-1 text-[10px] leading-4 text-[#748496]">{detail}</p>}
+  return <div className="case-report-field flex gap-3 py-3.5">
+    <span className="case-report-icon mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF2F5] text-[#244B70]"><Icon className="h-4 w-4" /></span>
+    <div className="min-w-0 flex-1 sm:grid sm:grid-cols-[minmax(125px,0.5fr)_minmax(0,1.5fr)] sm:gap-x-3">
+      <p className="case-report-field-label text-[10px] font-bold uppercase tracking-[.08em] text-[#687B8D]">{label}</p>
+      <p className={`case-report-field-value mt-1 whitespace-pre-wrap break-words leading-5 text-[#24384B] ${prominent ? "text-sm font-bold" : "text-xs font-medium"}`}>{value}</p>
+      {detail && <p className="case-report-field-detail mt-1 text-[10px] leading-4 text-[#748496]">{detail}</p>}
     </div>
   </div>;
+}
+
+function pendingTasksText(claim: Lead) {
+  const pendingTasks = (claim.tasks || []).filter((task) => task.status === "pending");
+  if (!pendingTasks.length) return "No tiene tareas pendientes";
+  return pendingTasks.map((task) => `${task.title} · ${task.dueDate ? formatDate(task.dueDate) : "Sin fecha límite"}`).join(" | ");
 }
 
 function SummaryCard({ label, value, detail }: { label: string; value: number; detail?: string }) {
