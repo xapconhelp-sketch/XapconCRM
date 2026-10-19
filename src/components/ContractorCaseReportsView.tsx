@@ -10,6 +10,11 @@ interface ContractorCaseReportsViewProps {
 }
 
 const REPORT_PERIOD_DAYS = 8;
+const EXCLUDED_REPORT_STATUSES = new Set(["finalizado", "cancelado", "cancelados", "negado", "negados"]);
+
+function isIncludedInReport(claim: Lead) {
+  return !EXCLUDED_REPORT_STATUSES.has(claim.status.trim().toLocaleLowerCase("es-CO"));
+}
 
 function eventDate(event: Lead["timeline"][number]) {
   for (const candidate of [event.date, event.timestamp]) {
@@ -57,7 +62,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
   const reports = useMemo(() => displayedCompanies.map((company) => ({
     company,
     claims: claims
-      .filter((claim) => claim.organizationId === company.id)
+      .filter((claim) => claim.organizationId === company.id && isIncludedInReport(claim))
       .slice()
       .sort((a, b) => lastActivity(b) - lastActivity(a)),
   })), [claims, displayedCompanies]);
@@ -114,7 +119,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
           <div>
             <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[.12em] text-[#53677B]"><Activity className="h-4 w-4 text-[#102A46]" /> Informes para contratistas</p>
             <h1 className="text-2xl font-bold tracking-tight text-[#102A46] sm:text-3xl">Casos por empresa</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#53677B]">Incluye todos los casos de cada empresa y resalta la actividad registrada en los últimos {REPORT_PERIOD_DAYS} días.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#53677B]">Muestra los casos activos o en gestión de cada empresa y resalta la actividad registrada en los últimos {REPORT_PERIOD_DAYS} días. Los finalizados, cancelados y negados quedan excluidos.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="mr-2 text-xs font-medium text-[#607286]">{activeOrganizationId ? (selectedCompany ? `Empresa seleccionada: ${selectedCompany.name}` : "La selección actual no es una empresa contratista") : "Empresa seleccionada: todas"}</span>
@@ -144,8 +149,8 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
                   return <tr key={claim.id} className="border-t border-[#E5E9ED] align-top"><td className="whitespace-nowrap px-4 py-3.5 font-semibold text-[#102A46] sm:px-6">{claim.claimNumber || "Sin número"}</td><td className="max-w-56 px-4 py-3.5 font-medium text-[#26384A]">{claim.name || "Sin nombre"}</td><td className="max-w-48 px-4 py-3.5 text-[#42566B]">{claim.insuranceProvider || "Sin aseguradora"}</td><td className="max-w-40 px-4 py-3.5 text-[#42566B]">{claim.damageType || "Sin especificar"}</td><td className="px-4 py-3.5"><span className="inline-flex rounded-full bg-[#EDF0F4] px-2.5 py-1 font-semibold text-[#283D56]">{claim.status}</span></td><td className="whitespace-nowrap px-4 py-3.5 text-[#42566B]">{activity ? <>{formatDate(activity)}{isRecent && <span className="ml-2 inline-flex rounded-full bg-[#E4EAF1] px-2 py-0.5 text-[9px] font-bold text-[#15375E]">Últimos 8 días</span>}</> : "Sin actividad registrada"}</td></tr>;
                 })}</tbody>
               </table>
-              <p className="px-4 py-3 text-[10px] text-[#607286] sm:px-6">Se muestran todos los casos de la empresa. El indicador destaca los casos con actividad reciente.</p>
-            </div> : <p className="px-6 py-12 text-center text-sm text-[#607286]">No hay casos registrados para esta empresa.</p>}
+              <p className="px-4 py-3 text-[10px] text-[#607286] sm:px-6">Se muestran los casos activos o en gestión. El indicador destaca los casos con actividad reciente.</p>
+            </div> : <p className="px-6 py-12 text-center text-sm text-[#607286]">No hay casos activos o en gestión para esta empresa.</p>}
           </section>
         ))}
         <p className="case-report-controls text-center text-[10px] text-[#607286]">Informe generado desde Xapcon CRM · Información correspondiente a cada empresa contratista</p>
