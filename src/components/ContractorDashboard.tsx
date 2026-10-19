@@ -81,6 +81,7 @@ const taskCategoryLabels: Record<NonNullable<TaskItem["category"]>, string> = {
   panel_contract_followup: "Esperando o enviar Contrato de Paneles",
   pending_coc: "Pendiente enviar COC",
   request_depreciation: "Pendiente Solicitar Depreciación",
+  send_upload_photos: "Enviar o cargar Fotos",
   other: "Otro",
 };
 const taskCategoryOptions = [
@@ -90,6 +91,7 @@ const taskCategoryOptions = [
   { value: "panel_contract_followup", label: "Esperando o enviar Contrato de Paneles" },
   { value: "pending_coc", label: "Pendiente enviar COC" },
   { value: "request_depreciation", label: "Pendiente Solicitar Depreciación" },
+  { value: "send_upload_photos", label: "Enviar o cargar Fotos" },
   { value: "other", label: "Otro" },
 ] as const;
 

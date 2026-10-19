@@ -372,7 +372,7 @@ BEGIN
     OR coalesce(p_details ->> 'category', 'general') NOT IN (
       'general', 'pending_document', 'visit_homeowner', 'call_homeowner', 'call_adjuster',
       'prepare_supplement', 'prepare_estimate', 'itel_followup', 'panel_contract_followup',
-      'pending_coc', 'request_depreciation', 'other')
+      'pending_coc', 'request_depreciation', 'send_upload_photos', 'other')
     THEN RAISE EXCEPTION 'Tipo, categoría o prioridad no válidos.'; END IF;
   IF due_date !~ '^\d{4}-\d{2}-\d{2}$' THEN RAISE EXCEPTION 'La fecha debe usar el formato AAAA-MM-DD.'; END IF;
   PERFORM due_date::date;

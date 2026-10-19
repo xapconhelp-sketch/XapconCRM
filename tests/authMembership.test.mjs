@@ -179,7 +179,7 @@ test('PostgreSQL account, company, task and notification integration', async t =
       await sql('INSERT INTO leads(id,name,organization_id) VALUES($1,$2,$3)', [workflowClaim, 'Workflow test case', company]);
       const categories = [
         'prepare_supplement', 'prepare_estimate', 'itel_followup', 'panel_contract_followup',
-        'pending_coc', 'request_depreciation', 'other'
+        'pending_coc', 'request_depreciation', 'send_upload_photos', 'other'
       ];
       const savedCategories = await actor(saul, async () => {
         const saved = [];
