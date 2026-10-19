@@ -60,6 +60,9 @@ const SENT_DOCUMENT_OPTIONS = [
   "Inv. Final",
   "COC",
   "W9",
+  "Carta",
+  "ITEL",
+  "Fabricante",
 ];
 const HOMEOWNER_CONTACT_CHANNELS: { value: AdminHomeownerContact["channels"][number]; label: string }[] = [
   { value: "call", label: "Llamada" },
