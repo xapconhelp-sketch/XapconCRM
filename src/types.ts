@@ -5,6 +5,7 @@ export enum ViewType {
   PRODUCTION = "production",
   INSURANCE_DIRECTORY = "insurance_directory",
   CONTRACTOR_CASE_REPORTS = "contractor_case_reports",
+  MEMBERSHIP_ACCESS = "membership_access",
   VALORES_INSURANCE = "valores_insurance",
   TEAM = "team",
   SETTINGS = "settings"

@@ -88,15 +88,18 @@ function formatAdminDate(value: string) {
 function HomeownerServicePanel({
   lead,
   onAddContact,
+  onDeleteContact,
 }: {
   lead: Lead;
   onAddContact: (leadId: string, contact: Omit<AdminHomeownerContact, "id" | "createdAt">) => Promise<boolean>;
+  onDeleteContact: (leadId: string, contactId: string) => Promise<boolean>;
 }) {
   const [contactedAt, setContactedAt] = useState(localDateInputValue);
   const [channels, setChannels] = useState<AdminHomeownerContact["channels"]>([]);
   const [note, setNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [deletingContactId, setDeletingContactId] = useState("");
   const contacts = lead.adminHomeownerContacts || [];
 
   useEffect(() => {
@@ -194,12 +197,36 @@ function HomeownerServicePanel({
           <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#566A7E]">Registros guardados</p>
           <ul className="space-y-2">
             {contacts.map(contact => (
-              <li key={contact.id} className="rounded-lg bg-[#F7F8FA] px-3 py-2">
-                <div className="flex flex-wrap items-center justify-between gap-1">
-                  <span className="text-[11px] font-bold text-[#102A46]">{formatAdminDate(contact.contactedAt)}</span>
-                  <span className="text-[10px] font-medium text-[#8C6A22]">
-                    {HOMEOWNER_CONTACT_CHANNELS.filter(channel => contact.channels.includes(channel.value)).map(channel => channel.label.replace("Mensaje de texto (SMS)", "SMS")).join(" · ")}
-                  </span>
+              <li key={contact.id} className="rounded-lg border border-[#E1E8EF] bg-white px-3 py-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="text-[11px] font-bold text-[#102A46]">{formatAdminDate(contact.contactedAt)}</span>
+                    <span className="text-[10px] font-medium text-[#8C6A22]">
+                      {HOMEOWNER_CONTACT_CHANNELS.filter(channel => contact.channels.includes(channel.value)).map(channel => channel.label.replace("Mensaje de texto (SMS)", "SMS")).join(" · ")}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!window.confirm(`¿Eliminar el contacto con Homeowner del ${formatAdminDate(contact.contactedAt)}?`)) return;
+                      setDeletingContactId(contact.id);
+                      try {
+                        const deleted = await onDeleteContact(lead.id, contact.id);
+                        setMessage(deleted ? "Contacto eliminado" : "No se pudo eliminar el contacto");
+                      } catch (error) {
+                        console.error("Error al eliminar el contacto con Homeowner:", error);
+                        setMessage("No se pudo eliminar el contacto");
+                      } finally {
+                        setDeletingContactId("");
+                      }
+                    }}
+                    disabled={Boolean(deletingContactId)}
+                    aria-label={`Eliminar contacto con Homeowner del ${formatAdminDate(contact.contactedAt)}`}
+                    title="Eliminar registro"
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#718096] transition hover:bg-[#FCEDEA] hover:text-[#B5493B] disabled:cursor-wait disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
                 </div>
                 {contact.note && <p className="mt-1 whitespace-pre-wrap text-[11px] leading-relaxed text-[#566A7E]">{contact.note}</p>}
               </li>
@@ -215,10 +242,12 @@ function AdminDocumentsSentPanel({
   lead,
   records,
   onSave,
+  onDelete,
 }: {
   lead: Lead;
   records: AdminClaimRecord[];
   onSave: (leadId: string, record: Omit<AdminClaimRecord, "id" | "createdAt">) => Promise<boolean>;
+  onDelete: (leadId: string, recordId: string) => Promise<boolean>;
 }) {
   const [lastDocumentsSentAt, setLastDocumentsSentAt] = useState(lead.adminActivity?.lastDocumentsSentAt || "");
   const [sentDocumentTypes, setSentDocumentTypes] = useState<string[]>(lead.adminActivity?.sentDocumentTypes || []);
@@ -321,7 +350,7 @@ function AdminDocumentsSentPanel({
         </button>
       </div>
 
-      <AdminClaimRecordsList records={records} type="documents_sent" />
+      <AdminClaimRecordsList leadId={lead.id} records={records} type="documents_sent" onDelete={onDelete} />
     </section>
   );
 }
@@ -330,10 +359,12 @@ function InsuranceResponsePanel({
   lead,
   records,
   onSave,
+  onDelete,
 }: {
   lead: Lead;
   records: AdminClaimRecord[];
   onSave: (leadId: string, record: Omit<AdminClaimRecord, "id" | "createdAt">) => Promise<boolean>;
+  onDelete: (leadId: string, recordId: string) => Promise<boolean>;
 }) {
   const [respondedAt, setRespondedAt] = useState(lead.adminActivity?.lastInsuranceResponseAt || "");
   const [note, setNote] = useState("");
@@ -382,12 +413,18 @@ function InsuranceResponsePanel({
         {message && <span role="status" className={`text-[11px] ${message === "Registro guardado" ? "text-emerald-700" : "text-amber-700"}`}>{message}</span>}
         <button type="button" onClick={saveResponse} disabled={isSaving} className="rounded-lg bg-[#102A46] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-[#183B60] disabled:cursor-wait disabled:opacity-60">{isSaving ? "Guardando…" : "Guardar registro"}</button>
       </div>
-      <AdminClaimRecordsList records={records} type="insurance_response" />
+      <AdminClaimRecordsList leadId={lead.id} records={records} type="insurance_response" onDelete={onDelete} />
     </section>
   );
 }
 
-function AdminClaimRecordsList({ records, type }: { records: AdminClaimRecord[]; type: AdminClaimRecord["type"] }) {
+function AdminClaimRecordsList({ leadId, records, type, onDelete }: {
+  leadId: string;
+  records: AdminClaimRecord[];
+  type: AdminClaimRecord["type"];
+  onDelete: (leadId: string, recordId: string) => Promise<boolean>;
+}) {
+  const [deletingRecordId, setDeletingRecordId] = useState("");
   const filteredRecords = records.filter(record => record.type === type);
   if (filteredRecords.length === 0) return null;
   return (
@@ -406,7 +443,31 @@ function AdminClaimRecordsList({ records, type }: { records: AdminClaimRecord[];
                   <p className="mt-0.5 text-xs font-bold text-[#102A46]">{formatAdminDate(record.date)}</p>
                 </div>
               </div>
-              <span className="text-[10px] text-[#718096]">Guardado {formatAdminDate(record.createdAt.slice(0, 10))}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-[#718096]">Guardado {formatAdminDate(record.createdAt.slice(0, 10))}</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const label = type === "documents_sent" ? "el envío de documentos" : type === "insurance_response" ? "la respuesta del seguro" : "la llamada al seguro";
+                    if (!window.confirm(`¿Eliminar ${label} del ${formatAdminDate(record.date)}?`)) return;
+                    setDeletingRecordId(record.id);
+                    try {
+                      await onDelete(leadId, record.id);
+                    } catch (error) {
+                      console.error("Error al eliminar el registro del caso:", error);
+                      alert("No se pudo eliminar el registro. Intenta de nuevo.");
+                    } finally {
+                      setDeletingRecordId("");
+                    }
+                  }}
+                  disabled={Boolean(deletingRecordId)}
+                  aria-label={`Eliminar registro del ${formatAdminDate(record.date)}`}
+                  title="Eliminar registro"
+                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#718096] transition hover:bg-[#FCEDEA] hover:text-[#B5493B] disabled:cursor-wait disabled:opacity-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </div>
             </div>
             <div className="space-y-2.5 px-3 py-3">
               {record.documentTypes.length > 0 && <div className="flex flex-wrap gap-1.5" aria-label="Tipos de documentos enviados">{record.documentTypes.map(documentType => <span key={documentType} className="inline-flex items-center rounded-md border border-[#D7E3EE] bg-[#F2F7FB] px-2 py-1 text-[10px] font-semibold leading-none text-[#244F75]">{documentType}</span>)}</div>}
@@ -424,10 +485,12 @@ function InsuranceCallsPanel({
   lead,
   records,
   onSave,
+  onDelete,
 }: {
   lead: Lead;
   records: AdminClaimRecord[];
   onSave: (leadId: string, record: Omit<AdminClaimRecord, "id" | "createdAt">) => Promise<boolean>;
+  onDelete: (leadId: string, recordId: string) => Promise<boolean>;
 }) {
   const [calledAt, setCalledAt] = useState(localDateInputValue);
   const [note, setNote] = useState("");
@@ -476,7 +539,7 @@ function InsuranceCallsPanel({
         {message && <span role="status" className={`text-[11px] ${message === "Llamada guardada" ? "text-emerald-700" : "text-amber-700"}`}>{message}</span>}
         <button type="button" onClick={saveCall} disabled={isSaving} className="rounded-lg bg-[#102A46] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-[#183B60] disabled:cursor-wait disabled:opacity-60">{isSaving ? "Guardando…" : "Guardar llamada"}</button>
       </div>
-      <AdminClaimRecordsList records={records} type="insurance_call" />
+      <AdminClaimRecordsList leadId={lead.id} records={records} type="insurance_call" onDelete={onDelete} />
     </section>
   );
 }
@@ -505,7 +568,9 @@ interface LeadsViewProps {
   searchTerm?: string;
   onUpdateLead?: (leadId: string, updatedFields: Partial<Lead>) => Promise<void> | void;
   onSaveAdminClaimRecord?: (leadId: string, record: Omit<AdminClaimRecord, "id" | "createdAt">) => Promise<boolean>;
+  onDeleteAdminClaimRecord?: (leadId: string, recordId: string) => Promise<boolean>;
   onAddAdminHomeownerContact?: (leadId: string, contact: Omit<AdminHomeownerContact, "id" | "createdAt">) => Promise<boolean>;
+  onDeleteAdminHomeownerContact?: (leadId: string, contactId: string) => Promise<boolean>;
   activeOrganizationId?: string;
   openCreateFormOnEnter?: boolean;
   onCreateFormOpened?: () => void;
@@ -537,7 +602,9 @@ export default function LeadsView({
   searchTerm = "",
   onUpdateLead,
   onSaveAdminClaimRecord,
+  onDeleteAdminClaimRecord,
   onAddAdminHomeownerContact,
+  onDeleteAdminHomeownerContact,
   activeOrganizationId,
   openCreateFormOnEnter = false,
   onCreateFormOpened,
@@ -2074,31 +2141,35 @@ export default function LeadsView({
                       );
                     })}
                   </div>
-                  {activeRecordTab === "nosotros" && onSaveAdminClaimRecord && (
+                  {activeRecordTab === "nosotros" && onSaveAdminClaimRecord && onDeleteAdminClaimRecord && (
                     <div className="space-y-4">
                       <AdminDocumentsSentPanel
                         lead={selectedLead}
                         records={selectedLead.adminClaimRecords || []}
                         onSave={onSaveAdminClaimRecord}
+                        onDelete={onDeleteAdminClaimRecord}
                       />
                       <InsuranceResponsePanel
                         lead={selectedLead}
                         records={selectedLead.adminClaimRecords || []}
                         onSave={onSaveAdminClaimRecord}
+                        onDelete={onDeleteAdminClaimRecord}
                       />
                     </div>
                   )}
-                  {activeRecordTab === "homeowner" && onAddAdminHomeownerContact && (
+                  {activeRecordTab === "homeowner" && onAddAdminHomeownerContact && onDeleteAdminHomeownerContact && (
                     <HomeownerServicePanel
                       lead={selectedLead}
                       onAddContact={onAddAdminHomeownerContact}
+                      onDeleteContact={onDeleteAdminHomeownerContact}
                     />
                   )}
-                  {activeRecordTab === "aseguranza" && onSaveAdminClaimRecord && (
+                  {activeRecordTab === "aseguranza" && onSaveAdminClaimRecord && onDeleteAdminClaimRecord && (
                     <InsuranceCallsPanel
                       lead={selectedLead}
                       records={selectedLead.adminClaimRecords || []}
                       onSave={onSaveAdminClaimRecord}
+                      onDelete={onDeleteAdminClaimRecord}
                     />
                   )}
                 </div>

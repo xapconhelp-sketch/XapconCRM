@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
-  ChartNoAxesCombined
+  ChartNoAxesCombined,
+  KeyRound
 } from "lucide-react";
 
 interface SidebarProps {
@@ -32,6 +33,7 @@ const SECTION_MANAGEMENT = [
 
 const SECTION_ADMIN = [
   { type: ViewType.CONTRACTOR_CASE_REPORTS, label: "Informes por empresa", icon: ChartNoAxesCombined },
+  { type: ViewType.MEMBERSHIP_ACCESS, label: "Membresías y privilegios", icon: KeyRound },
   { type: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras",  icon: ShieldCheck },
   { type: ViewType.VALORES_INSURANCE, label: "Valores Insurance", icon: ChartNoAxesCombined },
 ];
@@ -52,6 +54,7 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
       [ViewType.INSURANCE_DIRECTORY]: "insurance",
       [ViewType.VALORES_INSURANCE]: "estimate",
       [ViewType.CONTRACTOR_CASE_REPORTS]: "activity",
+      [ViewType.MEMBERSHIP_ACCESS]: "insurance",
       [ViewType.TEAM]: "team",
       [ViewType.SETTINGS]: "settings",
     };

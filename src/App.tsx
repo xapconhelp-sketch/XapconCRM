@@ -20,6 +20,7 @@ const ProductionView = lazy(() => import("./components/ProductionView"));
 const InsuranceDirectoryView = lazy(() => import("./components/InsuranceDirectoryView"));
 const ValuesInsuranceView = lazy(() => import("./components/ValuesInsuranceView"));
 const ContractorCaseReportsView = lazy(() => import("./components/ContractorCaseReportsView"));
+const MembershipAccessView = lazy(() => import("./components/MembershipAccessView"));
 import { fetchDbInsuranceCompanies, getAllInsuranceCompanyNames } from "./data/insuranceDirectoryData";
 const TeamView = lazy(() => import("./components/TeamView"));
 const SettingsView = lazy(() => import("./components/SettingsView"));
@@ -60,6 +61,7 @@ function normalizeViewForRole(view: ViewType | null, role: AppRole): ViewType {
   if (!view) return ViewType.DASHBOARD;
   if (role === "contractor" && view === ViewType.VALORES_INSURANCE) return ViewType.DASHBOARD;
   if (role === "contractor" && view === ViewType.CONTRACTOR_CASE_REPORTS) return ViewType.DASHBOARD;
+  if (role === "contractor" && view === ViewType.MEMBERSHIP_ACCESS) return ViewType.DASHBOARD;
   if (role === "admin" && view === ViewType.CLAIMS) return ViewType.DASHBOARD;
   return view;
 }
@@ -539,6 +541,77 @@ export default function App() {
     return true;
   };
 
+  const handleDeleteAdminClaimRecord = async (leadId: string, recordId: string): Promise<boolean> => {
+    if (!session || userRole !== "admin") return false;
+    const targetClaim = insuranceClaims.find(claim => claim.id === leadId && claim.is_insurance_claim);
+    if (!targetClaim?.organizationId) return false;
+
+    const { data: deletedRecord, error: deleteError } = await supabase
+      .from("admin_claim_records")
+      .delete()
+      .eq("id", recordId)
+      .eq("lead_id", leadId)
+      .select("id")
+      .maybeSingle();
+    if (deleteError || !deletedRecord) {
+      console.error("Error al eliminar el registro del caso:", deleteError?.message || "No se encontró el registro.");
+      alert("No se pudo eliminar el registro. Verifica tus permisos y vuelve a intentarlo. " + (deleteError?.message || ""));
+      return false;
+    }
+
+    const { data: remainingRows, error: listError } = await supabase
+      .from("admin_claim_records")
+      .select("id, record_type, recorded_at, note, document_types, created_at")
+      .eq("lead_id", leadId)
+      .order("recorded_at", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (listError) {
+      console.error("No se pudo recalcular el resumen de registros:", listError.message);
+      alert("El registro se eliminó, pero no se pudo recalcular el resumen. Recarga el expediente para actualizarlo. " + listError.message);
+      setInsuranceClaims(prev => prev.map(claim => claim.id === leadId
+        ? { ...claim, adminClaimRecords: (claim.adminClaimRecords || []).filter(record => record.id !== recordId) }
+        : claim));
+      setLeads(prev => prev.map(lead => lead.id === leadId
+        ? { ...lead, adminClaimRecords: (lead.adminClaimRecords || []).filter(record => record.id !== recordId) }
+        : lead));
+      return true;
+    }
+
+    const remainingRecords: AdminClaimRecord[] = (remainingRows || []).map((row: any) => ({
+      id: row.id,
+      type: row.record_type,
+      date: row.recorded_at || "",
+      note: row.note || "",
+      documentTypes: Array.isArray(row.document_types) ? row.document_types : [],
+      createdAt: row.created_at || "",
+    }));
+    const latestRecordOfType = (type: AdminClaimRecord["type"]) => remainingRecords.find(record => record.type === type);
+    const latestResponse = latestRecordOfType("insurance_response");
+    const latestDocuments = latestRecordOfType("documents_sent");
+    const updatedActivity: AdminClaimActivity = {
+      lastInsuranceResponseAt: latestResponse?.date || "",
+      lastDocumentsSentAt: latestDocuments?.date || "",
+      sentDocumentTypes: latestDocuments?.documentTypes || [],
+    };
+
+    const { error: activityError } = await supabase.from("admin_claim_activity").upsert({
+      lead_id: leadId,
+      organization_id: targetClaim.organizationId,
+      last_insurance_response_at: updatedActivity.lastInsuranceResponseAt || null,
+      last_documents_sent_at: updatedActivity.lastDocumentsSentAt || null,
+      sent_document_types: updatedActivity.sentDocumentTypes,
+    }, { onConflict: "lead_id" });
+    if (activityError) {
+      console.error("Error al actualizar el resumen después de eliminar un registro:", activityError.message);
+      alert("El registro se eliminó, pero no se pudo actualizar el resumen del caso. Recarga el expediente. " + activityError.message);
+    }
+
+    const updatedLead = { ...targetClaim, adminActivity: updatedActivity, adminClaimRecords: remainingRecords };
+    setInsuranceClaims(prev => prev.map(claim => claim.id === leadId ? updatedLead : claim));
+    setLeads(prev => prev.map(lead => lead.id === leadId ? updatedLead : lead));
+    return true;
+  };
+
   const handleAddAdminHomeownerContact = async (
     leadId: string,
     contact: Omit<AdminHomeownerContact, "id" | "createdAt">
@@ -574,6 +647,29 @@ export default function App() {
       : claim));
     setLeads(prev => prev.map(lead => lead.id === leadId
       ? { ...lead, adminHomeownerContacts: [savedContact, ...(lead.adminHomeownerContacts || [])] }
+      : lead));
+    return true;
+  };
+
+  const handleDeleteAdminHomeownerContact = async (leadId: string, contactId: string): Promise<boolean> => {
+    if (!session || userRole !== "admin") return false;
+    const { data: deletedContact, error } = await supabase
+      .from("admin_homeowner_contacts")
+      .delete()
+      .eq("id", contactId)
+      .eq("lead_id", leadId)
+      .select("id")
+      .maybeSingle();
+    if (error || !deletedContact) {
+      console.error("Error al eliminar el contacto con homeowner:", error?.message || "No se encontró el registro.");
+      alert("No se pudo eliminar el contacto. Verifica tus permisos y vuelve a intentarlo. " + (error?.message || ""));
+      return false;
+    }
+    setInsuranceClaims(prev => prev.map(claim => claim.id === leadId
+      ? { ...claim, adminHomeownerContacts: (claim.adminHomeownerContacts || []).filter(contact => contact.id !== contactId) }
+      : claim));
+    setLeads(prev => prev.map(lead => lead.id === leadId
+      ? { ...lead, adminHomeownerContacts: (lead.adminHomeownerContacts || []).filter(contact => contact.id !== contactId) }
       : lead));
     return true;
   };
@@ -904,6 +1000,30 @@ export default function App() {
 
     setOrganizations(previous => previous.map(org => org.id === organizationId ? { ...org, ...organizationPatch, logo_url: logoUrl || org.logo_url } : org));
     setActiveOrganization(previous => previous?.id === organizationId ? { ...previous, ...organizationPatch, logo_url: logoUrl || previous.logo_url } : previous);
+    return true;
+  };
+
+  const handleUpdateMembershipAccess = async (
+    organizationId: string,
+    settings: {
+      membership_plan: "software_only" | "pro" | "plus";
+      insurance_calls_enabled: boolean;
+      homeowner_followup_level: "none" | "partial" | "full";
+    },
+  ) => {
+    if (profile?.role !== "super_admin") return false;
+    const { data, error } = await supabase
+      .from("organizations")
+      .update(settings)
+      .eq("id", organizationId)
+      .select("id")
+      .maybeSingle();
+    if (error || !data) {
+      console.error("Error al actualizar los privilegios de la empresa:", error?.message || "No se encontró la empresa.");
+      return false;
+    }
+    setOrganizations(previous => previous.map(organization => organization.id === organizationId ? { ...organization, ...settings } : organization));
+    setActiveOrganization(previous => previous?.id === organizationId ? { ...previous, ...settings } : previous);
     return true;
   };
 
@@ -1743,6 +1863,7 @@ export default function App() {
                 claims={filteredInsuranceClaims}
                 teamMembers={teamMembers}
                 currentUserId={session.user.id}
+                membershipPlan={activeOrganization?.membership_plan === "pro" || activeOrganization?.membership_plan === "plus" ? activeOrganization.membership_plan : undefined}
                 defaultTaskScope={canManageTeam ? "all" : "mine"}
                 onNavigateToView={navigateToView}
                 onNavigateToLead={handleNavigateToInsuranceClaim}
@@ -1806,7 +1927,9 @@ export default function App() {
                 onMoveProject={handleMoveProject}
                 insuranceCompanies={availableInsuranceCompanies}
                 onSaveAdminClaimRecord={handleSaveAdminClaimRecord}
+                onDeleteAdminClaimRecord={handleDeleteAdminClaimRecord}
                 onAddAdminHomeownerContact={handleAddAdminHomeownerContact}
+                onDeleteAdminHomeownerContact={handleDeleteAdminHomeownerContact}
               />
             </ErrorBoundary>
           )}
@@ -1845,6 +1968,10 @@ export default function App() {
 
           {currentView === ViewType.CONTRACTOR_CASE_REPORTS && userRole === "admin" && (
             <ContractorCaseReportsView claims={filteredInsuranceClaims} organizations={organizations} activeOrganizationId={activeOrganization?.id} />
+          )}
+
+          {currentView === ViewType.MEMBERSHIP_ACCESS && profile?.role === "super_admin" && (
+            <MembershipAccessView organizations={organizations} onSave={handleUpdateMembershipAccess} />
           )}
 
           {currentView === ViewType.TEAM && (

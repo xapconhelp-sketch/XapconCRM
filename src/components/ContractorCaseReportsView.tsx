@@ -4,6 +4,7 @@ import { jsPDF } from "jspdf";
 import type { AdminClaimRecord, AdminHomeownerContact, Lead } from "../types";
 import type { Organization } from "../contexts/AuthContext";
 import logoXapcon from "../assets/optimized/logo-xapcon.webp";
+import { resolveOrganizationMembership } from "../lib/membershipAccess";
 
 interface ContractorCaseReportsViewProps {
   claims: Lead[];
@@ -125,27 +126,24 @@ function newestHomeownerContact(contacts: AdminHomeownerContact[]) {
     }, undefined);
 }
 
-function countWeeklyManagement(claim: Lead, range: { start: string; end: string }) {
-  const records = claim.adminClaimRecords || [];
-  const insuranceActivityCount = records.filter((record) =>
-    (record.type === "insurance_call" || record.type === "insurance_response")
-      && dateKey(record.date) >= range.start
-      && dateKey(record.date) <= range.end,
-  ).length;
-  const legacyResponseKey = dateKey(claim.adminActivity?.lastInsuranceResponseAt);
-  const legacyResponseCount = legacyResponseKey >= range.start && legacyResponseKey <= range.end
-    && !records.some((record) => record.type === "insurance_response" && dateKey(record.date) === legacyResponseKey)
-    ? 1
-    : 0;
-  const homeownerContactCount = (claim.adminHomeownerContacts || []).filter((contact) =>
-    dateKey(contact.contactedAt) >= range.start && dateKey(contact.contactedAt) <= range.end,
-  ).length;
-  return insuranceActivityCount + legacyResponseCount + homeownerContactCount;
+function weeklyTimelineComments(claim: Lead, range: { start: string; end: string }) {
+  return (claim.timeline || [])
+    .filter((event) => {
+      const eventDate = dateKey(event.timestamp || event.date);
+      return event.type === "note" && event.content.trim().length > 0
+        && eventDate >= range.start && eventDate <= range.end;
+    })
+    .sort((a, b) => dateKey(a.timestamp || a.date).localeCompare(dateKey(b.timestamp || b.date)));
 }
 
-function activityText(record?: AdminClaimRecord) {
-  if (!record) return "Sin registro";
-  return [formatDate(record.date), record.note.trim()].filter(Boolean).join(" · ");
+function weeklyTimelineCommentsText(claim: Lead, range: { start: string; end: string }) {
+  const comments = weeklyTimelineComments(claim, range);
+  if (!comments.length) return "Sin comentarios esta semana";
+  return comments.map((event) => `${formatDate(event.timestamp || event.date)} · ${event.content.trim()}`).join("\n");
+}
+
+function countWeeklyTimelineComments(claim: Lead, range: { start: string; end: string }) {
+  return weeklyTimelineComments(claim, range).length;
 }
 
 function lastInsuranceResponseText(claim: Lead) {
@@ -154,7 +152,17 @@ function lastInsuranceResponseText(claim: Lead) {
   if (!record) return legacyDate ? formatDate(legacyDate) : "Sin registro";
   return legacyDate && dateKey(legacyDate) > dateKey(record.date)
     ? formatDate(legacyDate)
-    : activityText(record);
+    : [formatDate(record.date), record.note.trim()].filter(Boolean).join(" · ");
+}
+
+function lastInsuranceCallDate(claim: Lead) {
+  return formatDate(newestRecord(claim.adminClaimRecords || [], "insurance_call")?.date);
+}
+
+function reportInsuranceCall(claim: Lead, company: Organization) {
+  return resolveOrganizationMembership(company).insurance_calls_enabled
+    ? lastInsuranceCallDate(claim)
+    : "No aplica para la membresía actual";
 }
 
 function homeownerText(contact?: AdminHomeownerContact) {
@@ -164,6 +172,16 @@ function homeownerText(contact?: AdminHomeownerContact) {
   };
   const channelText = contact.channels.map((channel) => channels[channel]).filter(Boolean).join(", ");
   return [formatDate(contact.contactedAt), channelText, contact.note.trim()].filter(Boolean).join(" · ");
+}
+
+function reportHomeownerUpdate(claim: Lead, company: Organization) {
+  const { homeowner_followup_level: level } = resolveOrganizationMembership(company);
+  if (level === "none") return "No aplica para la membresía actual";
+  const contacts = claim.adminHomeownerContacts || [];
+  const contact = newestHomeownerContact(contacts);
+  if (contact) return homeownerText(contact);
+  if (level === "partial" && contacts.length === 0) return "Seguimiento Parcial - Sujeto a Membresía";
+  return "Sin registro";
 }
 
 function latestCaseManagementDateKey(claim: Lead) {
@@ -196,7 +214,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
       .sort((a, b) => latestCaseManagementDateKey(b).localeCompare(latestCaseManagementDateKey(a))),
   })), [claims, displayedCompanies]);
   const totalCases = reports.reduce((sum, report) => sum + report.claims.length, 0);
-  const weeklyManagementTotal = reports.reduce((sum, report) => sum + report.claims.reduce((caseSum, claim) => caseSum + countWeeklyManagement(claim, week), 0), 0);
+  const weeklyManagementTotal = reports.reduce((sum, report) => sum + report.claims.reduce((caseSum, claim) => caseSum + countWeeklyTimelineComments(claim, week), 0), 0);
 
   const downloadCsv = () => {
     const rows = [["Empresa contratista", "Número de Claim", "Campo", "Información"]];
@@ -206,10 +224,10 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
           ["Nombre del Homeowner", claim.name || "Sin nombre registrado"],
           ["Aseguranza", claim.insuranceProvider || "Sin aseguradora registrada"],
           ["Número de Claim", claim.claimNumber || "Sin número registrado"],
-          [`Gestión semanal (${reportWeek})`, `${countWeeklyManagement(claim, week)} actividades`],
+          [`Gestión semanal (${reportWeek})`, weeklyTimelineCommentsText(claim, week)],
           ["Última respuesta del seguro", lastInsuranceResponseText(claim)],
-          ["Última llamada al seguro", activityText(newestRecord(claim.adminClaimRecords || [], "insurance_call"))],
-          ["Última actualización al Homeowner", homeownerText(newestHomeownerContact(claim.adminHomeownerContacts || []))],
+          ["Última llamada al seguro", reportInsuranceCall(claim, company)],
+          ["Última actualización al Homeowner", reportHomeownerUpdate(claim, company)],
           ["Tareas pendientes", pendingTasksText(claim)],
         ];
         fields.forEach(([field, value]) => rows.push([
@@ -262,8 +280,22 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
         pdf.setFontSize(8);
         pdf.setTextColor(66, 86, 107);
         pdf.text(`Semana: ${reportWeek}`, textX, y + 10);
-        pdf.text("gestion@xapcongroup.com · xapcongroup.com", textX, y + 15);
-        pdf.text("crm.xapcongroup.com · Tel. (601) 881-3663", textX, y + 20);
+        pdf.setFontSize(7.5);
+        const contactRowY = [y + 15, y + 20];
+        const contactColumns = [textX, textX + 83];
+        const contactRows = [
+          [["Correo:", "gestion@xapcongroup.com"], ["Web:", "www.xapcongroup.com"]],
+          [["Sistema:", "crm.xapcongroup.com"], ["Tel:", "(601) 881-3663"]],
+        ] as const;
+        contactRows.forEach((row, rowIndex) => {
+          row.forEach(([label, value], columnIndex) => {
+            const columnX = contactColumns[columnIndex];
+            pdf.setFont("helvetica", "bold");
+            pdf.text(label, columnX, contactRowY[rowIndex]);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(value, columnX + (columnIndex === 0 && rowIndex === 0 ? 12 : 13), contactRowY[rowIndex]);
+          });
+        });
         y += 27;
       } else {
         pdf.setFont("helvetica", "bold");
@@ -278,23 +310,22 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
       y += 5;
     };
 
-    const drawCase = (item: typeof caseItems[number]) => {
+    const drawCase = async (item: typeof caseItems[number]) => {
       const { claim, company, caseNumber } = item;
-      const weeklyCount = countWeeklyManagement(claim, week);
-      const fields: [string, string][] = [
-        ["Nombre del Homeowner", claim.name || "Sin nombre registrado"],
-        ["Aseguranza", claim.insuranceProvider || "Sin aseguradora registrada"],
-        ["Número de Claim", claim.claimNumber || "Sin número registrado"],
-        [`Gestión semanal · ${reportWeek}`, `${weeklyCount} ${weeklyCount === 1 ? "actividad registrada" : "actividades registradas"}`],
-        ["Última respuesta del seguro", lastInsuranceResponseText(claim)],
-        ["Última llamada al seguro", activityText(newestRecord(claim.adminClaimRecords || [], "insurance_call"))],
-        ["Última actualización al Homeowner", homeownerText(newestHomeownerContact(claim.adminHomeownerContacts || []))],
-        ["Tareas pendientes", pendingTasksText(claim)],
+      const fields: { label: string; value: string; tone?: "default" | "accent" }[] = [
+        { label: "Nombre del Homeowner", value: claim.name || "Sin nombre registrado" },
+        { label: "Aseguranza", value: claim.insuranceProvider || "Sin aseguradora registrada" },
+        { label: "Número de Claim", value: claim.claimNumber || "Sin número registrado" },
+        { label: `Gestión semanal · ${reportWeek}`, value: weeklyTimelineCommentsText(claim, week) },
+        { label: "Última respuesta del seguro", value: lastInsuranceResponseText(claim), tone: "accent" },
+        { label: "Última llamada al seguro", value: reportInsuranceCall(claim, company) },
+        { label: "Última actualización al Homeowner", value: reportHomeownerUpdate(claim, company) },
+        { label: "Tareas pendientes", value: pendingTasksText(claim), tone: "accent" },
       ];
       const labelWidth = 48;
       const valueX = margin + labelWidth + 5;
       const valueWidth = contentWidth - labelWidth - 9;
-      const rows = fields.map(([label, value]) => {
+      const rows = fields.map(({ label, value, tone }) => {
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(7.5);
         const labelLines = pdf.splitTextToSize(label, labelWidth);
@@ -302,10 +333,12 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
         pdf.setFontSize(8.2);
         const valueLines = pdf.splitTextToSize(value || "Sin registro", valueWidth);
         const lineCount = Math.max(labelLines.length, valueLines.length);
-        return { labelLines, valueLines, height: Math.max(6.2, lineCount * 3.6 + 2) };
+        return { labelLines, valueLines, tone, height: Math.max(6.2, lineCount * 3.6 + 2) };
       });
       const headerHeight = 9;
       const cardHeight = headerHeight + rows.reduce((height, row) => height + row.height, 0) + 2;
+      if (casesOnPage === 2 || (casesOnPage > 0 && y + cardHeight > pageHeight - margin)) await startPage();
+      if (casesOnPage === 0 && pageNumber === 1 && y + cardHeight > pageHeight - margin) await startPage();
       pdf.setDrawColor(210, 219, 228);
       pdf.setLineWidth(0.3);
       pdf.setFillColor(255, 255, 255);
@@ -331,11 +364,13 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
         pdf.text(row.labelLines, margin + 4, rowY + 4);
         pdf.setFont("helvetica", "normal");
         pdf.setFontSize(8.2);
-        pdf.setTextColor(36, 56, 75);
+        if (row.tone === "accent") pdf.setTextColor(31, 92, 145);
+        else pdf.setTextColor(36, 56, 75);
         pdf.text(row.valueLines, valueX, rowY + 4);
         rowY += row.height;
       });
       y += cardHeight + 4;
+      casesOnPage += 1;
     };
 
     await startPage();
@@ -346,11 +381,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
       pdf.text("No hay casos activos o en gestión en este informe.", margin, y + 5);
     } else {
       for (const item of caseItems) {
-        if (casesOnPage === 2) await startPage();
-        const estimatedHeight = 71;
-        if (casesOnPage > 0 && y + estimatedHeight > pageHeight - margin) await startPage();
-        drawCase(item);
-        casesOnPage += 1;
+        await drawCase(item);
       }
     }
 
@@ -368,6 +399,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
   return (
     <div className="case-reports-screen min-h-full overflow-y-auto bg-[#F5F6F7] p-4 sm:p-7 lg:p-9">
       <style>{`
+        .print-color-exact { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         @page { size: portrait; margin: 10mm; }
         @media print {
           body * { visibility: hidden !important; }
@@ -401,11 +433,20 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
 
       <div className="case-report-print mx-auto max-w-[1440px]">
         <header className="case-report-branding mb-4 hidden items-center gap-3 border-b-2 border-[#173B60] pb-3">
-        <img src={logoXapcon} alt="Xapcon Group" className="h-[50px] w-[50px] shrink-0 object-contain" />
+          <img src={logoXapcon} alt="Xapcon Group" className="h-[50px] w-[50px] shrink-0 object-contain" />
           <div className="min-w-0 flex-1">
             <p className="text-[9px] font-bold uppercase tracking-[.16em] text-[#687B8D]">Informe de casos · Xapcon Group</p>
-            <p className="mt-1 text-[9px] leading-4 text-[#42566B]">gestion@xapcongroup.com · xapcongroup.com · crm.xapcongroup.com</p>
-            <p className="text-[9px] leading-4 text-[#42566B]">Tel. (601) 881-3663</p>
+            <p className="mt-1 text-[9px] leading-4 text-[#42566B]">Semana: {reportWeek}</p>
+            <div className="mt-1 grid grid-cols-2 gap-x-8 text-[9px] leading-4 text-[#42566B]">
+              <div>
+                <p><span className="font-semibold text-[#173B60]">Correo:</span> gestion@xapcongroup.com</p>
+                <p><span className="font-semibold text-[#173B60]">Sistema:</span> crm.xapcongroup.com</p>
+              </div>
+              <div>
+                <p><span className="font-semibold text-[#173B60]">Web:</span> www.xapcongroup.com</p>
+                <p><span className="font-semibold text-[#173B60]">Tel:</span> (601) 881-3663</p>
+              </div>
+            </div>
           </div>
         </header>
         <header className="case-report-controls mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -429,21 +470,18 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
         <div className="case-report-controls mb-6 grid gap-3 sm:grid-cols-3">
           <SummaryCard label="Empresas en este informe" value={displayedCompanies.length} />
           <SummaryCard label="Casos incluidos" value={totalCases} />
-          <SummaryCard label="Gestiones esta semana" value={weeklyManagementTotal} detail={reportWeek} />
+          <SummaryCard label="Comentarios en Línea de Tiempo" value={weeklyManagementTotal} detail={reportWeek} />
         </div>
 
         {!displayedCompanies.length ? <div className="rounded-xl border border-dashed border-[#C7D1DA] bg-white p-10 text-center text-sm text-[#53677B]">Selecciona una empresa contratista o “Todas las empresas” en el filtro superior.</div> : reports.map(({ company, claims: companyClaims }) => (
           <section key={company.id} className="case-report-company mb-5 overflow-hidden rounded-2xl border border-[#DDE2E7] bg-white shadow-[0_4px_18px_rgba(16,42,70,0.04)]">
             <header className="flex flex-wrap items-end justify-between gap-4 border-b border-[#DDE2E7] bg-[#EDF0F4] px-5 py-5 sm:px-7">
               <div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#53677B]">Informe de expedientes · {reportDate}</p><h2 className="mt-1 flex items-center gap-2 text-xl font-bold text-[#102A46]"><Building2 className="h-5 w-5" /> {companyLabel(company)}</h2><p className="mt-1 text-xs text-[#53677B]">Semana de gestión: lunes a domingo · {reportWeek}</p></div>
-              <div className="flex gap-5 text-right"><div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#607286]">Casos activos</p><p className="text-2xl font-bold tabular-nums text-[#102A46]">{companyClaims.length}</p></div><div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#607286]">Gestiones esta semana</p><p className="text-2xl font-bold tabular-nums text-[#102A46]">{companyClaims.reduce((sum, claim) => sum + countWeeklyManagement(claim, week), 0)}</p></div></div>
+              <div className="flex gap-5 text-right"><div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#607286]">Casos activos</p><p className="text-2xl font-bold tabular-nums text-[#102A46]">{companyClaims.length}</p></div><div><p className="text-[10px] font-semibold uppercase tracking-wide text-[#607286]">Comentarios esta semana</p><p className="text-2xl font-bold tabular-nums text-[#102A46]">{companyClaims.reduce((sum, claim) => sum + countWeeklyTimelineComments(claim, week), 0)}</p></div></div>
             </header>
             {companyClaims.length ? <div className="case-report-cases grid grid-cols-1 gap-3 p-3 sm:p-4 lg:p-5">
               {companyClaims.map((claim, index) => {
-                const records = claim.adminClaimRecords || [];
-                const weeklyCount = countWeeklyManagement(claim, week);
-                const lastCall = newestRecord(records, "insurance_call");
-                const lastHomeownerUpdate = newestHomeownerContact(claim.adminHomeownerContacts || []);
+                const weeklyComments = weeklyTimelineComments(claim, week);
                 const pendingTasks = (claim.tasks || []).filter((task) => task.status === "pending");
                 return <article key={claim.id} className="case-report-card overflow-hidden rounded-2xl border border-[#DFE5E9] bg-white shadow-[0_2px_8px_rgba(16,42,70,0.035)] transition-shadow hover:shadow-[0_5px_18px_rgba(16,42,70,0.08)]">
                   <div className="case-report-card-heading flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-[#E7EBEF] bg-gradient-to-r from-[#F7F9FC] to-white px-4 py-3.5 sm:px-5">
@@ -455,16 +493,16 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
                         <h3 className="truncate text-sm font-bold text-[#102A46] sm:text-base">{claim.name || "Sin nombre registrado"}</h3>
                       </div>
                     </div>
-                    <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold ${weeklyCount > 0 ? "bg-[#EAF3FB] text-[#174F7D]" : "bg-[#F1F4F7] text-[#607286]"}`}><Activity aria-hidden="true" className="h-3.5 w-3.5" /> {weeklyCount} {weeklyCount === 1 ? "gestión" : "gestiones"} esta semana</span>
+                    <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold ${weeklyComments.length > 0 ? "bg-[#EAF3FB] text-[#174F7D]" : "bg-[#F1F4F7] text-[#607286]"}`}><Activity aria-hidden="true" className="h-3.5 w-3.5" /> {weeklyComments.length} {weeklyComments.length === 1 ? "comentario" : "comentarios"} esta semana</span>
                   </div>
                   <div className="case-report-fields grid grid-cols-1 gap-2 p-3 sm:grid-cols-2 sm:p-4 2xl:grid-cols-4">
                     <ReportField icon={ShieldCheck} label="Aseguranza" value={claim.insuranceProvider || "Sin aseguradora registrada"} />
                     <ReportField icon={FileText} label="Número de Claim" value={claim.claimNumber || "Sin número registrado"} />
-                    <ReportField icon={CalendarDays} label={`Gestión semanal · ${reportWeek}`} value={`${weeklyCount} ${weeklyCount === 1 ? "actividad registrada" : "actividades registradas"}`} detail="Cuenta llamadas y respuestas al seguro, y contactos al Homeowner, de lunes a domingo." />
-                    <ReportField icon={MessageCircle} label="Última respuesta del seguro" value={lastInsuranceResponseText(claim)} />
-                    <ReportField icon={PhoneCall} label="Última llamada al seguro" value={activityText(lastCall)} />
-                    <ReportField icon={House} label="Última actualización al Homeowner" value={homeownerText(lastHomeownerUpdate)} />
-                    <ReportField icon={ListTodo} label="Tareas pendientes" value={pendingTasks.length ? `${pendingTasks.length} ${pendingTasks.length === 1 ? "tarea pendiente" : "tareas pendientes"}` : "No tiene tareas pendientes"} detail={pendingTasks.length ? pendingTasks.map((task) => `${task.title} · ${task.dueDate ? formatDate(task.dueDate) : "Sin fecha límite"}`).join(" | ") : undefined} />
+                    <ReportField icon={CalendarDays} label={`Gestión semanal · ${reportWeek}`} value={weeklyTimelineCommentsText(claim, week)} detail="Comentarios agregados a la Línea de Tiempo durante esta semana." />
+                    <ReportField icon={MessageCircle} label="Última respuesta del seguro" value={lastInsuranceResponseText(claim)} tone="accent" />
+                    <ReportField icon={PhoneCall} label="Última llamada al seguro" value={reportInsuranceCall(claim, company)} />
+                    <ReportField icon={House} label="Última actualización al Homeowner" value={reportHomeownerUpdate(claim, company)} />
+                    <ReportField icon={ListTodo} label="Tareas pendientes" value={pendingTasks.length ? `${pendingTasks.length} ${pendingTasks.length === 1 ? "tarea pendiente" : "tareas pendientes"}` : "No tiene tareas pendientes"} detail={pendingTasks.length ? pendingTasks.map((task) => `${task.title} · ${task.dueDate ? formatDate(task.dueDate) : "Sin fecha límite"}`).join(" | ") : undefined} tone="accent" />
                   </div>
                 </article>;
               })}
@@ -477,13 +515,13 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
   );
 }
 
-function ReportField({ icon: Icon, label, value, detail }: { icon: typeof Activity; label: string; value: string; detail?: string }) {
+function ReportField({ icon: Icon, label, value, detail, tone = "default" }: { icon: typeof Activity; label: string; value: string; detail?: string; tone?: "default" | "accent" }) {
   return <div className="case-report-field flex min-w-0 items-start gap-2.5 rounded-xl border border-[#E7EDF3] bg-[#FBFCFE] p-3">
     <span className="case-report-icon mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EAF0F6] text-[#244B70]"><Icon aria-hidden="true" className="h-4 w-4" /></span>
     <div className="min-w-0 flex-1">
       <p className="case-report-field-label text-[9px] font-bold uppercase tracking-[.08em] text-[#718398]">{label}</p>
-      <p className="case-report-field-value mt-1 whitespace-pre-wrap break-words text-xs font-semibold leading-[1.45] text-[#24384B]">{value}</p>
-      {detail && <p className="case-report-field-detail mt-1 text-[9px] leading-[1.4] text-[#8290A0]">{detail}</p>}
+      <p className={`case-report-field-value mt-1 whitespace-pre-wrap break-words text-xs font-semibold leading-[1.45] ${tone === "accent" ? "text-[#1F5C91] print-color-exact" : "text-[#24384B]"}`}>{value}</p>
+      {detail && <p className={`case-report-field-detail mt-1 text-[9px] leading-[1.4] ${tone === "accent" ? "font-semibold text-[#1F5C91] print-color-exact" : "text-[#8290A0]"}`}>{detail}</p>}
     </div>
   </div>;
 }

@@ -10,6 +10,7 @@ import { RoleModal } from './contractor/DesignSystem';
 import {
   AlarmClock,
   ArrowRight,
+  BadgeCheck,
   CalendarDays,
   Check,
   CheckCheck,
@@ -34,6 +35,7 @@ type NewTaskDetails = {
 interface ContractorDashboardProps {
   claims: Lead[];
   currentUserId: string;
+  membershipPlan?: "pro" | "plus";
   defaultTaskScope?: "all" | "mine";
   composerOnly?: boolean;
   teamMembers: TeamMember[];
@@ -98,6 +100,7 @@ const taskCategoryOptions = [
 export default function ContractorDashboard({
   claims,
   currentUserId,
+  membershipPlan,
   defaultTaskScope = "all",
   composerOnly = false,
   teamMembers,
@@ -204,7 +207,10 @@ export default function ContractorDashboard({
       <div className="contractor-dashboard-inner mx-auto w-full max-w-[1500px] space-y-5 p-4 sm:p-6 xl:p-8">
         <div className="contractor-overview">
         <header className="contractor-page-heading contractor-welcome">
-          <div><h1>Panel de trabajo</h1></div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1>Panel de trabajo</h1>
+            {membershipPlan && <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-bold tracking-[.09em] ${membershipPlan === "plus" ? "border-[#D2B96F] bg-[#FBF7E9] text-[#735719]" : "border-[#C9DCEB] bg-[#EEF5FA] text-[#1F5C91]"}`}><BadgeCheck className="h-3.5 w-3.5" /> Miembro {membershipPlan === "pro" ? "PRO" : "PLUS"}</span>}
+          </div>
           <div className="contractor-welcome-action"><Button onClick={onCreateClaim}><Plus data-icon="inline-start" />Nuevo reclamo</Button></div>
         </header>
         <section className="contractor-metrics" aria-label="Resumen de trabajo">

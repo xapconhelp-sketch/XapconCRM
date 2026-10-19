@@ -35,6 +35,9 @@ export interface Organization {
   brand_accent_color?: string | null;
   retail_tax_rate?: number;
   retail_default_fee?: number;
+  membership_plan?: "software_only" | "pro" | "plus";
+  insurance_calls_enabled?: boolean;
+  homeowner_followup_level?: "none" | "partial" | "full";
 }
 
 interface AuthContextType {
