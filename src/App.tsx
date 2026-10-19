@@ -486,7 +486,7 @@ export default function App() {
 
     if (error || !data) {
       console.error("Error al guardar el registro del caso:", error?.message);
-      alert("No se pudo guardar el registro. Verifica que schema_admin_claim_records.sql esté aplicado en Supabase. " + (error?.message || ""));
+      alert("No se pudo guardar el registro. Si seleccionaste Carta, ITEL o Fabricante, actualiza en Supabase la lista permitida con schema_admin_claim_document_types.sql y vuelve a guardar. " + (error?.message || ""));
       return false;
     }
 

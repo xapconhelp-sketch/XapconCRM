@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS public.admin_claim_records (
   CONSTRAINT admin_claim_records_document_types_valid CHECK (
     document_types <@ ARRAY[
       'Suplemento', 'Estimado', 'LOR', 'Cont. Paneles',
-      'Foto Reporte', 'Inv. Final', 'COC', 'W9'
+      'Foto Reporte', 'Inv. Final', 'COC', 'W9',
+      'Carta', 'ITEL', 'Fabricante'
     ]::TEXT[]
   ),
   CONSTRAINT admin_claim_records_type_payload_valid CHECK (

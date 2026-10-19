@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS public.admin_claim_activity (
   CONSTRAINT admin_claim_activity_document_types_valid CHECK (
     sent_document_types <@ ARRAY[
       'Suplemento', 'Estimado', 'LOR', 'Cont. Paneles',
-      'Foto Reporte', 'Inv. Final', 'COC', 'W9'
+      'Foto Reporte', 'Inv. Final', 'COC', 'W9',
+      'Carta', 'ITEL', 'Fabricante'
     ]::TEXT[]
   )
 );
