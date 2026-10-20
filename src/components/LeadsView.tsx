@@ -551,7 +551,7 @@ interface LeadsViewProps {
   selectedLeadId: string;
   onSelectLead: (leadId: string) => void;
   onAddTimelineEvent: (leadId: string, event: Omit<TimelineEvent, "id" | "timestamp">) => Promise<void> | void;
-  onAddLead: (lead: Omit<Lead, "id" | "timeline" | "documents" | "tasks" | "createdAt">) => void;
+  onAddLead: (lead: Omit<Lead, "id" | "timeline" | "documents" | "tasks" | "createdAt">) => void | boolean | Promise<void | boolean>;
   onUploadDocuments?: (leadId: string, files: File[], category?: string) => Promise<boolean>;
   onDeleteDocument?: (leadId: string, docId: string, filePath?: string) => Promise<boolean>;
   onUploadImageForTimeline?: (file: File, claimId: string) => Promise<string | null>;
@@ -627,14 +627,21 @@ export default function LeadsView({
     if (userRole === "admin" && activeTab === "finances") setActiveTab("timeline");
   }, [activeTab, userRole]);
   const [newNote, setNewNote] = useState("");
-  const [selectedOrgId, setSelectedOrgId] = useState("");
+  const [selectedOrgId, setSelectedOrgId] = useState(activeOrganizationId || "");
+  const lastActiveOrganizationId = useRef(activeOrganizationId || "");
 
   useEffect(() => {
-    if (organizations && organizations.length > 0 && !selectedOrgId) {
-      setSelectedOrgId(organizations[0].id);
+    const activeOrganizationChanged = activeOrganizationId !== lastActiveOrganizationId.current;
+    lastActiveOrganizationId.current = activeOrganizationId || "";
+    if (userRole === "admin" && activeOrganizationId && activeOrganizationChanged) {
+      setSelectedOrgId(activeOrganizationId);
+      return;
     }
-  }, [organizations]);
+    if (organizations.length > 0 && !selectedOrgId) setSelectedOrgId(activeOrganizationId || organizations[0].id);
+  }, [activeOrganizationId, organizations, selectedOrgId, userRole]);
   const [isAddingLead, setIsAddingLead] = useState(false);
+  const [isCreatingLead, setIsCreatingLead] = useState(false);
+  const [createLeadError, setCreateLeadError] = useState("");
 
   useEffect(() => {
     if (!openCreateFormOnEnter) return;
@@ -1250,49 +1257,62 @@ export default function LeadsView({
 
   };
 
-  const handleCreateLead = (e: React.FormEvent) => {
+  const handleCreateLead = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!leadName.trim()) return;
+    if (!leadName.trim() || isCreatingLead) return;
 
-    onAddLead({
-      name: leadName,
-      status: "Nuevo",
-      address: leadAddress || "No registrada",
-      phone: leadPhone || "No registrado",
-      email: leadEmail || "No registrado",
-      propertyType: "Residential - Single Family",
-      sqft: Number(leadSqft) || 1500,
-      insuranceProvider: leadInsurance,
-      claimNumber: isInsuranceView ? (insuranceClaimNumber || "Por reclamar") : "Por reclamar",
-      policyNumber: isInsuranceView ? insurancePolicy : undefined,
-      damageType: isInsuranceView ? insuranceDamage : undefined,
-      lossDate: isInsuranceView ? insuranceLossDate : undefined,
-      insurancePhone1: isInsuranceView ? insPhone1 : undefined,
-      insuranceEmail1: isInsuranceView ? insEmail1 : undefined,
-      notes: isInsuranceView ? homeownerNotes : undefined,
-      insuranceNotes: isInsuranceView ? insuranceNotes : undefined,
-      adjusterName: isInsuranceView ? (leadAdjusterName || "Por asignar") : "Por asignar",
-      assignedRep: leadAssignedRep.trim() || "Por asignar",
-      assignedRepAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCOMn-jxxsxze-KxE7RjITjibnMpECd9pRZt1yZyyDI5eazYLGRCAFWs9B1gPugfJKxBDA3-yro9u2C0jFV-hNcuCsA2C5HKO4x0IDFsMjuyEEdVA779oxdqiVl1wcSGhBwJAFEY6SMnvjhwRmD-MgiRxcXe5-EEND8x0mJLrnlHXmvXrCH8fuMGbKw-yA8vlL8HA10YP-v5XdlZ1J1tU5QaON6ngK6M9bPDxJzwpKF5OBqDCEKUTYULl2f224zGtFpozg6XEPqYAUC",
-      organizationId: userRole === "admin" ? (selectedOrgId || undefined) : undefined
-    });
+    setIsCreatingLead(true);
+    setCreateLeadError("");
 
-    // Reset
-    setLeadName("");
-    setLeadAddress("");
-    setLeadPhone("");
-    setLeadEmail("");
-    setLeadAssignedRep("");
-    setInsurancePolicy("");
-    setInsuranceDamage("Hail Damage");
-    setInsuranceLossDate("");
-    setInsPhone1("");
-    setInsEmail1("");
-    setInsuranceNotes("");
-    setInsuranceClaimNumber("");
-    setLeadAdjusterName("");
-    setHomeownerNotes("");
-    setIsAddingLead(false);
+    try {
+      const result = await onAddLead({
+        name: leadName.trim(),
+        status: "Nuevo",
+        address: leadAddress || "No registrada",
+        phone: leadPhone || "No registrado",
+        email: leadEmail || "No registrado",
+        propertyType: "Residential - Single Family",
+        sqft: Number(leadSqft) || 1500,
+        insuranceProvider: leadInsurance,
+        claimNumber: isInsuranceView ? (insuranceClaimNumber || "Por reclamar") : "Por reclamar",
+        policyNumber: isInsuranceView ? insurancePolicy : undefined,
+        damageType: isInsuranceView ? insuranceDamage : undefined,
+        lossDate: isInsuranceView ? insuranceLossDate : undefined,
+        insurancePhone1: isInsuranceView ? insPhone1 : undefined,
+        insuranceEmail1: isInsuranceView ? insEmail1 : undefined,
+        notes: isInsuranceView ? homeownerNotes : undefined,
+        insuranceNotes: isInsuranceView ? insuranceNotes : undefined,
+        adjusterName: isInsuranceView ? (leadAdjusterName || "Por asignar") : "Por asignar",
+        assignedRep: leadAssignedRep.trim() || "Por asignar",
+        assignedRepAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCOMn-jxxsxze-KxE7RjITjibnMpECd9pRZt1yZyyDI5eazYLGRCAFWs9B1gPugfJKxBDA3-yro9u2C0jFV-hNcuCsA2C5HKO4x0IDFsMjuyEEdVA779oxdqiVl1wcSGhBwJAFEY6SMnvjhwRmD-MgiRxcXe5-EEND8x0mJLrnlHXmvXrCH8fuMGbKw-yA8vlL8HA10YP-v5XdlZ1J1tU5QaON6ngK6M9bPDxJzwpKF5OBqDCEKUTYULl2f224zGtFpozg6XEPqYAUC",
+        organizationId: userRole === "admin" ? (selectedOrgId || undefined) : undefined
+      });
+      if (result === false) {
+        setCreateLeadError("No se pudo guardar el reclamo. Revisa la empresa asignada e inténtalo de nuevo.");
+        return;
+      }
+
+      setLeadName("");
+      setLeadAddress("");
+      setLeadPhone("");
+      setLeadEmail("");
+      setLeadAssignedRep("");
+      setInsurancePolicy("");
+      setInsuranceDamage("Hail Damage");
+      setInsuranceLossDate("");
+      setInsPhone1("");
+      setInsEmail1("");
+      setInsuranceNotes("");
+      setInsuranceClaimNumber("");
+      setLeadAdjusterName("");
+      setHomeownerNotes("");
+      setIsAddingLead(false);
+    } catch (error) {
+      console.error("Error al crear el reclamo:", error);
+      setCreateLeadError(error instanceof Error ? error.message : "No se pudo guardar el reclamo. Inténtalo de nuevo.");
+    } finally {
+      setIsCreatingLead(false);
+    }
   };
 
   return (
@@ -1314,6 +1334,7 @@ export default function LeadsView({
 
       {isAddingLead && (
         <form onSubmit={handleCreateLead} className="w-full space-y-6">
+          {createLeadError && <p role="alert" className="rounded-xl border border-[#E8C6C1] bg-[#FFF5F3] px-4 py-3 text-sm font-medium text-[#9B3F36]">{createLeadError}</p>}
           {isInsuranceView ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
 
@@ -1648,16 +1669,18 @@ export default function LeadsView({
           <div className={`flex justify-end gap-2 p-4 bg-white border border-[#DCE4EB]/30 rounded-2xl shadow-sm w-full ${isInsuranceView ? "" : "max-w-2xl"}`}>
             <button
               type="button"
-              onClick={() => setIsAddingLead(false)}
+              onClick={() => { if (!isCreatingLead) { setCreateLeadError(""); setIsAddingLead(false); } }}
+              disabled={isCreatingLead}
               className="px-4 py-2 border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-slate-100 transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="btn-responsive btn-gold-3d px-4 py-2 bg-[#8C6A22] text-slate-900 text-xs font-bold rounded-lg shadow-sm hover:bg-[#664A14] transition-colors"
+              disabled={isCreatingLead}
+              className="btn-responsive btn-gold-3d px-4 py-2 bg-[#8C6A22] text-slate-900 text-xs font-bold rounded-lg shadow-sm hover:bg-[#664A14] transition-colors disabled:cursor-wait disabled:opacity-60"
             >
-              {formSubmitLabel || "Registrar Prospecto"}
+              {isCreatingLead ? "Guardando…" : formSubmitLabel || "Registrar Prospecto"}
             </button>
           </div>
 

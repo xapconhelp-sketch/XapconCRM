@@ -1071,7 +1071,7 @@ export default function App() {
   };
 
   const handleAddLead = async (newLeadData: Omit<Lead, "id" | "timeline" | "documents" | "tasks" | "createdAt">) => {
-    if (!session) return;
+    if (!session) throw new Error("Tu sesión expiró. Inicia sesión de nuevo antes de guardar.");
 
     let targetOrgId = newLeadData.organizationId || null;
     if (!targetOrgId) {
@@ -1117,13 +1117,14 @@ export default function App() {
 
     if (error) {
       console.error("Error al crear lead:", error.message);
-      alert("Error al guardar en Supabase: " + error.message);
-      return;
+      throw new Error(error.message);
     }
 
     if (data) {
       await fetchLeads();
+      return;
     }
+    throw new Error("Supabase no devolvió el lead guardado.");
   };
 
   // Actions: Insurance Claims View
@@ -1194,7 +1195,7 @@ export default function App() {
   };
 
   const handleAddInsuranceClaim = async (newClaimData: Omit<Lead, "id" | "timeline" | "documents" | "tasks" | "createdAt">) => {
-    if (!session) return;
+    if (!session) throw new Error("Tu sesión expiró. Inicia sesión de nuevo antes de guardar.");
 
     let targetOrgId = newClaimData.organizationId || null;
     if (!targetOrgId) {
@@ -1205,6 +1206,7 @@ export default function App() {
         targetOrgId = currentOrg?.id || organizations[0]?.id || null;
       }
     }
+    if (!targetOrgId) throw new Error("Selecciona una empresa contratista antes de registrar el reclamo.");
 
     const { data, error } = await supabase
       .from('leads')
@@ -1251,14 +1253,15 @@ export default function App() {
 
     if (error) {
       console.error("Error al crear reclamación:", error.message);
-      alert("Error al guardar en Supabase: " + error.message);
-      return;
+      throw new Error(error.message);
     }
 
     if (data) {
       await fetchLeads();
       setSelectedInsuranceClaimId(data.id);
+      return true;
     }
+    throw new Error("Supabase no devolvió el reclamo guardado.");
   };
 
   // Actions: Document Management
