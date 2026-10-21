@@ -1351,8 +1351,9 @@ export default function LeadsView({
                       <div className="md:col-span-2">
                         <label className="block text-[11px] font-bold text-[#664A14] mb-1">Empresa / Contratista Asignado</label>
                         <RoleSelect
-                          value={selectedOrgId}
+                          value={activeOrganizationId || selectedOrgId}
                           onChange={(e) => setSelectedOrgId(e.target.value)}
+                          disabled={Boolean(activeOrganizationId)}
                           className="w-full bg-white border border-[#DCE4EB]/80 rounded-lg p-2 text-xs text-[#191c1e] font-bold focus:border-[#8C6A22] outline-none cursor-pointer"
                           required
                         >

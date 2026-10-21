@@ -1197,15 +1197,12 @@ export default function App() {
   const handleAddInsuranceClaim = async (newClaimData: Omit<Lead, "id" | "timeline" | "documents" | "tasks" | "createdAt">) => {
     if (!session) throw new Error("Tu sesión expiró. Inicia sesión de nuevo antes de guardar.");
 
-    let targetOrgId = newClaimData.organizationId || null;
-    if (!targetOrgId) {
-      if (userRole === "contractor") {
-        targetOrgId = activeOrganization?.id;
-      } else {
-        const currentOrg = organizations.find(o => o.id === selectedCompanyFilter);
-        targetOrgId = currentOrg?.id || organizations[0]?.id || null;
-      }
-    }
+    // For superadmins, the company chosen in the app header is authoritative
+    // whenever a single company is selected. The form can still hold a stale
+    // organization ID if it was opened while the consolidated view was active.
+    // In the consolidated view, honor the explicit company chosen in the form;
+    // never silently fall back to the first organization.
+    const targetOrgId = activeOrganization?.id || newClaimData.organizationId || null;
     if (!targetOrgId) throw new Error("Selecciona una empresa contratista antes de registrar el reclamo.");
 
     const { data, error } = await supabase
