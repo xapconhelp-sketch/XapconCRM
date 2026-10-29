@@ -20,6 +20,10 @@ https://ai.studio/apps/42e26a9f-7bf4-4678-b527-5d7e712f53aa
 
 For production, run `npm run build` followed by `npm start`. The production server defaults to port 3001; override it with `PORT` and optionally `HOST`. Frontend environment variables are embedded at build time.
 
+## Contractor weather
+
+The local development server uses Open-Meteo's open-access endpoints for evaluation and prototyping. Production use requires an Open-Meteo commercial API key in the server-side `OPEN_METEO_API_KEY` environment variable; keep it out of all `VITE_` variables. The geocoder receives only a city/locality or postal code derived from the company address, not the street address or building number. The widget links to Open-Meteo and its CC BY 4.0 attribution; weather condition codes are translated into Spanish.
+
 Validation: `npm run lint`, `npm test`, and `npm audit`. The production HTTP tests bind an ephemeral loopback port. `npm run clean` removes generated build output using Node on Windows, macOS and Linux.
 
 See [the technical audit and remaining production checks](docs/auditoria-crm-2026-10-16.md).

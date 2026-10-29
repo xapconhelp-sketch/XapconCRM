@@ -29,6 +29,7 @@ import { NotificationBell } from "./components/NotificationBell";
 import { eligibleCaseMembers, memberBelongsToOrganization } from "./lib/teamAccess.js";
 const PasswordRecoveryView = lazy(() => import("./components/PasswordRecoveryView"));
 import ContractorWeather from "./components/ContractorWeather";
+import { resolveOrganizationMembership } from "./lib/membershipAccess";
 
 import { Menu, X, Search, ChevronRight, ChevronDown, Building2, Check } from "lucide-react";
 
@@ -841,6 +842,36 @@ export default function App() {
 
   // Filtered lists (fallback logic for local rendering)
   const filteredInsuranceClaims = insuranceClaims;
+  const membershipManagedOrganizations = useMemo(
+    () => organizations.filter((organization) => !organization.is_internal && organization.name.trim().toLowerCase() !== "xapcon group"),
+    [organizations],
+  );
+  const organizationsById = useMemo(
+    () => new Map(membershipManagedOrganizations.map((organization) => [organization.id, organization])),
+    [membershipManagedOrganizations],
+  );
+  const callAlertsEnabled = userRole === "admin" && (activeOrganization
+    ? membershipManagedOrganizations.some((organization) => organization.id === activeOrganization.id && resolveOrganizationMembership(organization).insurance_calls_enabled)
+    : membershipManagedOrganizations.some((organization) => resolveOrganizationMembership(organization).insurance_calls_enabled));
+  const callReminderClaims = useMemo(() => {
+    if (userRole !== "admin") return [];
+    return insuranceClaims.filter((claim) => {
+      if (!claim.organizationId || (activeOrganization && claim.organizationId !== activeOrganization.id)) return false;
+      const organization = organizationsById.get(claim.organizationId);
+      return organization ? resolveOrganizationMembership(organization).insurance_calls_enabled : false;
+    });
+  }, [activeOrganization, insuranceClaims, organizationsById, userRole]);
+  const homeownerAlertsEnabled = userRole === "admin" && (activeOrganization
+    ? membershipManagedOrganizations.some((organization) => organization.id === activeOrganization.id && resolveOrganizationMembership(organization).homeowner_followup_level !== "none")
+    : membershipManagedOrganizations.some((organization) => resolveOrganizationMembership(organization).homeowner_followup_level !== "none"));
+  const homeownerReminderClaims = useMemo(() => {
+    if (userRole !== "admin") return [];
+    return insuranceClaims.filter((claim) => {
+      if (!claim.organizationId || (activeOrganization && claim.organizationId !== activeOrganization.id)) return false;
+      const organization = organizationsById.get(claim.organizationId);
+      return organization ? resolveOrganizationMembership(organization).homeowner_followup_level !== "none" : false;
+    });
+  }, [activeOrganization, insuranceClaims, organizationsById, userRole]);
   const directoryClaims = userRole === "admin"
     ? [...leads, ...insuranceClaims]
     : activeOrganization
@@ -1732,12 +1763,12 @@ export default function App() {
                   userId={session.user.id}
                   organizationId={activeOrganization?.id}
                   onNotificationClick={handleNotificationClick}
-                  callReminderLeads={insuranceClaims}
+                  callReminderLeads={callReminderClaims}
                   onCallReminderClick={handleNavigateToInsuranceClaim}
-                  callAlertsEnabled
-                  homeownerReminderLeads={insuranceClaims}
+                  callAlertsEnabled={callAlertsEnabled}
+                  homeownerReminderLeads={homeownerReminderClaims}
                   onHomeownerReminderClick={handleNavigateToInsuranceClaim}
-                  homeownerAlertsEnabled
+                  homeownerAlertsEnabled={homeownerAlertsEnabled}
                 />
               </div>
             </div>
@@ -1763,7 +1794,7 @@ export default function App() {
                 </span>
                 <LiveDateTime />
               </div>
-              <ContractorWeather address={activeOrganization?.company_address} />
+              <ContractorWeather address={organizations.find(organization => organization.id === activeOrganization?.id)?.company_address ?? activeOrganization?.company_address} />
             </div>
 
             {/* Center: Search Bar */}
@@ -1963,7 +1994,7 @@ export default function App() {
           )}
 
           {currentView === ViewType.VALORES_INSURANCE && userRole === "admin" && (
-            <ValuesInsuranceView claims={filteredInsuranceClaims} />
+            <ValuesInsuranceView claims={filteredInsuranceClaims} activeOrganizationId={activeOrganization?.id} />
           )}
 
           {currentView === ViewType.CONTRACTOR_CASE_REPORTS && userRole === "admin" && (

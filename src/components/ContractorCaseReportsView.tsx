@@ -5,6 +5,7 @@ import type { AdminClaimRecord, AdminHomeownerContact, Lead } from "../types";
 import type { Organization } from "../contexts/AuthContext";
 import logoXapcon from "../assets/optimized/logo-xapcon.webp";
 import { resolveOrganizationMembership } from "../lib/membershipAccess";
+import { getContractorPendingTasks } from "../lib/taskCategories";
 
 interface ContractorCaseReportsViewProps {
   claims: Lead[];
@@ -213,11 +214,27 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
       .slice()
       .sort((a, b) => latestCaseManagementDateKey(b).localeCompare(latestCaseManagementDateKey(a))),
   })), [claims, displayedCompanies]);
+  const pendingTaskRows = useMemo(() => reports.flatMap(({ company, claims: companyClaims }) =>
+    companyClaims.flatMap((claim) => getContractorPendingTasks(claim.tasks)
+      .map((task) => ({ company, claim, task }))),
+  ), [reports]);
   const totalCases = reports.reduce((sum, report) => sum + report.claims.length, 0);
   const weeklyManagementTotal = reports.reduce((sum, report) => sum + report.claims.reduce((caseSum, claim) => caseSum + countWeeklyTimelineComments(claim, week), 0), 0);
 
   const downloadCsv = () => {
     const rows = [["Empresa contratista", "Número de Claim", "Campo", "Información"]];
+    rows.push(["RESUMEN DE TAREAS PENDIENTES", "", "", ""]);
+    if (pendingTaskRows.length) {
+      pendingTaskRows.forEach(({ company, claim, task }) => rows.push([
+        companyLabel(company),
+        claim.claimNumber || "Sin número",
+        `HO: ${claim.name || "Sin nombre registrado"}`,
+        `${task.title} · ${task.dueDate ? `Fecha límite: ${formatDate(task.dueDate)}` : "Sin fecha límite"}`,
+      ]));
+    } else {
+      rows.push(["", "", "", "No hay tareas pendientes"]);
+    }
+    rows.push(["", "", "", ""]);
     for (const { company, claims: companyClaims } of reports) {
       for (const claim of companyClaims) {
         const fields = [
@@ -310,6 +327,71 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
       y += 5;
     };
 
+    const drawPendingTaskSummary = async () => {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9);
+      pdf.setTextColor(23, 59, 96);
+      pdf.text(`RESUMEN DE TAREAS PENDIENTES · ${pendingTaskRows.length}`, margin, y + 4);
+      y += 8;
+
+      const columnWidths = [32, 38, 26, 64, 26];
+      const columnLabels = ["EMPRESA", "NOMBRE DEL HO", "CLAIM", "ACTIVIDAD PENDIENTE", "FECHA LÍMITE"];
+      const columnX = [margin];
+      columnWidths.slice(0, -1).forEach((width) => columnX.push(columnX[columnX.length - 1] + width));
+      const drawTableHeader = () => {
+        pdf.setFillColor(237, 242, 247);
+        pdf.setDrawColor(210, 219, 228);
+        pdf.roundedRect(margin, y, contentWidth, 7, 1.5, 1.5, "FD");
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(6.5);
+        pdf.setTextColor(66, 86, 107);
+        columnLabels.forEach((label, index) => pdf.text(label, columnX[index] + 1.5, y + 4.6, { maxWidth: columnWidths[index] - 3 }));
+        y += 7;
+      };
+
+      if (!pendingTaskRows.length) {
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        pdf.setTextColor(66, 86, 107);
+        pdf.text("No hay tareas pendientes en los casos incluidos.", margin, y + 4);
+        y += 9;
+        return;
+      }
+
+      drawTableHeader();
+      for (const [index, { company, claim, task }] of pendingTaskRows.entries()) {
+        const values = [
+          companyLabel(company),
+          claim.name || "Sin nombre registrado",
+          claim.claimNumber || "Sin número",
+          task.title || "Actividad sin título",
+          task.dueDate ? formatDate(task.dueDate) : "Sin fecha límite",
+        ];
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(7);
+        const lines = values.map((value, column) => pdf.splitTextToSize(value, columnWidths[column] - 4));
+        const rowHeight = Math.max(7, Math.max(...lines.map((columnLines) => columnLines.length)) * 3.2 + 2.5);
+        if (y + rowHeight > pageHeight - margin) {
+          await startPage();
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(8);
+          pdf.setTextColor(23, 59, 96);
+          pdf.text("RESUMEN DE TAREAS PENDIENTES · CONTINÚA", margin, y + 4);
+          y += 7;
+          drawTableHeader();
+        }
+        pdf.setFillColor(index % 2 === 0 ? 250 : 255, index % 2 === 0 ? 252 : 255, index % 2 === 0 ? 254 : 255);
+        pdf.setDrawColor(225, 231, 236);
+        pdf.rect(margin, y, contentWidth, rowHeight, "FD");
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(7);
+        pdf.setTextColor(36, 56, 75);
+        lines.forEach((columnLines, column) => pdf.text(columnLines, columnX[column] + 1.5, y + 3.4));
+        y += rowHeight;
+      }
+      y += 5;
+    };
+
     const drawCase = async (item: typeof caseItems[number]) => {
       const { claim, company, caseNumber } = item;
       const fields: { label: string; value: string; tone?: "default" | "accent" }[] = [
@@ -338,7 +420,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
       const headerHeight = 9;
       const cardHeight = headerHeight + rows.reduce((height, row) => height + row.height, 0) + 2;
       if (casesOnPage === 2 || (casesOnPage > 0 && y + cardHeight > pageHeight - margin)) await startPage();
-      if (casesOnPage === 0 && pageNumber === 1 && y + cardHeight > pageHeight - margin) await startPage();
+      if (casesOnPage === 0 && y + cardHeight > pageHeight - margin) await startPage();
       pdf.setDrawColor(210, 219, 228);
       pdf.setLineWidth(0.3);
       pdf.setFillColor(255, 255, 255);
@@ -374,6 +456,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
     };
 
     await startPage();
+    await drawPendingTaskSummary();
     if (!caseItems.length) {
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(10);
@@ -409,6 +492,14 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
           .crm-main, .crm-content { display: block !important; height: auto !important; min-height: 0 !important; overflow: visible !important; }
           .case-report-controls { display: none !important; }
           .case-report-branding { display: flex !important; }
+          .case-report-pending-summary { margin-bottom: 5px !important; border-radius: 7px !important; box-shadow: none !important; }
+          .case-report-pending-summary > header { gap: 5px !important; padding: 5px 8px !important; }
+          .case-report-pending-summary > header h2 { font-size: 10px !important; }
+          .case-report-pending-summary > header p { font-size: 7px !important; }
+          .case-report-pending-summary table { min-width: 0 !important; font-size: 7px !important; }
+          .case-report-pending-summary thead { display: table-header-group; }
+          .case-report-pending-summary th, .case-report-pending-summary td { padding: 4px 6px !important; }
+          .case-report-pending-row { break-inside: avoid; page-break-inside: avoid; }
           .case-report-company { break-inside: auto; margin-bottom: 5px !important; border-radius: 0 !important; box-shadow: none !important; }
           .case-report-company > header { gap: 8px !important; padding: 6px 10px !important; }
           .case-report-company > header h2 { margin-top: 1px !important; font-size: 12px !important; line-height: 1.2 !important; }
@@ -473,6 +564,32 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
           <SummaryCard label="Comentarios en Línea de Tiempo" value={weeklyManagementTotal} detail={reportWeek} />
         </div>
 
+        {displayedCompanies.length > 0 && <section className="case-report-pending-summary mb-6 overflow-hidden rounded-2xl border border-[#D6E2EC] bg-white shadow-[0_4px_18px_rgba(16,42,70,0.04)]" aria-labelledby="pending-task-summary-heading">
+          <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#DCE6EE] bg-gradient-to-r from-[#EDF4F9] to-[#F8FAFC] px-5 py-4 sm:px-6">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#173B60] text-white"><ListTodo aria-hidden="true" className="h-4 w-4" /></span>
+              <div><h2 id="pending-task-summary-heading" className="text-sm font-bold text-[#102A46] sm:text-base">Resumen de tareas pendientes</h2><p className="mt-0.5 text-xs text-[#607286]">Homeowner y actividad que requiere atención en cada caso.</p></div>
+            </div>
+            <span className="rounded-full border border-[#D5E2EC] bg-white px-3 py-1 text-xs font-bold tabular-nums text-[#173B60]">{pendingTaskRows.length} {pendingTaskRows.length === 1 ? "actividad" : "actividades"}</span>
+          </header>
+          {pendingTaskRows.length ? <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse text-left">
+              <thead className="bg-[#FAFBFC] text-[9px] font-bold uppercase tracking-[.08em] text-[#718398]"><tr>
+                <th className="px-5 py-3">Empresa</th><th className="px-5 py-3">Nombre del HO</th><th className="px-5 py-3">Claim</th><th className="px-5 py-3">Actividad pendiente</th><th className="px-5 py-3">Fecha límite</th>
+              </tr></thead>
+              <tbody className="divide-y divide-[#E8EDF1] text-xs text-[#24384B]">
+                {pendingTaskRows.map(({ company, claim, task }) => <tr key={`${claim.id}-${task.id}`} className="case-report-pending-row hover:bg-[#F8FAFC]">
+                  <td className="px-5 py-3 font-medium text-[#53677B]">{companyLabel(company)}</td>
+                  <td className="px-5 py-3 font-semibold text-[#102A46]">{claim.name || "Sin nombre registrado"}</td>
+                  <td className="px-5 py-3 tabular-nums">{claim.claimNumber || "Sin número"}</td>
+                  <td className="px-5 py-3 font-semibold text-[#1F5C91]">{task.title || "Actividad sin título"}</td>
+                  <td className="px-5 py-3 whitespace-nowrap text-[#607286]">{task.dueDate ? formatDate(task.dueDate) : "Sin fecha límite"}</td>
+                </tr>)}
+              </tbody>
+            </table>
+          </div> : <p className="px-5 py-6 text-sm text-[#607286]">No hay tareas pendientes en los casos incluidos.</p>}
+        </section>}
+
         {!displayedCompanies.length ? <div className="rounded-xl border border-dashed border-[#C7D1DA] bg-white p-10 text-center text-sm text-[#53677B]">Selecciona una empresa contratista o “Todas las empresas” en el filtro superior.</div> : reports.map(({ company, claims: companyClaims }) => (
           <section key={company.id} className="case-report-company mb-5 overflow-hidden rounded-2xl border border-[#DDE2E7] bg-white shadow-[0_4px_18px_rgba(16,42,70,0.04)]">
             <header className="flex flex-wrap items-end justify-between gap-4 border-b border-[#DDE2E7] bg-[#EDF0F4] px-5 py-5 sm:px-7">
@@ -482,7 +599,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
             {companyClaims.length ? <div className="case-report-cases grid grid-cols-1 gap-3 p-3 sm:p-4 lg:p-5">
               {companyClaims.map((claim, index) => {
                 const weeklyComments = weeklyTimelineComments(claim, week);
-                const pendingTasks = (claim.tasks || []).filter((task) => task.status === "pending");
+                const pendingTasks = getContractorPendingTasks(claim.tasks);
                 return <article key={claim.id} className="case-report-card overflow-hidden rounded-2xl border border-[#DFE5E9] bg-white shadow-[0_2px_8px_rgba(16,42,70,0.035)] transition-shadow hover:shadow-[0_5px_18px_rgba(16,42,70,0.08)]">
                   <div className="case-report-card-heading flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-[#E7EBEF] bg-gradient-to-r from-[#F7F9FC] to-white px-4 py-3.5 sm:px-5">
                     <div className="flex min-w-0 items-center gap-3">
@@ -527,7 +644,7 @@ function ReportField({ icon: Icon, label, value, detail, tone = "default" }: { i
 }
 
 function pendingTasksText(claim: Lead) {
-  const pendingTasks = (claim.tasks || []).filter((task) => task.status === "pending");
+  const pendingTasks = getContractorPendingTasks(claim.tasks);
   if (!pendingTasks.length) return "No tiene tareas pendientes";
   return pendingTasks.map((task) => `${task.title} · ${task.dueDate ? formatDate(task.dueDate) : "Sin fecha límite"}`).join(" | ");
 }

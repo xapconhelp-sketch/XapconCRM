@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { contractorWeatherMiddleware } from "./server/contractorWeather";
 import { createProductionApp } from "./server/productionApp";
 
-dotenv.config();
+dotenv.config({ path: [".env.local", ".env"] });
 
 const app = process.env.NODE_ENV === 'production'
   ? createProductionApp(path.join(process.cwd(), 'dist', 'client'))

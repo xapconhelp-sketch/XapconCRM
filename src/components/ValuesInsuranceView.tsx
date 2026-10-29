@@ -141,9 +141,9 @@ function AnalyticsStat({ label, value, detail, icon: Icon, tone = "blue" }: {
     green: "bg-[#EDF5F0] text-[#39705A]",
     slate: "bg-[#F0F3F5] text-[#596D78]",
   };
-  return <article className="min-w-0 rounded-2xl border border-[#DDE3E8] bg-white p-4 shadow-[0_5px_18px_rgba(23,49,74,0.035)] sm:p-5">
-    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[.1em] text-[#687C89]">{label}</p><p className="mt-2 truncate font-display text-[24px] font-semibold tracking-[-.035em] text-[#122B40] sm:text-[28px]">{value}</p></div><span className={`values-analytics-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}><Icon className="h-5 w-5" /></span></div>
-    <p className="mt-2 text-[11px] leading-5 text-[#637782]">{detail}</p>
+  return <article className="min-h-[116px] min-w-0 rounded-2xl border border-[#DDE3E8] bg-white p-3.5 shadow-[0_5px_18px_rgba(23,49,74,0.035)] sm:p-4">
+    <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[9px] font-bold uppercase tracking-[.09em] text-[#687C89]">{label}</p><p className="mt-1.5 truncate font-display text-[22px] font-semibold tracking-[-.035em] text-[#122B40] sm:text-[25px] xl:text-[19px] 2xl:text-[25px]">{value}</p></div><span className={`values-analytics-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}><Icon className="h-[18px] w-[18px]" /></span></div>
+    <p className="mt-1.5 line-clamp-2 min-h-[2rem] text-[10px] leading-4 text-[#637782]">{detail}</p>
   </article>;
 }
 
@@ -213,9 +213,10 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
       })[0];
       const estimateAmount = Number(estimate?.amount) || 0;
       const sowAmount = Number(latestSow?.amount) || 0;
+      const firstSowAmount = Number(firstSow?.amount) || 0;
       const finance = finances.find((row) => row.claim_id === claim.id);
       return {
-        claim, estimate, firstSow, latestSow, estimateAmount, sowAmount,
+        claim, estimate, firstSow, latestSow, estimateAmount, firstSowAmount, sowAmount,
         gap: estimate && latestSow && estimate.amount !== null && latestSow.amount !== null ? estimateAmount - sowAmount : null,
         sowAmountCount: sowsWithAmount.length,
         sowChange: sowsWithAmount.length >= 2 && firstSow && latestSow ? Number(latestSow.amount) - Number(firstSow.amount) : null,
@@ -236,11 +237,12 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
     });
     const totals = claimRows.reduce((acc, row) => ({
       estimates: acc.estimates + row.estimateAmount,
+      firstSow: acc.firstSow + row.firstSowAmount,
       latestSow: acc.latestSow + row.sowAmount,
       additionalSow: acc.additionalSow + (row.sowChange ?? 0),
       rcv: acc.rcv + row.rcv,
       acv: acc.acv + row.acv,
-    }), { estimates: 0, latestSow: 0, additionalSow: 0, rcv: 0, acv: 0 });
+    }), { estimates: 0, firstSow: 0, latestSow: 0, additionalSow: 0, rcv: 0, acv: 0 });
     const carrierMap = new Map<string, typeof claimRows>();
     for (const row of claimRows) {
       const carrier = row.claim.insuranceProvider?.trim() || "Aseguradora sin registrar";
@@ -263,8 +265,9 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
     })).sort((a, b) => b.count - a.count);
     const maxStatus = Math.max(1, ...statuses.map((row) => row.count));
     const claimsWithSow = claimRows.filter((row) => row.latestSow).length;
+    const claimsWithFirstSow = claimRows.filter((row) => row.firstSow).length;
     const comparableSowCount = claimRows.filter((row) => row.sowChange !== null).length;
-    return { claimRows, totals, carriers, statuses, maxStatus, claimsWithSow, comparableSowCount };
+    return { claimRows, totals, carriers, statuses, maxStatus, claimsWithSow, claimsWithFirstSow, comparableSowCount };
   }, [claims, values, finances]);
 
   const selectedCase = analysis.claimRows.find((row) => row.claim.id === selectedCaseId);
@@ -285,9 +288,10 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
 
   return <div className="space-y-5">
     {errors.length > 0 && <div role="alert" className="rounded-xl border border-[#E9D9B2] bg-[#FBF7EB] px-4 py-3 text-[11px] leading-5 text-[#765B22]">{errors.join(" ")}</div>}
-    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
       <AnalyticsStat label="Expedientes de seguro" value={String(claims.length)} detail={`${analysis.claimRows.filter((row) => row.claim.status !== "Finalizado" && row.claim.status !== "Cancelado" && row.claim.status !== "Negados").length} activos según etapa actual`} icon={ShieldCheck} />
       <AnalyticsStat label="Total esperado" value={money(analysis.totals.estimates)} detail="Suma de los montos que se esperan cobrar al seguro en todos los expedientes" icon={BadgeDollarSign} tone="gold" />
+      <AnalyticsStat label="Total recibido · primer SOW" value={money(analysis.totals.firstSow)} detail={`Suma del primer SOW recibido en ${analysis.claimsWithFirstSow} expedientes`} icon={CircleDollarSign} tone="slate" />
       <AnalyticsStat label="Total aprobado · último SOW" value={money(analysis.totals.latestSow)} detail={`Suma del SOW más reciente en ${analysis.claimsWithSow} expedientes`} icon={FileCheck2} tone="blue" />
       <AnalyticsStat label="Incremento adicional logrado" value={money(analysis.totals.additionalSow)} detail={`Último SOW − primer SOW en ${analysis.comparableSowCount} expedientes comparables`} icon={TrendingUp} tone="green" />
     </div>
@@ -348,8 +352,10 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
   </div>;
 }
 
-export default function ValuesInsuranceView({ claims }: { claims: Lead[] }) {
-  const activeClaims = useMemo(() => claims.filter((claim) => claim.is_insurance_claim), [claims]);
+export default function ValuesInsuranceView({ claims, activeOrganizationId }: { claims: Lead[]; activeOrganizationId?: string }) {
+  const activeClaims = useMemo(() => claims.filter((claim) =>
+    claim.is_insurance_claim && (!activeOrganizationId || claim.organizationId === activeOrganizationId),
+  ), [claims, activeOrganizationId]);
   const [sectionTab, setSectionTab] = useState<"records" | "analysis">("records");
   const [selectedClaimId, setSelectedClaimId] = useState("");
   const [query, setQuery] = useState("");

@@ -250,11 +250,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const refresh = membershipRefresh.refresh;
     document.addEventListener("visibilitychange", refresh);
     const interval = setInterval(refresh, 60000);
-    const channel = supabase.channel(`my-memberships-${userId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_organizations', filter: `user_id=eq.${userId}` }, refresh)
-      .subscribe();
+    let channel = supabase.channel(`my-memberships-${userId}-${activeOrganization?.id || 'all'}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_organizations', filter: `user_id=eq.${userId}` }, refresh);
+    if (activeOrganization?.id) {
+      channel = channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'organizations', filter: `id=eq.${activeOrganization.id}` }, refresh);
+    }
+    channel.subscribe();
     return () => { membershipRefresh.stop(); clearInterval(interval); document.removeEventListener("visibilitychange", refresh); void supabase.removeChannel(channel); };
-  }, [session?.user.id]);
+  }, [session?.user.id, activeOrganization?.id]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

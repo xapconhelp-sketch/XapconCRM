@@ -133,8 +133,6 @@
   .contractor-app .contractor-topbar-logo img { transform:none; }
   .contractor-app .contractor-topbar-greeting { font-size:13px; font-weight:600; color:var(--foreground); }
   .contractor-app .contractor-topbar-intro > span:last-child { font-size:10px; color:var(--muted-foreground); }
-  .contractor-app .contractor-weather { border:0; background:transparent; box-shadow:none; padding:4px 12px; }
-  .contractor-app .contractor-weather-icon { border:0; background:transparent; }
   .contractor-app .contractor-topbar > .relative { flex:1 1 230px; max-width:340px; padding:0; }
   .contractor-app .contractor-topbar input { height:40px; background:#f6f7f8; border:1px solid var(--ui-border); border-radius:8px; padding-left:35px; font-size:12px; box-shadow:none; }
   .contractor-app .contractor-topbar > .relative > button { right:12px; }

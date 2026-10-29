@@ -9,6 +9,7 @@ import {
   Clock3,
 } from "lucide-react";
 import { KPI, Lead, TaskItem, ViewType } from "../types";
+import { isContractorTask } from "../lib/taskCategories";
 import IllustratedIcon, { type Illustration } from "./contractor/IllustratedIcon";
 
 interface MainDashboardProps {
@@ -23,13 +24,6 @@ interface MainDashboardProps {
 type TaskRow = { claimId: string; claimName: string; claimStatus: string; task: TaskItem };
 type InactivityRow = { claim: Lead; days: number };
 type TaskFilter = "all" | "urgent";
-
-const xapconTaskCategories = new Set<NonNullable<TaskItem["category"]>>([
-  "prepare_supplement",
-  "prepare_estimate",
-  "pending_coc",
-  "request_depreciation",
-]);
 
 const metricIllustrations: Record<string, Illustration> = {
   "users": "team",
@@ -174,8 +168,8 @@ export default function MainDashboard({
       .map(task => ({ claimId: claim.id, claimName: claim.name, claimStatus: claim.status, task }));
   }), [claims]);
 
-  const xapconTasks = pendingTasks.filter(({ task }) => task.category && xapconTaskCategories.has(task.category));
-  const contractorTasks = pendingTasks.filter(({ task }) => !task.category || !xapconTaskCategories.has(task.category));
+  const contractorTasks = pendingTasks.filter(({ task }) => isContractorTask(task));
+  const xapconTasks = pendingTasks.filter(({ task }) => !isContractorTask(task));
 
   const inactivityRows = React.useMemo<InactivityRow[]>(() => claims
     .filter(activeClaim)
