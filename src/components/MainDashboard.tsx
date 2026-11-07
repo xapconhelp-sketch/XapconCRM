@@ -8,12 +8,11 @@ import {
   CheckCircle2,
   Clock3,
 } from "lucide-react";
-import { KPI, Lead, TaskItem, ViewType } from "../types";
+import { Lead, TaskItem, ViewType } from "../types";
 import { isContractorTask } from "../lib/taskCategories";
-import IllustratedIcon, { type Illustration } from "./contractor/IllustratedIcon";
+import IllustratedIcon from "./contractor/IllustratedIcon";
 
 interface MainDashboardProps {
-  kpis: KPI[];
   taskComposer?: React.ReactNode;
   onNavigateToView: (view: ViewType) => void;
   onNavigateToLead: (leadId: string) => void;
@@ -24,19 +23,6 @@ interface MainDashboardProps {
 type TaskRow = { claimId: string; claimName: string; claimStatus: string; task: TaskItem };
 type InactivityRow = { claim: Lead; days: number };
 type TaskFilter = "all" | "urgent";
-
-const metricIllustrations: Record<string, Illustration> = {
-  "users": "team",
-  "file-text": "claim",
-  "hard-hat": "production",
-  "check-circle": "success",
-  "clock": "clock",
-  "trending-up": "activity",
-  "x-circle": "declined",
-  "scale": "estimate",
-  "plus-circle": "claim",
-  "flag": "production",
-};
 
 const activeClaim = (claim: Lead) => !["Finalizado", "Cancelado", "Negados"].includes(claim.status);
 
@@ -153,7 +139,6 @@ function TaskPanel({
 }
 
 export default function MainDashboard({
-  kpis,
   onNavigateToView,
   onNavigateToLead,
   claims = [],
@@ -192,22 +177,6 @@ export default function MainDashboard({
             <div className="admin-dashboard-actions flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
               <div className="admin-dashboard-composer flex shrink-0 flex-wrap items-center gap-2">{taskComposer}</div>
             </div>
-          </div>
-        </section>
-
-        <section aria-labelledby="portfolio-heading">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
-            <MetricCard title="Expedientes" value={String(claims.length)} illustration="home" onClick={() => onNavigateToView(ViewType.INSURANCE_CLAIM)} />
-            {kpis.map((kpi, index) => {
-              const title = kpi.title.toLowerCase();
-              const illustration = title.includes("constru") ? "production"
-                : title.includes("depre") ? "finance"
-                  : title.includes("disput") || title.includes("negad") ? "alert"
-                    : title.includes("finaliz") ? "success"
-                      : title.includes("activo") ? "claim"
-                        : metricIllustrations[kpi.icon] || "claim";
-              return <MetricCard key={`${kpi.title}-${index}`} title={kpi.title} value={kpi.value} illustration={illustration} onClick={() => onNavigateToView(kpi.title.toLowerCase().includes("constru") ? ViewType.PRODUCTION : ViewType.INSURANCE_CLAIM)} />;
-            })}
           </div>
         </section>
 
@@ -252,16 +221,6 @@ export default function MainDashboard({
         </div>
       </div>
     </main>
-  );
-}
-
-function MetricCard({ title, value, illustration, onClick }: { key?: React.Key; title: string; value: string; illustration: Illustration; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} className="admin-metric-card group relative flex min-h-[76px] min-w-0 items-center gap-3 overflow-hidden rounded-2xl border border-[#E0E5E8] bg-white px-3 py-3 text-left shadow-[0_4px_15px_rgba(23,49,74,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#D3DBDF] hover:shadow-[0_10px_22px_rgba(23,49,74,0.075)] focus-visible:outline-[#755613] sm:px-3.5">
-      <span className="admin-metric-accent absolute inset-x-0 top-0 h-[2px]" />
-      <IllustratedIcon name={illustration} className="admin-metric-illustration" />
-      <span className="min-w-0 flex-1"><span title={title} className="line-clamp-2 whitespace-normal break-words text-[9px] font-bold uppercase leading-[1.15] tracking-[0.065em] text-[#73818B]">{title}</span><span className="mt-1 block truncate text-2xl font-bold leading-none tracking-tight tabular-nums text-[#102A46]">{value}</span></span>
-    </button>
   );
 }
 

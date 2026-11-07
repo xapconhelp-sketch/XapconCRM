@@ -561,16 +561,13 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
         <div className="case-report-controls mb-6 grid gap-3 sm:grid-cols-3">
           <SummaryCard label="Empresas en este informe" value={displayedCompanies.length} />
           <SummaryCard label="Casos incluidos" value={totalCases} />
-          <SummaryCard label="Comentarios en Línea de Tiempo" value={weeklyManagementTotal} detail={reportWeek} />
+          <SummaryCard label="Comentarios en Línea de Tiempo" value={weeklyManagementTotal} />
         </div>
 
         {displayedCompanies.length > 0 && <section className="case-report-pending-summary mb-6 overflow-hidden rounded-2xl border border-[#D6E2EC] bg-white shadow-[0_4px_18px_rgba(16,42,70,0.04)]" aria-labelledby="pending-task-summary-heading">
-          <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#DCE6EE] bg-gradient-to-r from-[#EDF4F9] to-[#F8FAFC] px-5 py-4 sm:px-6">
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#173B60] text-white"><ListTodo aria-hidden="true" className="h-4 w-4" /></span>
-              <div><h2 id="pending-task-summary-heading" className="text-sm font-bold text-[#102A46] sm:text-base">Resumen de tareas pendientes</h2><p className="mt-0.5 text-xs text-[#607286]">Homeowner y actividad que requiere atención en cada caso.</p></div>
-            </div>
-            <span className="rounded-full border border-[#D5E2EC] bg-white px-3 py-1 text-xs font-bold tabular-nums text-[#173B60]">{pendingTaskRows.length} {pendingTaskRows.length === 1 ? "actividad" : "actividades"}</span>
+          <header className="case-report-pending-heading flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 px-4 py-2 sm:px-5">
+            <h2 id="pending-task-summary-heading" className="text-sm font-semibold">Resumen de tareas pendientes</h2>
+            <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-zinc-700">{pendingTaskRows.length} {pendingTaskRows.length === 1 ? "actividad" : "actividades"}</span>
           </header>
           {pendingTaskRows.length ? <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] border-collapse text-left">
@@ -582,7 +579,7 @@ export default function ContractorCaseReportsView({ claims, organizations, activ
                   <td className="px-5 py-3 font-medium text-[#53677B]">{companyLabel(company)}</td>
                   <td className="px-5 py-3 font-semibold text-[#102A46]">{claim.name || "Sin nombre registrado"}</td>
                   <td className="px-5 py-3 tabular-nums">{claim.claimNumber || "Sin número"}</td>
-                  <td className="px-5 py-3 font-semibold text-[#1F5C91]">{task.title || "Actividad sin título"}</td>
+                  <td className="px-5 py-3 font-semibold text-zinc-800">{task.title || "Actividad sin título"}</td>
                   <td className="px-5 py-3 whitespace-nowrap text-[#607286]">{task.dueDate ? formatDate(task.dueDate) : "Sin fecha límite"}</td>
                 </tr>)}
               </tbody>
@@ -670,6 +667,11 @@ function makePdfFileName(companyName: string, week: { start: string; end: string
   return `informe-casos-${companyName}-${week.start}-${week.end}.pdf`.replace(/[^\p{L}\p{N}._-]+/gu, "-");
 }
 
-function SummaryCard({ label, value, detail }: { label: string; value: number; detail?: string }) {
-  return <div className="rounded-xl border border-[#DDE2E7] bg-white px-4 py-3 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wide text-[#607286]">{label}</p><p className="mt-1 text-2xl font-bold tabular-nums text-[#102A46]">{value}</p>{detail && <p className="mt-1 text-[10px] leading-4 text-[#718096]">{detail}</p>}</div>;
+function SummaryCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-[#DDE2E7] bg-white px-4 py-2 shadow-sm">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-[#607286]">{label}</p>
+      <p className="shrink-0 text-2xl font-bold tabular-nums text-[#102A46]">{value}</p>
+    </div>
+  );
 }

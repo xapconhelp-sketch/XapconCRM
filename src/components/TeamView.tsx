@@ -205,7 +205,7 @@ export default function TeamView({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#DCE4EB]/30 pb-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="font-sans text-[26px] font-bold text-[#102A46] tracking-tight"><RoleSectionIcon name="team" />Personal & Cuadrillas</h1>
+            <h1 className="font-sans text-[26px] font-bold text-[#102A46] tracking-tight"><RoleSectionIcon name="team" />Equipo y cuadrillas</h1>
             {userRole === "contractor" && companyInviteCode && (
               <span className="px-2.5 py-1 bg-[#fff8e1] border border-[#ffecb3] text-[#664A14] text-xs font-mono font-bold rounded-lg shadow-sm">
                 Código de Invitación: {companyInviteCode}
@@ -221,7 +221,7 @@ export default function TeamView({
             className="btn-gold-3d flex items-center gap-1.5 px-4 py-2 bg-[#8C6A22] hover:bg-[#664A14] text-slate-900 font-bold text-xs rounded-lg shadow-sm transition-all"
           >
             <Plus className="w-4 h-4 text-slate-900" />
-            <span>Invitación de Usuario</span>
+            <span>Invitar usuario</span>
           </button>
         )}
       </div>
@@ -403,7 +403,7 @@ export default function TeamView({
         <div className="bg-white border border-[#DCE4EB]/30 rounded-2xl p-4 shadow-sm text-center">
           <span className="text-[10px] font-mono text-[#566A7E] uppercase block font-semibold">Miembros Registrados</span>
           <span className="text-2xl font-bold text-[#102A46] block mt-1">{members.length} Cuentas</span>
-          <span className="text-[10px] text-yellow-600 font-bold block mt-0.5">● Portal Activo</span>
+          <span className="text-[10px] text-zinc-600 font-semibold block mt-0.5">● Portal Activo</span>
         </div>
         <div className="bg-white border border-[#DCE4EB]/30 rounded-2xl p-4 shadow-sm text-center">
           <span className="text-[10px] font-mono text-[#566A7E] uppercase block font-semibold">Equipo operativo</span>
@@ -440,7 +440,7 @@ export default function TeamView({
         </div>
 
         {/* Directory Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 select-none">
+        <div className="team-member-grid grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 select-none">
           {filteredMembers.map((m) => (
             <div
               key={m.id}
@@ -495,7 +495,7 @@ export default function TeamView({
                     </div>
                     <div>
                       <span className="text-[#566A7E] font-medium block text-[10px]">Cierre de Ventas</span>
-                      <span className="font-sans font-bold text-yellow-600">{m.closeRate == null ? "Sin datos" : `${m.closeRate}%`}</span>
+                      <span className="font-sans font-semibold text-zinc-800">{m.closeRate == null ? "Sin datos" : `${m.closeRate}%`}</span>
                     </div>
                   </>
                 )}
@@ -530,7 +530,7 @@ export default function TeamView({
                   <>
                     <div>
                       <span className="text-[#566A7E] font-medium block text-[10px]">Empresa</span>
-                      <span className="font-sans font-bold text-sky-700 truncate block">{m.company || "Xapcon Admin"}</span>
+                      <span className="font-sans font-semibold text-zinc-800 truncate block">{m.company || "Xapcon Admin"}</span>
                     </div>
                     <div>
                       {m.roleCategory === "contractor" && (m as any).companyInviteCode ? (
@@ -543,7 +543,7 @@ export default function TeamView({
                       ) : (
                         <>
                           <span className="text-[#566A7E] font-medium block text-[10px]">Acceso Portal</span>
-                          <span className="font-sans font-bold text-yellow-600">Activo</span>
+                          <span className="font-sans font-semibold text-zinc-700">Activo</span>
                         </>
                       )}
                     </div>

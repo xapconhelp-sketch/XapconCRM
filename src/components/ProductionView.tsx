@@ -1,11 +1,10 @@
 import { RoleSectionIcon, RoleIconTile } from "./contractor/DesignSystem";
-import { Lead } from "../types";
+import { KPI, Lead, ViewType } from "../types";
+import IllustratedIcon, { type Illustration } from "./contractor/IllustratedIcon";
 import {
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
-  ClipboardCheck,
-  MapPin,
   ShieldCheck,
   Layers3,
   HardHat,
@@ -13,8 +12,22 @@ import {
 
 interface ProductionViewProps {
   claims: Lead[];
+  adminMetrics?: { kpis: KPI[]; onNavigateToView: (view: ViewType) => void };
   onMoveProject: (projectId: string, direction: "next" | "prev") => void;
 }
+
+const metricIllustrations: Record<string, Illustration> = {
+  "users": "team",
+  "file-text": "claim",
+  "hard-hat": "production",
+  "check-circle": "success",
+  "clock": "clock",
+  "trending-up": "activity",
+  "x-circle": "declined",
+  "scale": "estimate",
+  "plus-circle": "claim",
+  "flag": "production",
+};
 
 const PIPELINE_COLUMNS = [
   { id: "Negados", title: "Negados", accent: "#B6484F", tint: "#F9ECEC" },
@@ -28,25 +41,38 @@ const PIPELINE_COLUMNS = [
   { id: "Cancelado", title: "Cancelado", accent: "#7B8793", tint: "#E6ECF1" },
 ];
 
-export default function ProductionView({ claims, onMoveProject }: ProductionViewProps) {
+export default function ProductionView({ claims, onMoveProject, adminMetrics }: ProductionViewProps) {
   const constructionCount = claims.filter((claim) => claim.status === "Construcción").length;
   const finishedCount = claims.filter((claim) => claim.status === "Finalizado").length;
 
   return (
     <div className="production-page crm-workspace flex-1 min-h-0 overflow-y-auto p-5 md:p-7 space-y-6">
-      <header className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-5 border-b border-[#DCE3E8] pb-6">
+      <header className={`flex flex-col gap-5 border-b border-[#DCE3E8] pb-6 ${adminMetrics ? "" : "xl:flex-row xl:items-end xl:justify-between"}`}>
         <div className="flex items-start gap-4">
           <div>
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-[.18em] text-[#664A14]">Operación de proyectos</p>
             <h1 className="font-display text-[28px] font-bold tracking-tight text-[#102A46] md:text-[32px]">
-              <RoleSectionIcon name="production" />Pipeline de Producción
+              <RoleSectionIcon name="production" />Producción
             </h1>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-[#718093]">
-              Sigue cada expediente por sus etapas y mantén visible el próximo movimiento del equipo.
-            </p>
           </div>
         </div>
 
+        {adminMetrics ? (
+        <section aria-label="Indicadores de producción">
+          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
+            <MetricCard title="Expedientes" value={String(claims.length)} illustration="home" onClick={() => adminMetrics.onNavigateToView(ViewType.INSURANCE_CLAIM)} />
+            {adminMetrics.kpis.map((kpi, index) => {
+              const title = kpi.title.toLowerCase();
+              const illustration = title.includes("constru") ? "production"
+                : title.includes("depre") ? "finance"
+                  : title.includes("disput") || title.includes("negad") ? "alert"
+                    : title.includes("finaliz") ? "success"
+                      : title.includes("activo") ? "claim"
+                        : metricIllustrations[kpi.icon] || "claim";
+              return <MetricCard key={`${kpi.title}-${index}`} title={kpi.title} value={kpi.value} illustration={illustration} onClick={() => adminMetrics.onNavigateToView(kpi.title.toLowerCase().includes("constru") ? ViewType.PRODUCTION : ViewType.INSURANCE_CLAIM)} />;
+            })}
+          </div>
+        </section>
+        ) : (
         <div className="grid grid-cols-3 gap-2 sm:min-w-[390px] sm:gap-3">
           <div className="rounded-2xl border border-[#DCE4EB] bg-white px-3 py-3 shadow-sm sm:px-4">
             <p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#5C6D7D]">Expedientes</p>
@@ -61,6 +87,7 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
             <p className="mt-1 text-2xl font-bold leading-none text-[#4E8C75]">{finishedCount}</p>
           </div>
         </div>
+        )}
       </header>
 
       <div className="flex snap-x gap-4 overflow-x-auto pb-4 select-none">
@@ -88,9 +115,6 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
                     {projects.length}
                   </span>
                 </div>
-                <p className="mt-1 text-[10px] font-medium text-[#8A97A4]">
-                  {projects.length === 1 ? "1 expediente" : `${projects.length} expedientes`}
-                </p>
               </div>
 
               <div className="flex-1 space-y-3 overflow-y-auto p-3">
@@ -102,18 +126,13 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
                     <span className="text-[11px] font-medium text-[#8794A1]">Sin expedientes en esta etapa</span>
                   </div>
                 ) : (
-                  projects.map((project) => {
-                    const totalTasks = project.tasks?.length ?? 0;
-                    const completedTasks = project.tasks?.filter((task) => task.status === "completed").length ?? 0;
-                    const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-
-                    return (
+                  projects.map((project) => (
                       <article
                         key={project.id}
                         className="group rounded-2xl border border-[#E0E6EB] bg-white p-4 shadow-[0_2px_6px_rgba(23,49,74,0.035)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#CBD6DE] hover:shadow-[0_10px_22px_rgba(23,49,74,0.09)]"
                         style={{ borderTopWidth: 3, borderTopColor: column.accent }}
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="production-card-reference flex items-start justify-between gap-3">
                           <span className="inline-flex min-w-0 items-center gap-1.5 rounded-lg px-2 py-1 font-mono text-[9px] font-bold text-[#506579]" style={{ backgroundColor: column.tint }}>
                             <ShieldCheck className="h-3 w-3 shrink-0" style={{ color: column.accent }} />
                             <span className="truncate">{project.claimNumber || "Claim pendiente"}</span>
@@ -126,24 +145,6 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
                         </div>
 
                         <h3 className="mt-3 text-[13px] font-bold leading-5 text-[#20364B]">{project.name}</h3>
-                        <p className="mt-1 flex items-start gap-1.5 text-[11px] leading-4 text-[#7C8B99]">
-                          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#735818]" />
-                          <span className="line-clamp-2">{project.address || "Dirección pendiente"}</span>
-                        </p>
-
-                        {totalTasks > 0 && (
-                          <div className="mt-4 rounded-xl bg-[#F6F8F9] px-3 py-2.5">
-                            <div className="mb-2 flex items-center justify-between gap-2">
-                              <span className="flex items-center gap-1.5 text-[10px] font-semibold text-[#53677B]">
-                                <ClipboardCheck className="h-3.5 w-3.5 text-[#735818]" /> Avance de tareas
-                              </span>
-                              <span className="text-[10px] font-bold tabular-nums text-[#506579]">{completedTasks}/{totalTasks}</span>
-                            </div>
-                            <div className="h-1.5 overflow-hidden rounded-full bg-[#E3E9ED]">
-                              <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${taskProgress}%`, backgroundColor: column.accent }} />
-                            </div>
-                          </div>
-                        )}
 
                         <div className="mt-4 flex items-center gap-2 border-t border-[#EDF1F3] pt-3">
                           <button
@@ -167,8 +168,7 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
                           </button>
                         </div>
                       </article>
-                    );
-                  })
+                  ))
                 )}
               </div>
             </section>
@@ -182,5 +182,18 @@ export default function ProductionView({ claims, onMoveProject }: ProductionView
         <CheckCircle2 className="ml-auto hidden h-4 w-4 text-[#4E8C75] sm:block" />
       </div>
     </div>
+  );
+}
+
+function MetricCard({ title, value, illustration, onClick }: { title: string; value: string; illustration: Illustration; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="admin-metric-card group relative flex min-h-[96px] min-w-0 flex-col justify-between overflow-hidden rounded-lg border border-zinc-200 bg-white px-4 py-3 text-left transition-colors hover:border-zinc-400 hover:bg-zinc-50 focus-visible:outline-[#755613]">
+      <span className="admin-metric-accent" aria-hidden="true" />
+      <span className="admin-metric-topline flex min-w-0 items-center justify-between gap-2">
+        <span title={title} className="block truncate text-[10px] font-medium uppercase leading-tight tracking-[0.08em] text-zinc-500">{title}</span>
+        <IllustratedIcon name={illustration} className="admin-metric-illustration" />
+      </span>
+      <span className="admin-metric-value block truncate text-[27px] font-semibold leading-none tracking-tight tabular-nums text-zinc-950">{value}</span>
+    </button>
   );
 }

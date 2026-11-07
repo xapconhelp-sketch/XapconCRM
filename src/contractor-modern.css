@@ -129,11 +129,41 @@
 
   .contractor-app .contractor-topbar { min-height:88px; padding:16px 32px; display:flex; align-items:center; flex-direction:row; flex-wrap:wrap; gap:18px; background:#fff; border-color:var(--ui-border); box-shadow:none; }
   .contractor-app .contractor-topbar-brand { display:flex; flex:1 1 250px; gap:12px; align-items:center; }
+  .contractor-app .contractor-membership { --membership-metal:#c8e6ff; position:relative; isolation:isolate; display:flex; align-items:center; gap:12px; width:240px; max-width:100%; min-height:64px; padding:9px 18px 9px 10px; overflow:hidden; border:1px solid #7faaca; border-radius:14px; color:#eef8ff; background:repeating-linear-gradient(125deg,transparent 0 22px,#ffffff08 23px 24px),linear-gradient(115deg,#091c31,#234d70 60%,#102b46); box-shadow:inset 0 1px 0 #ffffff66,inset 0 -1px 0 #00000040,0 5px 14px #102a4626; }
+  .contractor-app .contractor-membership::before { content:''; position:absolute; z-index:-1; width:130px; height:130px; right:-28px; top:-75px; border:18px double #bbdfff26; border-radius:50%; transform:rotate(-25deg); }
+  .contractor-app .contractor-membership::after { content:''; position:absolute; inset:4px; pointer-events:none; border:1px solid #c8e6ff33; border-radius:10px; }
+  .contractor-app .contractor-membership-emblem { display:grid; place-items:center; width:44px; height:44px; flex-shrink:0; border:1px solid #e2f3ff88; border-radius:12px; background:linear-gradient(135deg,#eef9ff,#85b0d1 48%,#d9efff); color:#173c5a; box-shadow:inset 0 1px 2px #ffffff,0 3px 8px #00000033; transform:rotate(-7deg); }
+  .contractor-app .contractor-membership-emblem svg { width:27px; height:27px; stroke-width:1.6; }
+  .contractor-app .contractor-membership-copy { display:flex; flex-direction:column; gap:1px; }
+  .contractor-app .contractor-membership-copy > span { color:var(--membership-metal); font-size:9px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; }
+  .contractor-app .contractor-membership-copy strong { font-size:27px; line-height:1; font-weight:850; letter-spacing:.08em; text-shadow:0 2px 0 #00000040; }
+  .contractor-app .contractor-membership-sparkles { width:22px; height:22px; margin-left:auto; color:var(--membership-metal); }
+  .contractor-app .contractor-membership.is-plus { --membership-metal:#f5dda1; border-color:#b89c56; background:repeating-linear-gradient(125deg,transparent 0 22px,#ffffff08 23px 24px),linear-gradient(115deg,#292310,#69552d 60%,#302916); }
+  .contractor-app .contractor-membership.is-plus .contractor-membership-emblem { color:#5d4415; border-color:#f4d794; background:linear-gradient(135deg,#fff5d7,#c7a453 48%,#f2dfa5); }
+  .contractor-app .contractor-company-logo { display:flex; align-items:center; justify-content:center; min-height:124px; padding:16px 12px; }
+  .contractor-app .contractor-company-logo img { display:block; width:100%; max-width:190px; height:90px; object-fit:contain; }
+  .contractor-app .contractor-company-logo.is-compact { min-height:64px; padding:8px 0; }
+  .contractor-app .contractor-company-logo.is-compact img { height:44px; }
+  .contractor-app .contractor-company-logo-fallback { font-size:12px; font-weight:600; text-align:center; overflow-wrap:anywhere; color:var(--muted-foreground); }
   .contractor-app .contractor-topbar-logo { width:48px; height:40px; flex-basis:48px; border:0; box-shadow:none; }
   .contractor-app .contractor-topbar-logo img { transform:none; }
   .contractor-app .contractor-topbar-greeting { font-size:13px; font-weight:600; color:var(--foreground); }
   .contractor-app .contractor-topbar-intro > span:last-child { font-size:10px; color:var(--muted-foreground); }
-  .contractor-app .contractor-topbar > .relative { flex:1 1 230px; max-width:340px; padding:0; }
+  .contractor-app .contractor-topbar > .relative { flex:1 1 280px; max-width:480px; padding:0; }
+  .contractor-app .contractor-topbar-actions { flex-wrap:wrap; gap:10px; }
+  .contractor-app .contractor-create-claim,
+  .contractor-app .contractor-account-trigger { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:40px; padding:8px 12px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; }
+  .contractor-app .contractor-create-claim { background:var(--primary); color:var(--primary-foreground); border:1px solid var(--primary); }
+  .contractor-app .contractor-account-trigger { background:white; color:var(--foreground); border:1px solid var(--ui-border); }
+  .contractor-app .contractor-create-claim:hover { filter:brightness(.92); }
+  .contractor-app .contractor-account-menu { z-index:70; width:260px; max-width:calc(100vw - 24px); padding:6px; background:white; color:var(--foreground); border:1px solid var(--ui-border); border-radius:12px; box-shadow:0 12px 32px #102a4626; }
+  .contractor-app .contractor-account-identity { display:flex; flex-direction:column; gap:4px; padding:10px; overflow-wrap:anywhere; font-size:12px; }
+  .contractor-app .contractor-account-identity span { color:var(--muted-foreground); }
+  .contractor-app .contractor-account-separator { height:1px; margin:4px 0; background:var(--ui-border); }
+  .contractor-app .contractor-account-item { display:flex; align-items:center; gap:10px; min-height:40px; padding:10px; border-radius:7px; font-size:12px; cursor:pointer; }
+  .contractor-app .contractor-account-item[data-highlighted] { background:#f0f4f8; outline:none; }
+  .contractor-app .contractor-create-claim:focus-visible,
+  .contractor-app .contractor-account-trigger:focus-visible { outline:2px solid var(--primary); outline-offset:3px; }
   .contractor-app .contractor-topbar input { height:40px; background:#f6f7f8; border:1px solid var(--ui-border); border-radius:8px; padding-left:35px; font-size:12px; box-shadow:none; }
   .contractor-app .contractor-topbar > .relative > button { right:12px; }
   .contractor-app .contractor-topbar > .relative > div.absolute:not(:has(svg)) { left:0; right:0; }
@@ -241,10 +271,11 @@
 @media screen and (max-width:767px) {
   .contractor-app .crm-main { height:calc(100dvh - 65px); }
   .contractor-app .contractor-topbar { padding:14px 18px; gap:12px; min-height:0; }
-  .contractor-app .contractor-topbar-brand { flex-basis:calc(100% - 65px); }
+  .contractor-app .contractor-topbar-brand { flex-basis:100%; }
   .contractor-app .contractor-topbar > .relative { order:3; max-width:none; flex-basis:100%; }
   .contractor-app .contractor-topbar > div:last-child { gap:8px; }
   .contractor-app .contractor-topbar > div:last-child > label { max-width:160px; }
+  .contractor-app .contractor-topbar .contractor-topbar-actions { flex:1 1 100%; margin-left:0; }
   .contractor-app .contractor-dashboard-inner, .contractor-app .crm-content > div:not(.contractor-dashboard):not(.retail-estimator) { padding:20px 16px; }
   .contractor-page-heading { align-items:flex-start; flex-direction:column; gap:16px; }
   .contractor-app .contractor-metrics { gap:10px; }
@@ -368,6 +399,16 @@
   .contractor-app .contractor-overview { display:grid; grid-template-columns:minmax(240px,.8fr) minmax(0,2fr); gap:18px; align-items:stretch; }
   .contractor-app .contractor-overview .contractor-welcome { width:100%; flex-direction:column; align-items:flex-start; justify-content:center; padding:12px 18px; gap:8px; border-radius:16px; }
   .contractor-app .contractor-overview .contractor-welcome h1 { font-size:23px; }
+  .contractor-app .contractor-overview .contractor-weather-overview { background:transparent; border:0; border-radius:0; box-shadow:none; padding:8px 0; min-height:134px; gap:10px; }
+  .contractor-app .contractor-weather-overview .contractor-weather { display:flex; width:100%; max-width:none; min-width:0; margin:0; padding:0; gap:12px; background:transparent; border:0; border-radius:0; box-shadow:none; transform:none; }
+  .contractor-app .contractor-weather-overview .contractor-weather-icon { width:58px; height:58px; flex:0 0 58px; background:transparent; border:0; border-radius:0; box-shadow:none; }
+  .contractor-app .contractor-weather-overview .contractor-weather-glyph { width:48px; height:48px; filter:none; }
+  .contractor-app .contractor-weather-overview .contractor-weather-reading strong { font-size:34px; }
+  .contractor-app .contractor-weather-overview .contractor-weather-details { border:0; padding-left:0; }
+  .contractor-app .contractor-weather-overview .contractor-weather-location { max-width:none; font-size:11px; white-space:normal; }
+  .contractor-app .contractor-weather-overview .contractor-weather-condition { font-size:10px; white-space:normal; }
+  .contractor-app .contractor-weather-overview .contractor-weather-source { font-size:8px; white-space:normal; }
+  .contractor-app .contractor-weather-overview .contractor-weather-status-copy { white-space:normal; }
   .contractor-app .contractor-overview .contractor-metrics { width:100%; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
   .contractor-app .contractor-overview .contractor-summary { justify-content:center; gap:8px; padding:12px 16px; border-radius:16px; }
   .contractor-app .contractor-overview .contractor-summary .contractor-illustration { width:34px; height:34px; padding:8px; border-radius:10px; }
@@ -400,7 +441,6 @@
   .contractor-app .insurance-directory-hero .contractor-section-art { width:42px; height:42px; padding:10px; border-radius:12px; }
   .contractor-app .insurance-directory-hero > .relative:last-child { border-top:0; padding:0; margin:0; gap:22px; }
   .contractor-app .insurance-directory-hero > .relative:last-child > div { gap:9px; }
-  .contractor-app .insurance-directory-hero > .relative:last-child > div > span:first-child { display:none; }
   .contractor-app .insurance-directory-hero .text-lg { font-size:22px; }
   .contractor-app .insurance-directory-hero .text-slate-300 { color:#dee5ee; font-size:10px; }
   .contractor-app .insurance-directory-layout { gap:22px; min-height:0; }
@@ -414,14 +454,12 @@
   .contractor-app .insurance-directory-detail { min-width:0; }
   .contractor-app .insurance-directory-detail > * + * { margin-top:18px; }
   .contractor-app .insurance-directory-detail .insurance-company-summary { width:100%; border:1px solid #cfd7e1; border-radius:16px; box-shadow:none; border-top:3px solid var(--xapcon-blue); }
-  .contractor-app .insurance-company-summary > div:nth-child(2) { padding:10px 18px; gap:8px; background:#fff; }
-  .contractor-app .insurance-company-summary > div:nth-child(2) .contractor-illustration { width:38px; height:38px; padding:9px; border-radius:10px; }
-  .contractor-app .insurance-company-summary h2 { font-size:22px; margin-top:2px; white-space:normal; overflow-wrap:anywhere; }
   .contractor-app .insurance-company-summary > div:last-child { background:#f2f4f7; }
-  .contractor-app .insurance-company-summary > div:last-child > div { padding:12px 22px; display:flex; align-items:baseline; gap:8px; }
   .contractor-app .insurance-directory-contact-grid { grid-template-columns:1fr; gap:18px; }
   .contractor-app .insurance-directory-history-grid { grid-template-columns:1fr; gap:18px; }
-  .contractor-app :is(.insurance-directory-contact-grid,.insurance-directory-history-grid) > section { padding:20px; border:1px solid #dce1e7; border-radius:16px; box-shadow:none; }
+  .contractor-app :is(.insurance-directory-contact-grid,.insurance-directory-history-grid) > section { border:1px solid #dce1e7; border-radius:16px; box-shadow:none; }
+  .contractor-app .insurance-directory-contact-grid > section,
+  .contractor-app .insurance-directory-history-grid > section > div { padding:20px; }
   .contractor-app .insurance-directory-page h3 { font-size:15px; }
   .contractor-app .insurance-status-grid { grid-template-columns:1fr; margin-top:12px; gap:0; }
   .contractor-app .insurance-status-grid > div { border:0; border-radius:0; padding:8px 0; background:transparent; gap:9px; }
@@ -433,7 +471,7 @@
   .contractor-app .insurance-contact-row > span:nth-child(2) { white-space:normal; overflow-wrap:anywhere; text-overflow:clip; font-size:13px; }
   .contractor-app .insurance-contact-row button { border-color:#cfd7e0; color:var(--xapcon-blue); }
   .contractor-app .insurance-directory-history-grid > section:first-child { background:#f7f8fa; }
-  .contractor-app .insurance-directory-history-grid > section:last-child > div:last-child > button { padding:14px; }
+  .contractor-app .insurance-directory-history-grid > section:last-child > div > div > button { padding:14px; }
 }
 @media screen and (min-width:1280px) {
   .contractor-app .insurance-directory-layout { grid-template-columns:280px minmax(0,1fr); }
@@ -444,7 +482,6 @@
   .contractor-app .insurance-directory-hero h1 { font-size:21px; }
   .contractor-app .insurance-directory-hero > .relative:last-child { width:100%; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
   .contractor-app .insurance-directory-list > div:last-child { max-height:none; }
-  .contractor-app .insurance-company-summary > div:last-child > div { padding:10px; flex-wrap:wrap; gap:3px 6px; }
   .contractor-app .insurance-contact-row > span:nth-child(2) { flex-basis:calc(100% - 44px); }
   .contractor-app .insurance-contact-row button { margin-left:42px; }
 }

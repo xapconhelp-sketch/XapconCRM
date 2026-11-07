@@ -1,0 +1,461 @@
+/* Visual system for authenticated workspaces and their portaled dialogs.
+   Legacy layout rules remain responsible for routing, sizing and print output. */
+@media screen {
+  :is(.contractor-app, .admin-app) {
+    --xapcon-blue: #18181b;
+    --xapcon-blue-hover: #27272a;
+    --background: #ffffff;
+    --foreground: #18181b;
+    --card: #ffffff;
+    --card-foreground: #18181b;
+    --popover: #ffffff;
+    --popover-foreground: #18181b;
+    --primary: #18181b;
+    --primary-foreground: #fafafa;
+    --secondary: #f4f4f5;
+    --secondary-foreground: #27272a;
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+    --accent: #f4f4f5;
+    --accent-foreground: #18181b;
+    --destructive: #dc2626;
+    --ui-border: #e4e4e7;
+    --input: #d4d4d8;
+    --ring: #6366f1;
+    --radius: .375rem;
+    --crm-ink: #18181b;
+    --crm-canvas: #fafafa;
+    --crm-line: #e4e4e7;
+    --crm-muted: #71717a;
+    --crm-gold: #18181b;
+    color: var(--foreground);
+    background: var(--crm-canvas);
+    font-family: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+
+  :is(.contractor-app, .admin-app) *,
+  :is(.contractor-app, .admin-app) *::before,
+  :is(.contractor-app, .admin-app) *::after {
+    transition-duration: 120ms !important;
+    animation-duration: 150ms;
+  }
+  :is(.contractor-app, .admin-app) .animate-spin { animation-duration: 1s; }
+  :is(.contractor-app, .admin-app) ::selection { background: #e0e7ff; color: #18181b; }
+  :is(.contractor-app, .admin-app) :is(h1,h2,h3,h4,button,input,select,textarea,.font-sans,.font-display,.case-profile-editorial) {
+    font-family: 'Inter Variable', ui-sans-serif, system-ui, sans-serif !important;
+  }
+  :is(.contractor-app, .admin-app) :is(h1,h2,h3,h4,strong,b,.font-bold,.font-extrabold,.font-black,.font-semibold) { font-weight: 600 !important; }
+  :is(.contractor-app, .admin-app) h1 { font-size: 22px !important; line-height: 1.35; letter-spacing: -.035em; }
+  :is(.contractor-app, .admin-app) h2 { font-size: 16px; line-height: 1.4; letter-spacing: -.02em; }
+  :is(.contractor-app, .admin-app) h3 { font-size: 14px; letter-spacing: -.015em; }
+  :is(.contractor-app, .admin-app) .font-medium { font-weight: 400; }
+  :is(.contractor-app, .admin-app) :is(.font-mono,.contractor-summary-value,.case-claim-reference strong,td.text-right) {
+    font-family: ui-monospace, 'Cascadia Code', 'SFMono-Regular', Consolas, monospace !important;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.025em;
+  }
+
+  /* Neutralize the former blue/gold surfaces while retaining semantic status colors. */
+  :is(.contractor-app, .admin-app) :is(.crm-main,.crm-content,.crm-workspace,.retail-estimator,.estimator-workbench) { background: #fafafa !important; color: #18181b; }
+  :is(.contractor-app, .admin-app) .crm-content > :is(div,main) { background-color: #fafafa !important; }
+  :is(.contractor-app, .admin-app) :is([class*="text-[#102A46]"],[class*="text-[#172B40]"],[class*="text-[#191c1e]"],[class*="text-[#664A14]"],[class*="text-[#8C6A22]"],[class*="text-[#735719]"]) { color: #18181b !important; }
+  :is(.contractor-app, .admin-app) :is([class*="text-[#566A7E]"],[class*="text-[#53677B]"],[class*="text-[#607286]"],[class*="text-slate-500"],[class*="text-slate-400"]) { color: #71717a !important; }
+  :is(.contractor-app, .admin-app) :is([class*="bg-[#F1F4F7]"],[class*="bg-[#F4F6F8]"],[class*="bg-[#F8F9FB]"],[class*="bg-[#EEF2F5]"],[class*="bg-[#F4EEDB]"]) { background-color: #f4f4f5 !important; }
+  :is(.contractor-app, .admin-app) :is([class*="border-[#DCE4EB]"],[class*="border-[#E6ECF1]"],[class*="border-[#E0E6EB]"],[class*="border-[#8C6A22]"]) { border-color: #e4e4e7 !important; }
+  :is(.contractor-app, .admin-app) :is([class*="rounded-xl"],[class*="rounded-2xl"],[class*="rounded-3xl"],[class*="rounded-[20px]"]) { border-radius: 8px !important; }
+  :is(.contractor-app, .admin-app) :is([class*="shadow-"]) { box-shadow: 0 1px 2px #00000005 !important; }
+  :is(.contractor-app, .admin-app) :is([class*="bg-gradient-"],[class*="bg-[linear-gradient"]) { background-image: none !important; }
+  :is(.contractor-app, .admin-app) :is(.btn-gold-3d,.admin-primary-3d,.claim-stage-next,.contractor-create-claim,button[class*="bg-[#102A46]"],button[class*="bg-[#8C6A22]"],button[class*="bg-[#664A14]"]) {
+    color: #fafafa !important;
+    background: #18181b !important;
+    border: 1px solid #18181b !important;
+    border-radius: 6px !important;
+    box-shadow: 0 1px 2px #0000000d !important;
+    text-shadow: none !important;
+    transform: none !important;
+  }
+  :is(.contractor-app, .admin-app) :is(.btn-gold-3d,.admin-primary-3d,.claim-stage-next,.contractor-create-claim)::before,
+  :is(.contractor-app, .admin-app) :is(.btn-gold-3d,.admin-primary-3d,.claim-stage-next,.contractor-create-claim)::after { display: none; }
+  :is(.contractor-app, .admin-app) button { font-weight: 400; text-shadow: none !important; }
+  :is(.contractor-app, .admin-app) button:hover { transform: none !important; }
+  :is(.contractor-app, .admin-app) button:disabled { opacity: .45; cursor: not-allowed; }
+  :is(.contractor-app, .admin-app) :is(button,a,input,select,textarea):focus-visible { outline: 2px solid #6366f1 !important; outline-offset: 2px; }
+  :is(.contractor-app, .admin-app) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),select,textarea) {
+    background: #fff !important;
+    color: #18181b !important;
+    border: 1px solid #d4d4d8 !important;
+    border-radius: 6px !important;
+    box-shadow: 0 1px 2px #00000004 !important;
+    font-size: 13px;
+    font-weight: 400 !important;
+    letter-spacing: normal;
+    text-transform: none;
+    min-height: 34px;
+  }
+  :is(.contractor-app, .admin-app) :is(input,textarea)::placeholder { color: #a1a1aa; }
+  :is(.contractor-app, .admin-app) :is(input[type="checkbox"],input[type="radio"]) { accent-color: #4f46e5; }
+
+  /* Line icons replace the decorative multicolor tiles. */
+  :is(.contractor-app, .admin-app) .lucide {
+    --icon-ink: currentColor !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+    color: inherit !important;
+    stroke-width: 1.65;
+  }
+  :is(.contractor-app, .admin-app) .lucide:not(.animate-spin) { transform: none !important; }
+  :is(.contractor-app, .admin-app) .lucide.rotate-180 { transform: rotate(180deg) !important; }
+  :is(.contractor-app, .admin-app) .lucide.rotate-90 { transform: rotate(90deg) !important; }
+  :is(.contractor-app, .admin-app) .contractor-illustration {
+    width: 20px !important;
+    height: 20px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #71717a !important;
+  }
+  :is(.contractor-app, .admin-app) .contractor-illustration svg { width: 100% !important; height: 100% !important; }
+  :is(.contractor-app, .admin-app) .contractor-section-art { display: none !important; }
+  :is(.contractor-app, .admin-app) :is(.claim-document-icon,.claim-document-upload-icon,.claim-case-icon,.contractor-profile-mark) { background: #f4f4f5 !important; border: 0 !important; border-radius: 6px !important; box-shadow: none !important; }
+
+  /* Persistent navigation and toolbar. */
+  :is(.contractor-app, .admin-app) :is(.contractor-navigation,.crm-sidebar) { background: #fafafa !important; border-right: 1px solid #e4e4e7 !important; box-shadow: none !important; }
+  :is(.contractor-app, .admin-app) :is(.contractor-navigation-brand,.crm-sidebar-brand) { background: transparent !important; border-color: #e4e4e7 !important; min-height: 68px !important; padding-block: 16px !important; }
+  :is(.contractor-app, .admin-app) :is(.contractor-official-logo,.crm-sidebar-brand > img) { max-width: 180px !important; max-height: 34px !important; object-fit: contain; }
+  :is(.contractor-app, .admin-app) :is(.contractor-nav-link,.crm-sidebar button) { min-height: 36px !important; height: auto; border: 1px solid transparent; border-radius: 6px !important; gap: 10px; font-size: 13px; color: #52525b !important; box-shadow: none !important; }
+  :is(.contractor-app, .admin-app) :is(.contractor-nav-link[aria-current="page"],.crm-sidebar .nav-item-active) { background: #eeeeF0 !important; color: #18181b !important; border: 1px solid #e4e4e7 !important; box-shadow: none !important; }
+  :is(.contractor-app, .admin-app) :is(.contractor-nav-link:hover,.crm-sidebar button:hover) { background: #f0f0f2 !important; }
+  :is(.contractor-app, .admin-app) :is(.contractor-navigation,.crm-sidebar) p { font-size: 10px; letter-spacing: .06em; color: #71717a !important; }
+  :is(.contractor-app, .admin-app) .contractor-navigation > div:nth-child(2) { gap: 22px; padding: 16px 12px; }
+  :is(.contractor-app, .admin-app) .contractor-company-logo { min-height: 88px; padding: 12px; }
+  :is(.contractor-app, .admin-app) .contractor-company-logo img { max-width: 144px; height: 64px; }
+  :is(.contractor-app, .admin-app) .contractor-company-logo.is-compact img { height: 36px; }
+  :is(.contractor-app, .admin-app) :is(.crm-topbar,.admin-topbar,.contractor-topbar) { background: #fff !important; border-bottom: 1px solid #e4e4e7 !important; min-height: 68px; padding: 12px 24px; box-shadow: none !important; gap: 16px; }
+  :is(.contractor-app, .admin-app) .contractor-topbar-brand { flex: 0 0 auto; min-width: 140px; }
+  :is(.contractor-app, .admin-app) .contractor-topbar > .relative { max-width: 520px; margin-left: auto; }
+  :is(.contractor-app, .admin-app) :is(.contractor-account-trigger,.contractor-create-claim) { min-height: 34px; font-size: 12px; border-radius: 6px; }
+  :is(.contractor-app, .admin-app) .contractor-topbar .lucide-bell { width: 18px; height: 18px; }
+  :is(.contractor-app, .admin-app) :is(.contractor-account-menu,.admin-company-filter-menu) { border: 1px solid #e4e4e7; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px #00000012; }
+  :is(.contractor-app, .admin-app) .contractor-membership {
+    display: inline-flex; width: auto; min-height: 30px; padding: 5px 8px; gap: 7px;
+    background: #f4f4f5 !important; color: #3f3f46; border: 1px solid #e4e4e7; border-radius: 6px; box-shadow: none;
+  }
+  :is(.contractor-app, .admin-app) .contractor-membership::before,
+  :is(.contractor-app, .admin-app) .contractor-membership::after { display: none; }
+  :is(.contractor-app, .admin-app) .contractor-membership-emblem { width: 16px; height: 16px; border: 0; background: transparent !important; color: #71717a; border-radius: 0; box-shadow: none; transform: none; }
+  :is(.contractor-app, .admin-app) .contractor-membership-emblem svg { width: 16px; height: 16px; }
+  :is(.contractor-app, .admin-app) .contractor-membership-copy { flex-direction: row; align-items: baseline; gap: 5px; }
+  :is(.contractor-app, .admin-app) .contractor-membership-copy > span { font-size: 12px; color: #71717a; letter-spacing: 0; text-transform: none; }
+  :is(.contractor-app, .admin-app) .contractor-membership-copy strong { font-size: 12px; letter-spacing: 0; text-shadow: none; }
+  .admin-app .admin-role-badge { background: #f4f4f5; color: #52525b; border-color: #e4e4e7; font-weight: 600; }
+
+  /* Dashboards prioritize values, task lists and their next action. */
+  :is(.contractor-app, .admin-app) .contractor-dashboard-inner { padding: 24px; }
+  :is(.contractor-app, .admin-app) :is([data-slot="card"],.contractor-panel,.contractor-summary,.claim-profile-card) { background: #fff; border: 1px solid #e4e4e7 !important; border-radius: 8px !important; box-shadow: 0 1px 2px #00000004 !important; }
+  :is(.contractor-app, .admin-app) .contractor-panel-head { padding: 14px 16px; border-color: #e4e4e7; }
+  :is(.contractor-app, .admin-app) .contractor-panel-head > div > div:first-child { border: 0; background: transparent; box-shadow: none; }
+  :is(.contractor-app, .admin-app) .contractor-panel-head h2 { font-size: 13px; }
+  :is(.contractor-app, .admin-app) .contractor-overview .contractor-summary { padding: 10px 16px; gap: 8px; border-radius: 8px; }
+  :is(.contractor-app, .admin-app) .contractor-summary-value { font-size: 26px; font-weight: 600; }
+  :is(.contractor-app, .admin-app) .contractor-summary-label { font-size: 12px; color: #71717a; }
+  :is(.contractor-app, .admin-app) .contractor-summary[data-alert="true"] .contractor-summary-value { color: #dc2626; }
+  .contractor-app .contractor-weather-overview { min-height: 95px !important; }
+  .contractor-app .contractor-weather-overview .contractor-weather { color: #71717a; }
+  .contractor-app .contractor-weather-overview .contractor-weather-icon { width: 58px; height: 58px; flex-basis: 58px; color: #71717a; }
+  .contractor-app .contractor-weather-overview .contractor-weather-glyph { width: 56px; height: 56px; }
+  .contractor-app .contractor-weather-overview .contractor-weather-reading strong { font-size: 32px; font-weight: 600; color: #27272a; }
+  :is(.contractor-app, .admin-app) .contractor-weather-indicator { display: none; }
+  :is(.contractor-app, .admin-app) .contractor-weather-eyebrow { font-size: 10px; color: #71717a; letter-spacing: .04em; }
+  :is(.contractor-app, .admin-app) :is(.contractor-weather-location,.contractor-weather-condition,.contractor-weather-source) { color: #71717a; }
+  :is(.contractor-app, .admin-app) :is(.admin-dashboard-hero,.insurance-directory-hero,.values-page-header,.values-selected-case,.values-selector-heading,.values-analytics-heading,.claim-workspace-header) { background: #fff !important; background-image: none !important; color: #18181b !important; border-color: #e4e4e7 !important; border-radius: 8px !important; box-shadow: none !important; }
+  :is(.contractor-app, .admin-app) :is(.admin-dashboard-hero,.insurance-directory-hero,.values-page-header,.values-selected-case,.values-selector-heading,.values-analytics-heading) :is(h1,h2,h3,p,span):not(button span) { color: #3f3f46 !important; }
+  :is(.contractor-app, .admin-app) :is(.admin-dashboard-hero,.insurance-directory-hero,.values-page-header) > .pointer-events-none { display: none; }
+  :is(.contractor-app, .admin-app) .admin-dashboard-hero::before,
+  :is(.contractor-app, .admin-app) .admin-dashboard-hero::after { display: none; }
+
+  /* Case panels, documents and financial tables. */
+  :is(.contractor-app, .admin-app) .claim-case-sidebar .claim-profile-card { padding: 16px; gap: 16px; }
+  :is(.contractor-app, .admin-app) .claim-case-sidebar .claim-profile-card-header { width: calc(100% + 32px) !important; margin: -16px -16px 0; padding: 12px 16px; min-height: 42px; border-bottom: 1px solid #e4e4e7; border-radius: 7px 7px 0 0; background: #fafafa !important; color: #18181b !important; }
+  :is(.contractor-app, .admin-app) .claim-case-sidebar .claim-profile-card-header :is(h2,button) { color: #3f3f46 !important; background: transparent; }
+  :is(.contractor-app, .admin-app) :is(.case-person-avatar,.case-claim-reference) { background: #f4f4f5 !important; color: #27272a !important; border-radius: 6px; }
+  :is(.contractor-app, .admin-app) .case-claim-reference span { color: #71717a; }
+  :is(.contractor-app, .admin-app) :is(.case-person-identity,.case-insurer-identity) h3 { font-size: 16px; }
+  :is(.contractor-app, .admin-app) .case-profile-row { padding: 10px 0; border-color: #e4e4e7; }
+  :is(.contractor-app, .admin-app) .case-profile-row dd { font-size: 13px; font-weight: 400; color: #27272a; }
+  :is(.contractor-app, .admin-app) .case-profile-row dt { font-size: 11px; color: #71717a; }
+  :is(.contractor-app, .admin-app) .claim-tabs { border-color: #e4e4e7; gap: 16px; }
+  :is(.contractor-app, .admin-app) .claim-tabs button { min-height: 36px; padding: 8px 0; border-radius: 0; color: #71717a; font-size: 13px; }
+  :is(.contractor-app, .admin-app) .claim-tabs button[aria-selected="true"] {
+    color: var(--foreground) !important; border-bottom-color: var(--foreground) !important;
+  }
+  :is(.contractor-app, .admin-app) .claim-tabs { background: transparent !important; border-radius: 0; padding-inline: 0; }
+  :is(.contractor-app, .admin-app) .claim-tabs button[aria-selected="true"] { background: transparent; box-shadow: none; }
+  :is(.contractor-app, .admin-app) .claim-case-header { background: #fafafa !important; border-radius: 7px 7px 0 0; }
+  :is(.contractor-app, .admin-app) .insurance-claim-card { padding: 12px 16px; border: 1px solid #e4e4e7 !important; border-radius: 6px !important; box-shadow: none !important; }
+  :is(.contractor-app, .admin-app) .insurance-claim-card:hover { background: #fafafa; border-color: #d4d4d8 !important; transform: none; }
+  :is(.contractor-app, .admin-app) .insurance-list-heading { padding-bottom: 16px; }
+  :is(.contractor-app, .admin-app) .claim-timeline-entry { background: #fff !important; border: 0; border-bottom: 1px solid #e4e4e7; border-radius: 0 !important; padding: 12px 0; box-shadow: none !important; }
+  :is(.contractor-app, .admin-app) .claim-note-composer { background: #fafafa !important; }
+  :is(.contractor-app, .admin-app) .settings-hero { background: #fff !important; color: #18181b !important; border: 1px solid #e4e4e7; border-radius: 8px !important; box-shadow: none !important; padding: 20px 24px; }
+  :is(.contractor-app, .admin-app) .settings-hero :is(h1,p,span) { color: #3f3f46 !important; }
+  :is(.contractor-app, .admin-app) .settings-hero .pointer-events-none { display: none; }
+  :is(.contractor-app, .admin-app) .settings-page { background: #fafafa !important; }
+  :is(.contractor-app, .admin-app) .production-page > div > section { background: #f4f4f5 !important; border-color: #e4e4e7; border-radius: 8px; box-shadow: none; }
+  :is(.contractor-app, .admin-app) .production-page article { box-shadow: none !important; }
+  :is(.admin-app, .contractor-app) .production-page h1 { font-size: 25.3px !important; }
+  :is(.admin-app, .contractor-app) .production-card-reference .font-mono { font-size: 10.35px; }
+  :is(.admin-app, .contractor-app) .production-card-reference > span[title] { font-size: 11.5px; }
+  .admin-app .values-page-header > div.flex > div > .admin-values-header-icon:first-child,
+  .admin-app .values-page-header > div.flex > .values-access-badge {
+    color: var(--foreground) !important;
+    background: var(--secondary) !important;
+    border-color: var(--ui-border) !important;
+  }
+  .admin-app .values-page-header > div.flex > div > .admin-values-header-icon svg { color: inherit !important; }
+  .admin-app .values-entry-heading,
+  .admin-app .case-report-pending-heading,
+  :is(.admin-app, .contractor-app) .claim-case-sidebar > .claim-profile-card .claim-profile-card-header,
+  .admin-app .crm-content .claim-record-heading { background: #18181b !important; color: #fafafa !important; }
+  .admin-app .crm-content .values-entry-heading :is(h3,p,span) { color: #fafafa !important; }
+  .admin-app .case-report-pending-heading > span { background: #3f3f46; color: #fafafa; }
+  .admin-app .values-entry-heading h3 + span { background: #3f3f46 !important; border-color: #52525b !important; }
+  .admin-app .crm-content .values-entry-heading button[class*="bg-[#102A46]"] {
+    background: #fafafa !important; color: #18181b !important; border-color: #fafafa !important;
+  }
+  :is(.admin-app, .contractor-app) .claim-case-sidebar > .claim-profile-card .claim-profile-card-header :is(h2,svg,button) { color: #fafafa !important; }
+  :is(.admin-app, .contractor-app) .claim-case-sidebar > .claim-profile-card .claim-profile-card-header button { background: #3f3f46; }
+  .admin-app .claim-record-heading { width: 100%; padding: 9px 12px; border-radius: 6px; }
+  .admin-app div:has(> .claim-record-heading) { width: 100%; }
+  :is(.admin-app, .contractor-app) :is(.admin-company-filter-icon,.admin-company-filter-option-icon) img { width: 100%; height: 100%; min-width: 0; padding: 3px; object-fit: contain; }
+  :is(.admin-app, .contractor-app) :is(.admin-company-filter-icon,.admin-company-filter-option-icon) img:not([hidden]) + svg { display: none; }
+  .contractor-app .admin-company-filter-trigger { width: min(232px, calc(100vw - 32px)); }
+  .contractor-app .admin-company-filter-menu { left: auto; right: 0; width: 100%; }
+  .admin-app .values-selected-case > div > .values-claim-number {
+    color: var(--foreground) !important; background: var(--secondary) !important;
+    border-color: var(--ui-border) !important; font-size: 17px;
+  }
+  .contractor-app .claim-case-header .claim-number-badge {
+    color: var(--foreground); background: var(--secondary); font-size: 17px;
+    font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere;
+  }
+  :is(.admin-app, .contractor-app) .insurance-directory-hero {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px;
+    padding-block: 12px !important;
+  }
+  :is(.admin-app, .contractor-app) .insurance-directory-hero .relative h1 { color: var(--foreground) !important; }
+  :is(.admin-app, .contractor-app) .insurance-directory-hero .insurance-directory-metrics.relative {
+    display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 0; border: 0;
+  }
+  :is(.admin-app, .contractor-app) .insurance-directory-hero .insurance-directory-metrics .text-white { color: var(--foreground) !important; }
+  :is(.admin-app, .contractor-app) .insurance-directory-hero .insurance-directory-metrics .text-slate-300 { color: var(--muted-foreground) !important; }
+  :is(.admin-app, .contractor-app) .insurance-directory-hero .insurance-directory-metrics .insurance-summary-icon { color: var(--muted-foreground) !important; background: transparent !important; }
+  .contractor-app .insurance-directory-list .insurance-directory-search {
+    gap: 8px; padding: 0 10px; border: 1px solid var(--input);
+    border-radius: 6px; background: #fff; color: var(--muted-foreground);
+  }
+  .contractor-app .insurance-directory-list .insurance-directory-search:focus-within {
+    border-color: var(--ring); box-shadow: 0 0 0 2px #6366f126;
+  }
+  .contractor-app .insurance-directory-list .insurance-directory-search input {
+    padding: 0; border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none !important;
+  }
+  :is(.contractor-app, .admin-app) .production-page > header:has(.contractor-section-art) > div:first-child > div:first-child { display: block; }
+  :is(.contractor-app, .admin-app) .retail-estimator .estimator-workbench > .no-print > div:has(> .lucide-file-signature) { background: #f4f4f5 !important; border-radius: 8px; }
+  :is(.contractor-app, .admin-app) .contractor-field-label { text-transform: none; letter-spacing: normal; font-size: 12px; font-weight: 600; color: #52525b; }
+  :is(.contractor-app, .admin-app) .insurance-directory-list button[aria-current="true"] { background: #f4f4f5 !important; box-shadow: none; }
+  :is(.contractor-app, .admin-app) .insurance-company-summary > div:last-child { background: #fafafa !important; }
+  :is(.contractor-app, .admin-app) .insurance-contact-row { background: #fafafa; border-color: #e4e4e7; }
+  :is(.contractor-app, .admin-app) table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  :is(.contractor-app, .admin-app) th { background: #fafafa !important; color: #71717a !important; font-size: 11px; font-weight: 600; letter-spacing: .02em; padding-block: 9px !important; border-color: #e4e4e7 !important; }
+  :is(.contractor-app, .admin-app) td { padding-block: 10px !important; border-color: #e4e4e7 !important; }
+  :is(.contractor-app, .admin-app) tbody tr:hover { background-color: #fafafa; }
+  :is(.contractor-app, .admin-app) :is(.contractor-dialog,.contractor-mobile-menu,[data-slot="dialog-content"]) { border-radius: 8px; border-color: #e4e4e7; box-shadow: 0 16px 48px #0000001f; }
+  :is(.contractor-app, .admin-app) [data-slot="empty-media"] { background: #f4f4f5 !important; border-radius: 6px; color: #a1a1aa; box-shadow: none; }
+}
+
+@media screen and (min-width: 768px) {
+  :is(.contractor-app, .admin-app) .team-member-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+}
+
+@media screen and (min-width: 1800px) {
+  :is(.contractor-app, .admin-app) .team-member-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}
+
+@media screen and (max-width: 767px) {
+  :is(.contractor-app, .admin-app) :is(.crm-topbar,.admin-topbar,.contractor-topbar) { padding: 12px 16px; gap: 12px; }
+  :is(.contractor-app, .admin-app) .contractor-topbar-brand { flex: 0 0 auto; }
+  :is(.contractor-app, .admin-app) .contractor-topbar > .relative { max-width: none; }
+  :is(.contractor-app, .admin-app) .contractor-dashboard-inner { padding: 16px; }
+  :is(.contractor-app, .admin-app) .contractor-mobile-menu { border-radius: 0; }
+  :is(.contractor-app, .admin-app) .contractor-weather-overview { min-height: 80px !important; }
+}
+
+/* Case section tabs: consistent, legible treatment in admin and contractor views. */
+:is(.admin-app, .contractor-app) .claim-tabs {
+  width: 100%; min-width: 0; min-height: 54px; align-items: center; gap: 8px !important;
+  padding: 6px !important; border: 0 !important; border-radius: 8px !important;
+  background: #18181b !important; overflow-x: auto; overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+:is(.admin-app, .contractor-app) .claim-tabs::-webkit-scrollbar { display: none; }
+:is(.admin-app, .contractor-app) .claim-tabs button {
+  min-width: 132px; min-height: 40px !important; flex: 0 0 auto; display: inline-flex;
+  align-items: center; justify-content: center; gap: 8px; padding: 8px 16px !important;
+  border: 1px solid transparent !important; border-radius: 6px !important;
+  color: #d4d4d8 !important; font-size: 13px !important; white-space: nowrap;
+}
+:is(.admin-app, .contractor-app) .claim-tabs button[aria-selected="true"] {
+  background: #fff !important; color: #18181b !important; border-color: #fff !important;
+  box-shadow: none !important;
+}
+:is(.admin-app, .contractor-app) .claim-tabs button[aria-selected="true"] .lucide { color: #18181b !important; }
+
+:is(.admin-app, .contractor-app) .claim-case-header .claim-status-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 30px; padding: 5px 12px !important; border-radius: 5px !important;
+  background: #18181b !important; color: #fff !important; border: 1px solid #18181b !important;
+  box-shadow: none !important; font-size: 13px !important; font-weight: 600 !important;
+  letter-spacing: .01em;
+}
+
+.admin-app .production-page .admin-metric-card {
+  min-height: 96px;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px !important;
+  border-color: #e4e4e7 !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+.admin-app .production-page .admin-metric-card:hover {
+  border-color: #a1a1aa !important;
+  background: #fafafa !important;
+  box-shadow: 0 2px 6px #18181b0a !important;
+  transform: none !important;
+}
+.admin-app .production-page .admin-metric-card > .admin-metric-accent {
+  display: none !important;
+}
+.admin-app .production-page .admin-metric-card .admin-metric-topline {
+  min-height: 38px;
+  margin: -12px -14px 0;
+  padding: 5px 12px;
+  border-radius: 3px 3px 0 0 !important;
+  background: #18181b !important;
+  color: #fff !important;
+}
+.admin-app .production-page .admin-metric-card .admin-metric-topline > span {
+  color: #fff !important;
+}
+.admin-app .production-page .admin-metric-card .admin-metric-illustration {
+  flex: 0 0 28px;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 5px !important;
+  border: 1px solid #3f3f46 !important;
+  border-radius: 6px !important;
+  background: #27272a !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+.admin-app .production-page .admin-metric-card .admin-metric-illustration svg { stroke-width: 1.8; }
+.admin-app .production-page .admin-metric-card .admin-metric-value { font-size: 28px; }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.contractor-app, .admin-app) *,
+  :is(.contractor-app, .admin-app) *::before,
+  :is(.contractor-app, .admin-app) *::after { transition-duration: 0ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
+@media screen and (max-width: 480px) {
+  .contractor-app .contractor-topbar { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px; }
+  .contractor-app .contractor-topbar-brand { min-width: 0; }
+  .contractor-app .contractor-topbar > .relative { grid-column: 1 / -1; order: 3; }
+  .contractor-app .contractor-topbar .contractor-topbar-actions { justify-content: flex-end; gap: 6px; min-width: 0; }
+  .contractor-app .contractor-topbar .contractor-topbar-actions:has(> .admin-company-filter) { grid-column: 1 / -1; justify-content: flex-start; }
+  .contractor-app .contractor-topbar-actions > .border-l { padding-left: 6px; }
+  .contractor-app .contractor-create-claim { padding-inline: 8px; gap: 4px; font-size: 11px; }
+  .contractor-app .contractor-account-trigger { padding-inline: 8px; }
+  .contractor-app .contractor-account-trigger > span,
+  .contractor-app .contractor-account-trigger > .lucide-chevron-down { display: none; }
+  .contractor-app .contractor-membership { padding-inline: 6px; gap: 4px; }
+  .contractor-app .contractor-membership-copy { gap: 4px; }
+  .contractor-app .contractor-membership-copy > span,
+  .contractor-app .contractor-membership-copy strong { font-size: 11px; }
+}
+
+/* Phone layout: keep the workspace scrollable and let dense CRM views reflow. */
+@media screen and (max-width: 767px) {
+  :is(.contractor-app, .admin-app) {
+    min-height: 100dvh !important;
+    height: 100dvh;
+    overflow: hidden !important;
+  }
+  :is(.contractor-app, .admin-app) .crm-main {
+    width: 100%; min-width: 0; height: 100dvh !important; min-height: 0;
+    margin-left: 0 !important; overflow: hidden;
+  }
+  :is(.contractor-app, .admin-app) .crm-content {
+    min-width: 0; min-height: 0; overflow-x: hidden !important; overflow-y: auto !important;
+    overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch;
+  }
+  :is(.contractor-app, .admin-app) .crm-content > * { min-width: 0; max-width: 100%; }
+  :is(.contractor-app, .admin-app) :is(.crm-topbar,.admin-topbar,.contractor-topbar) {
+    width: 100%; min-width: 0; padding: 10px 12px !important; gap: 8px !important;
+  }
+  :is(.contractor-app, .admin-app) :is(.crm-workspace,.production-page,.insurance-directory-page,.values-insurance-page,.contractor-dashboard-inner) {
+    width: 100%; max-width: 100%; min-width: 0; padding-inline: 12px !important;
+  }
+  :is(.contractor-app, .admin-app) :is(.insurance-directory-layout,.claim-case-layout,.team-member-grid,.contractor-dashboard-grid,.contractor-overview,.case-report-controls) {
+    grid-template-columns: minmax(0,1fr) !important;
+  }
+  :is(.contractor-app, .admin-app) :is(.insurance-directory-list,.insurance-directory-detail,.claim-case-sidebar,.claim-workspace) {
+    width: 100% !important; min-width: 0 !important; max-width: 100%;
+  }
+  :is(.contractor-app, .admin-app) .production-page > .snap-x {
+    width: 100%; max-width: 100%; overflow-x: auto; scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  :is(.contractor-app, .admin-app) .production-page > .snap-x > section { scroll-snap-align: start; }
+  :is(.contractor-app, .admin-app) :is(.grid-cols-2,.grid-cols-3,.grid-cols-4,.grid-cols-5,.grid-cols-6) {
+    grid-template-columns: minmax(0,1fr) !important;
+  }
+  :is(.contractor-app, .admin-app) :is(.flex-row) { min-width: 0; }
+  :is(.contractor-app, .admin-app) table { min-width: 640px; }
+  :is(.contractor-app, .admin-app) :is(.overflow-x-auto,.overflow-auto) { -webkit-overflow-scrolling: touch; }
+  :is(.contractor-app, .admin-app) :is(input,select,textarea) { max-width: 100%; min-width: 0; }
+  :is(.contractor-app, .admin-app) [role="dialog"],[data-slot="dialog-content"] {
+    width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important;
+    max-height: calc(100dvh - 24px); overflow-y: auto;
+  }
+  .admin-app > header.md\:hidden { min-height: 54px; padding: 8px 12px !important; background: #fff !important; color: #18181b !important; border-color: #e4e4e7 !important; }
+  .admin-app > header.md\:hidden button { color: #18181b !important; }
+  .contractor-mobile-menu[data-slot="dialog-content"] {
+    position: fixed !important; top: 0 !important; right: auto !important; bottom: 0 !important; left: 0 !important;
+    transform: none !important; translate: 0 0 !important;
+    width: min(320px, 88vw) !important; max-width: none !important; height: 100dvh !important;
+    max-height: 100dvh !important; margin: 0 !important; padding: 0 !important;
+    display: flex !important; flex-direction: column; gap: 0 !important; overflow: hidden !important;
+    z-index: 80 !important; background: #fff !important;
+  }
+  [data-slot="dialog-overlay"] { position: fixed !important; inset: 0 !important; z-index: 79 !important; }
+  .contractor-mobile-menu > .contractor-navigation-brand { flex: 0 0 auto; padding: 12px 14px; min-height: 60px !important; }
+  .contractor-mobile-menu > div.flex.flex-1 { min-height: 0; overflow-y: auto; }
+  .admin-app .admin-mobile-drawer {
+    position: fixed !important; inset: 54px 0 0 !important; z-index: 80 !important;
+    height: auto !important; overflow-y: auto !important; padding: 12px !important;
+    background: #fff !important; color: #18181b !important; border-top: 1px solid #e4e4e7;
+  }
+  .admin-app .admin-mobile-drawer button { min-height: 44px; justify-content: flex-start; color: #3f3f46 !important; }
+  .admin-app .admin-mobile-drawer button[class*="bg-[#8C6A22]"] { background: #f4f4f5 !important; color: #18181b !important; }
+}

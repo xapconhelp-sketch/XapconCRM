@@ -91,19 +91,21 @@ function ValueEntryCard({ title, subtitle, kind, entries, onChange, onSave, onDe
   onSave: (entry: EntryDraft) => void; onDelete: (entry: EntryDraft) => void; savingId: string | null; onAdd?: () => void;
 }) {
   const sum = entries.reduce((total, entry) => total + (Number(entry.amount) || 0), 0);
-  const Icon = kind === "estimate" ? BadgeDollarSign : kind === "sow" ? FileCheck2 : FilePlus2;
   const count = kind === "estimate" ? "01 / 01" : `${String(entries.length).padStart(2, "0")} / 04`;
   return (
     <section className="overflow-hidden rounded-[20px] border border-[#DDE3E8] bg-white shadow-[0_8px_30px_rgba(23,49,74,0.045)] transition-shadow duration-200 hover:shadow-[0_12px_34px_rgba(23,49,74,0.065)]">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E9EDF0] bg-[linear-gradient(180deg,#FFFFFF_0%,#FBFCFD_100%)] px-4 py-4 sm:px-5">
-        <div className="flex min-w-0 items-center gap-3">
-            <span className={`values-entry-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] ${kind === "estimate" ? "bg-[#EEF2F6] text-[#2F5270]" : kind === "sow" ? "bg-[#F7F4E9] text-[#755613]" : "bg-[#EDF4F0] text-[#477B62]"}`}><Icon className="h-[17px] w-[17px]" /></span>
-          <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-display text-[15px] font-semibold tracking-[-0.02em] text-[#102A46]">{title}</h3><span className="rounded-md bg-[#F1F4F6] px-2 py-1 font-sans text-[10px] font-semibold tracking-wide text-[#596D78]">{count}</span></div><p className="mt-1 text-[12px] text-[#596D78]">{subtitle}</p></div>
+      <header className="values-entry-heading flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-zinc-800 px-4 py-2 sm:px-5">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-[15px] font-semibold tracking-[-0.02em]">{title}</h3>
+            <span className="rounded-md px-2 py-0.5 text-[10px] font-semibold tracking-wide">{count}</span>
+          </div>
+          <p className="mt-0.5 text-xs leading-4">{subtitle}</p>
         </div>
-        <div className="flex w-full items-center justify-between gap-3 pl-[52px] sm:w-auto sm:justify-end sm:pl-0">
-          {kind !== "estimate" && <div className="sm:text-right"><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#87949F]">Total registrado</p><span className="mt-0.5 block text-[13px] font-semibold tabular-nums text-[#344C60]">{money(sum)}</span></div>}
-          {onAdd && <button type="button" onClick={onAdd} disabled={entries.length >= MAX_REPEATED_ENTRIES} className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[#102A46] px-3.5 text-[12px] font-semibold text-white shadow-[0_3px_8px_rgba(23,49,74,0.12)] transition hover:-translate-y-px hover:bg-[#193856] hover:shadow-[0_5px_12px_rgba(23,49,74,0.17)] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"><Plus className="h-3.5 w-3.5" />Agregar {kind === "sow" ? "SOW" : "suplemento"}</button>}
-        </div>
+        {kind !== "estimate" && <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
+          <div className="sm:text-right"><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#87949F]">Total registrado</p><span className="mt-0.5 block text-[13px] font-semibold tabular-nums text-[#344C60]">{money(sum)}</span></div>
+          {onAdd && <button type="button" onClick={onAdd} disabled={entries.length >= MAX_REPEATED_ENTRIES} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#102A46] px-3 text-xs font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"><Plus className="h-3.5 w-3.5" />Agregar {kind === "sow" ? "SOW" : "suplemento"}</button>}
+        </div>}
       </header>
 
       {entries.length === 0 && kind !== "estimate" && <div className="flex min-h-[84px] items-center gap-3 px-5 py-4"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F4F6F8] text-[#9AA6AF]"><Plus className="h-4 w-4" /></span><div><p className="text-[12px] font-semibold text-[#526879]">Aún no hay {kind === "sow" ? "SOW" : "suplementos"} en este caso</p><p className="mt-1 text-[11px] text-[#81909D]">Agrega un registro cuando lo recibas o prepares.</p></div></div>}
@@ -499,9 +501,9 @@ export default function ValuesInsuranceView({ claims, activeOrganizationId }: { 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3.5">
               <IllustratedIcon name="finance" className="admin-values-header-icon" />
-              <div><p className="text-[9px] font-bold uppercase tracking-[0.17em] text-[#D3B566]">Administración de casos</p><h1 className="mt-0.5 font-display text-[23px] font-semibold tracking-[-0.04em] text-white sm:text-[25px]">Valores Insurance</h1></div>
+              <h1 className="font-display text-[23px] font-semibold tracking-[-0.04em] text-white sm:text-[25px]">Valores Insurance</h1>
             </div>
-            <span className="ml-[58px] inline-flex w-fit items-center gap-1.5 rounded-full border border-[#D3B566]/25 bg-[#0C2036]/55 px-3 py-1.5 text-[9px] font-semibold tracking-wide text-[#D8C68A] sm:ml-0"><span className="h-1.5 w-1.5 rounded-full bg-[#D89B6D]" />Solo superadmin</span>
+            <span className="values-access-badge ml-[58px] inline-flex w-fit items-center rounded-md border px-3 py-1.5 text-[11px] font-semibold sm:ml-0">Solo superadmin</span>
           </div>
         </header>
 
@@ -521,7 +523,7 @@ export default function ValuesInsuranceView({ claims, activeOrganizationId }: { 
                   <IllustratedIcon name="claim" className="admin-values-header-icon" />
                   <div className="min-w-0"><h2 className="truncate font-sans text-[18px] font-semibold tracking-[-0.015em] text-white">{selectedClaim.name}</h2><p className="mt-1 truncate font-sans text-[12px] text-[#CBD6DE]">{selectedClaim.company} <span className="mx-1 text-[#D3B566]/70">·</span> {selectedClaim.insuranceProvider}</p></div>
                 </div>
-                <span className="ml-[52px] w-fit rounded-lg border border-[#D3B566]/25 bg-[#0C2036]/55 px-2.5 py-1.5 font-sans text-[11px] font-semibold tracking-[0.01em] text-[#D8C68A] sm:ml-0">{selectedClaim.claimNumber}</span>
+                <span className="values-claim-number ml-[52px] w-fit max-w-full rounded-md border px-2.5 py-1.5 font-mono text-base font-semibold break-all sm:ml-0">{selectedClaim.claimNumber}</span>
               </div>
             </section>}
 

@@ -16,6 +16,7 @@ const MainDashboard = lazy(() => import("./components/MainDashboard"));
 const ContractorDashboard = lazy(() => import("./components/ContractorDashboard"));
 const LeadsView = lazy(() => import("./components/LeadsView"));
 const EstimatorView = lazy(() => import("./components/EstimatorView"));
+const AdminDocumentsView = lazy(() => import("./components/AdminDocumentsView"));
 const ProductionView = lazy(() => import("./components/ProductionView"));
 const InsuranceDirectoryView = lazy(() => import("./components/InsuranceDirectoryView"));
 const ValuesInsuranceView = lazy(() => import("./components/ValuesInsuranceView"));
@@ -28,12 +29,21 @@ const LoginView = lazy(() => import("./components/LoginView"));
 import { NotificationBell } from "./components/NotificationBell";
 import { eligibleCaseMembers, memberBelongsToOrganization } from "./lib/teamAccess.js";
 const PasswordRecoveryView = lazy(() => import("./components/PasswordRecoveryView"));
-import ContractorWeather from "./components/ContractorWeather";
+import { DropdownMenu } from "radix-ui";
 import { resolveOrganizationMembership } from "./lib/membershipAccess";
 
-import { Menu, X, Search, ChevronRight, ChevronDown, Building2, Check } from "lucide-react";
+import { Menu, X, Search, ChevronRight, ChevronDown, Building2, Check, Plus, UserRound, Settings, LogOut, BadgeCheck } from "lucide-react";
 
 type AppRole = "admin" | "contractor";
+
+function CompanyFilterIcon({ className, logo }: { className: string; logo?: string | null }) {
+  return (
+    <span className={className} aria-hidden="true">
+      {logo && <img key={logo} src={logo} alt="" onError={event => { event.currentTarget.hidden = true; }} />}
+      <Building2 />
+    </span>
+  );
+}
 
 interface AppRoute {
   role: AppRole | null;
@@ -63,6 +73,7 @@ function normalizeViewForRole(view: ViewType | null, role: AppRole): ViewType {
   if (role === "contractor" && view === ViewType.VALORES_INSURANCE) return ViewType.DASHBOARD;
   if (role === "contractor" && view === ViewType.CONTRACTOR_CASE_REPORTS) return ViewType.DASHBOARD;
   if (role === "contractor" && view === ViewType.MEMBERSHIP_ACCESS) return ViewType.DASHBOARD;
+  if (role === "contractor" && view === ViewType.DOCUMENTS) return ViewType.DASHBOARD;
   if (role === "admin" && view === ViewType.CLAIMS) return ViewType.DASHBOARD;
   return view;
 }
@@ -247,6 +258,9 @@ export default function App() {
   // Core CRM States
   const [leads, setLeads] = useState<Lead[]>([]);
   const [insuranceClaims, setInsuranceClaims] = useState<Lead[]>([]);
+  const stageMoves = useRef(new Map<string, { confirmed: string; targets: string[]; revision: number }>());
+  const stageRevision = useRef(0);
+  const [stageMoveError, setStageMoveError] = useState("");
   const [selectedInsuranceClaimId, setSelectedInsuranceClaimId] = useState<string>(() => {
     try { return localStorage.getItem("crm_selected_claim_id") || ""; } catch { return ""; }
   });
@@ -305,6 +319,7 @@ export default function App() {
   const fetchLeads = async () => {
     if (!session || !profile) return;
     const context = dataContext.current;
+    const readRevision = stageRevision.current;
 
     let query = supabase
       .from('leads')
@@ -465,7 +480,19 @@ export default function App() {
       setLeadLoadError("");
       setLeadDataContext(context);
       setLeads(prev => preserveCaseDocuments(prev, normalLeads, caseDocumentCache.current));
-      setInsuranceClaims(prev => preserveCaseDocuments(prev, claims, caseDocumentCache.current));
+      setInsuranceClaims(prev => {
+        const previousById = new Map(prev.map(claim => [claim.id, claim]));
+        const refreshedClaims = claims.map(claim => {
+          const move = stageMoves.current.get(claim.id);
+          if (!move || (!move.targets.length && move.revision <= readRevision)) return claim;
+          return {
+            ...claim,
+            status: move.targets.at(-1) ?? move.confirmed,
+            timeline: previousById.get(claim.id)?.timeline ?? claim.timeline,
+          };
+        });
+        return preserveCaseDocuments(prev, refreshedClaims, caseDocumentCache.current);
+      });
     }
   };
 
@@ -1212,6 +1239,13 @@ export default function App() {
     window.dispatchEvent(new Event('xapcon-notifications-changed'));
   };
 
+  const handleCreateClaim = () => {
+    setSelectedInsuranceClaimId("");
+    setSearchTerm("");
+    setOpenClaimFormOnEnter(true);
+    navigateToView(ViewType.INSURANCE_CLAIM);
+  };
+
   const handleNotificationClick = async (notification: { reference_id?: string; reference_type?: string; organization_id?: string }) => {
     if (!notification.reference_id || notification.reference_type !== 'lead') return;
     const { data, error } = await supabase.from('leads').select('id, organization_id, is_insurance_claim').eq('id', notification.reference_id).single();
@@ -1425,6 +1459,7 @@ export default function App() {
 
   // Actions: Production Kanban View connected to Supabase Leads
   const handleMoveProject = async (projectId: string, direction: "next" | "prev") => {
+    if (!session) return;
     const stages = [
       "Negados",
       "Inspección",
@@ -1440,9 +1475,11 @@ export default function App() {
     const claim = insuranceClaims.find(c => c.id === projectId);
     if (!claim) return;
 
-    let currentIdx = stages.indexOf(claim.status);
+    const pendingMove = stageMoves.current.get(projectId);
+    const currentStatus = pendingMove?.targets.at(-1) ?? claim.status;
+    let currentIdx = stages.indexOf(currentStatus);
     if (currentIdx === -1) {
-      if (claim.status === "Nuevo") {
+      if (currentStatus === "Nuevo") {
         currentIdx = 0;
       } else {
         currentIdx = 1;
@@ -1454,43 +1491,56 @@ export default function App() {
     if (direction === "prev" && currentIdx > 0) newIdx--;
 
     const newStatus = stages[newIdx];
-    if (newStatus === claim.status) return;
+    if (newStatus === currentStatus) return;
 
-    // Update locally immediately for optimistic UI
+    const move = pendingMove ?? { confirmed: currentStatus, targets: [], revision: 0 };
+    const alreadySaving = move.targets.length > 0;
+    if (!alreadySaving) move.confirmed = currentStatus;
+    move.targets.push(newStatus);
+    stageMoves.current.set(projectId, move);
+    setStageMoveError("");
     setInsuranceClaims(prev => prev.map(c => c.id === projectId ? { ...c, status: newStatus } : c));
-    setLeads(prev => prev.map(c => c.id === projectId ? { ...c, status: newStatus } : c));
+    if (alreadySaving) return;
 
-    // Update in Supabase
-    if (session) {
-      const { error } = await supabase
-        .from('leads')
-        .update({ status: newStatus })
-        .eq('id', projectId);
+    const sameSession = () => dataContext.current.startsWith(`${session.user.id}:`);
+    const context = dataContext.current;
+    let saveFailed = false;
+    try {
+      while (move.targets.length && sameSession()) {
+        const target = move.targets[0];
+        const fromStatus = move.confirmed;
+        const update = supabase.from('leads').update({ status: target }).eq('id', projectId);
+        const { data, error } = await (fromStatus == null ? update.is('status', null) : update.eq('status', fromStatus))
+          .select('id').maybeSingle();
+        if (error || !data) throw new Error(error?.message || 'La etapa cambió en otra sesión o el expediente ya no está disponible.');
+        move.confirmed = target;
+        if (!sameSession()) break;
 
-      if (error) {
-        console.error("Error updating claim status:", error.message);
-        setInsuranceClaims(prev => prev.map(c => c.id === projectId ? { ...c, status: claim.status } : c));
-        setLeads(prev => prev.map(c => c.id === projectId ? { ...c, status: claim.status } : c));
-        return;
+        const { data: timeline, error: timelineError } = await supabase.rpc('add_xapcon_timeline_event', {
+          p_lead_id: projectId,
+          p_event: {
+            type: 'status_change',
+            title: 'Cambio de etapa',
+            content: `${fromStatus} → ${target}`,
+            fromStatus,
+            toStatus: target,
+          },
+        });
+        if (timelineError) console.error("Error registrando el cambio de etapa:", timelineError.message);
+        else if (sameSession()) setInsuranceClaims(prev => prev.map(c => c.id === projectId ? { ...c, timeline: timeline as TimelineEvent[] } : c));
+        move.targets.shift();
       }
-
-      const { data: timeline, error: timelineError } = await supabase.rpc('add_xapcon_timeline_event', {
-        p_lead_id: projectId,
-        p_event: {
-          type: 'status_change',
-          title: 'Cambio de etapa',
-          content: `${claim.status} → ${newStatus}`,
-          fromStatus: claim.status,
-          toStatus: newStatus,
-        },
-      });
-      if (timelineError) {
-        console.error("Error registrando el cambio de etapa:", timelineError.message);
-      } else {
-        setInsuranceClaims(prev => prev.map(c => c.id === projectId ? { ...c, timeline: timeline as TimelineEvent[] } : c));
-        setLeads(prev => prev.map(c => c.id === projectId ? { ...c, timeline: timeline as TimelineEvent[] } : c));
+    } catch (error) {
+      saveFailed = true;
+      if (sameSession()) {
+        setInsuranceClaims(prev => prev.map(c => c.id === projectId ? { ...c, status: move.confirmed } : c));
+        setStageMoveError(`No se pudo guardar el cambio de etapa. ${error instanceof Error ? error.message : "Intenta de nuevo."}`);
       }
+    } finally {
+      move.revision = ++stageRevision.current;
+      move.targets.length = 0;
     }
+    if (saveFailed && context === dataContext.current) void fetchLeads();
   };
   if (passwordRecovery && session) return <Suspense fallback={<p role="status">Cargando…</p>}><PasswordRecoveryView onComplete={finishPasswordRecovery} /></Suspense>;
   if (loading) {
@@ -1523,7 +1573,64 @@ export default function App() {
   // "el valor de 'casos activos' es la suma de todos los casos, menos los finalizados, menos los negados, menos los cancelados."
   const casosActivosCount = filteredInsuranceClaims.length - finalizadoCount - negadosCount - canceladoCount;
   // "los casos 'Construidos' debe siempre ser igual al valor de los casos finalizados, mas los de esperando depreciación."
-  const construidosCount = finalizadoCount + esperandoDepreciacionCount;
+
+  const companySelector = (
+    <div className="admin-company-filter" ref={companyFilterRef}>
+      <button
+        type="button"
+        className="admin-company-filter-trigger"
+        aria-haspopup="dialog"
+        aria-expanded={companyFilterOpen}
+        aria-label={`Empresa seleccionada: ${activeOrganization?.name || (userRole === "admin" ? "Todas las empresas" : "Seleccionar empresa")}`}
+        onClick={() => setCompanyFilterOpen(open => !open)}
+      >
+        <CompanyFilterIcon className="admin-company-filter-icon" logo={activeOrganization?.logo_url} />
+        <span className="admin-company-filter-copy">
+          <span className="admin-company-filter-name">{activeOrganization?.name || (userRole === "admin" ? "Todas las empresas" : "Seleccionar empresa")}</span>
+          <span className="admin-company-filter-caption">{activeOrganization ? "Empresa seleccionada" : userRole === "admin" ? "Vista consolidada" : "Empresa"}</span>
+        </span>
+        <ChevronDown className={`admin-company-filter-chevron${companyFilterOpen ? " is-open" : ""}`} aria-hidden="true" />
+      </button>
+      {companyFilterOpen && (
+        <div className="admin-company-filter-menu" role="dialog" aria-label="Seleccionar empresa">
+          <div className="admin-company-filter-options">
+            {[
+              ...(userRole === "admin" && activeOrganization ? [{ id: "Todas", name: "Todas las empresas", description: "Vista consolidada", logo: null }] : []),
+              ...organizations.filter(org => userRole === "contractor" || (!org.is_internal && org.name.trim().toLowerCase() !== "xapcon group"))
+                .map(org => ({ id: org.id, name: org.name, description: "Empresa", logo: org.logo_url })),
+            ]
+              .map(option => {
+                const selected = activeOrganization?.id === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    aria-pressed={selected}
+                    className={`admin-company-filter-option${selected ? " is-selected" : ""}`}
+                    onClick={() => {
+                      if (userRole === "admin") {
+                        handleSetCompanyFilter(option.id);
+                      } else {
+                        const organization = organizations.find(org => org.id === option.id);
+                        if (organization) {
+                          setActiveOrganization(organization);
+                          setSelectedInsuranceClaimId("");
+                        }
+                      }
+                      setCompanyFilterOpen(false);
+                    }}
+                  >
+                    <CompanyFilterIcon className="admin-company-filter-option-icon" logo={option.logo} />
+                    <span className="admin-company-filter-option-copy"><strong>{option.name}</strong><small>{option.description}</small></span>
+                    {selected && <Check className="admin-company-filter-option-check" aria-hidden="true" />}
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <ContractorDesignContext.Provider value={userRole === "contractor" || userRole === "admin"}>
@@ -1539,8 +1646,8 @@ export default function App() {
           setSelectedInsuranceClaimId("");
           setSearchTerm("");
         }}
-        onLogout={signOut}
         company={activeOrganization?.company_name || contractorCompany}
+        companyLogo={activeOrganization?.logo_url}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
@@ -1581,7 +1688,7 @@ export default function App() {
 
       {/* Mobile Drawer Navigation links */}
       {mobileMenuOpen && userRole === "admin" && (
-        <div className="md:hidden fixed inset-0 top-[65px] bg-[#102A46] z-50 p-6 flex flex-col space-y-3 animate-fade-in select-none">
+        <div className="admin-mobile-drawer md:hidden fixed inset-0 top-[65px] bg-[#102A46] z-50 p-6 flex flex-col space-y-3 animate-fade-in select-none">
           {[
             { id: ViewType.DASHBOARD, label: "Dashboard" },
             { id: ViewType.INSURANCE_CLAIM, label: "Insurance Claim" },
@@ -1590,6 +1697,7 @@ export default function App() {
               { id: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras" },
               { id: ViewType.VALORES_INSURANCE, label: "Valores Insurance" },
               { id: ViewType.CONTRACTOR_CASE_REPORTS, label: "Informes por empresa" },
+              { id: ViewType.DOCUMENTS, label: "Documentos" },
             ] : []),
             { id: ViewType.TEAM, label: "Personal & Crews" },
             { id: ViewType.SETTINGS, label: "Configuración" }
@@ -1637,49 +1745,7 @@ export default function App() {
 
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Empresa</span>
-                <div className="admin-company-filter" ref={companyFilterRef}>
-                  <button
-                    type="button"
-                    className="admin-company-filter-trigger"
-                    aria-haspopup="dialog"
-                    aria-expanded={companyFilterOpen}
-                    aria-label={`Empresa seleccionada: ${activeOrganization?.name || "Todas las empresas"}`}
-                    onClick={() => setCompanyFilterOpen(open => !open)}
-                  >
-                    <span className="admin-company-filter-icon"><Building2 aria-hidden="true" /></span>
-                    <span className="admin-company-filter-copy">
-                      <span className="admin-company-filter-name">{activeOrganization?.name || "Todas las empresas"}</span>
-                      <span className="admin-company-filter-caption">{activeOrganization ? "Empresa seleccionada" : "Vista consolidada"}</span>
-                    </span>
-                    <ChevronDown className={`admin-company-filter-chevron${companyFilterOpen ? " is-open" : ""}`} aria-hidden="true" />
-                  </button>
-                  {companyFilterOpen && (
-                    <div className="admin-company-filter-menu" role="dialog" aria-label="Seleccionar empresa">
-                      <div className="admin-company-filter-options">
-                        {[{ id: "Todas", name: "Todas las empresas", description: "Vista consolidada", isAll: true }, ...organizations.filter(org => !org.is_internal && org.name.trim().toLowerCase() !== "xapcon group").map(org => ({ id: org.id, name: org.name, description: "Empresa", isAll: false }))]
-                          .map(option => {
-                            const selected = option.id === "Todas" ? !activeOrganization : activeOrganization?.id === option.id;
-                            return (
-                              <button
-                                key={option.id}
-                                type="button"
-                                aria-pressed={selected}
-                                className={`admin-company-filter-option${selected ? " is-selected" : ""}`}
-                                onClick={() => {
-                                  handleSetCompanyFilter(option.id);
-                                  setCompanyFilterOpen(false);
-                                }}
-                              >
-                                <span className="admin-company-filter-option-icon"><Building2 aria-hidden="true" /></span>
-                                <span className="admin-company-filter-option-copy"><strong>{option.name}</strong><small>{option.description}</small></span>
-                                {selected && <Check className="admin-company-filter-option-check" aria-hidden="true" />}
-                              </button>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {companySelector}
               </div>
             </div>
 
@@ -1754,9 +1820,8 @@ export default function App() {
 
             {/* Right: Superadmin Badge & Notifications */}
             <div className="flex items-center gap-3">
-              <span className="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200/60 text-[10px] font-bold rounded-lg uppercase tracking-wider flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                Super Admin
+              <span className="admin-role-badge px-2.5 py-1 border text-xs rounded-md flex items-center gap-1.5">
+                Superadmin
               </span>
               <div className="border-l border-gray-200 pl-3">
                 <NotificationBell
@@ -1777,31 +1842,22 @@ export default function App() {
 
         {userRole === "contractor" && (
           <div className="crm-topbar contractor-topbar no-print bg-white border-b border-[#DCE4EB]/30 px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 select-none shadow-sm">
-            {/* Company Logo & Welcome Header */}
+            {/* Membership for the active company */}
             <div className="contractor-topbar-brand">
-              {activeOrganization?.logo_url && (
-                <span className="contractor-topbar-logo">
-                  <img
-                    src={activeOrganization.logo_url}
-                    alt={`${activeOrganization.company_name || activeOrganization.name} logo`}
-                    onError={(event) => { event.currentTarget.style.visibility = "hidden"; }}
-                  />
-                </span>
+              {(activeOrganization?.membership_plan === "pro" || activeOrganization?.membership_plan === "plus") && (
+                <div className={`contractor-membership is-${activeOrganization.membership_plan}`} aria-label={`Miembro ${activeOrganization.membership_plan.toUpperCase()}`}>
+                  <span className="contractor-membership-emblem" aria-hidden="true"><BadgeCheck /></span>
+                  <span className="contractor-membership-copy"><span>Miembro</span><strong>{activeOrganization.membership_plan.toUpperCase()}</strong></span>
+                </div>
               )}
-              <div className="contractor-topbar-intro">
-                <span className="contractor-topbar-greeting">
-                  Bienvenido, {profile?.full_name || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "Usuario"}
-                </span>
-                <LiveDateTime />
-              </div>
-              <ContractorWeather address={organizations.find(organization => organization.id === activeOrganization?.id)?.company_address ?? activeOrganization?.company_address} />
             </div>
 
             {/* Center: Search Bar */}
             <div className="flex-1 max-w-md mx-auto relative px-4 w-full">
               <input
                 type="text"
-                placeholder="Buscar homeowner, claim o dirección..."
+                aria-label="Buscar reclamos por cliente, número o dirección"
+                placeholder="Buscar cliente, reclamo o dirección…"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-8 py-1.5 bg-[#F4F6F8] border border-[#DCE4EB]/60 rounded-xl text-xs text-[#102A46] placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#8C6A22] focus:border-[#8C6A22] shadow-sm transition-all"
@@ -1813,6 +1869,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setSearchTerm("")}
+                  aria-label="Limpiar búsqueda"
                   className="absolute right-7 top-1/2 -translate-y-1/2 text-slate-500 hover:text-gray-600 transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -1828,13 +1885,14 @@ export default function App() {
                     </div>
                   ) : (
                     headerSearchResults.map((claim) => (
-                      <div
+                      <button
+                        type="button"
                         key={claim.id}
                         onClick={() => {
                           handleNavigateToInsuranceClaim(claim.id);
                           setSearchTerm("");
                         }}
-                        className="p-3 hover:bg-[#F8F9FB] cursor-pointer transition-colors flex items-center justify-between gap-3 group"
+                        className="w-full text-left p-3 hover:bg-[#F8F9FB] focus-visible:bg-[#F8F9FB] cursor-pointer transition-colors flex items-center justify-between gap-3 group"
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
@@ -1855,22 +1913,20 @@ export default function App() {
                         <div className="flex items-center shrink-0">
                           <ChevronRight className="size-4" aria-hidden="true" />
                         </div>
-                      </div>
+                      </button>
                     ))
                   )}
                 </div>
               )}
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="contractor-topbar-actions flex items-center gap-4">
 
-              {organizations.length > 1 && <label className="text-xs font-semibold text-[#102A46]">Empresa
-                <select aria-label="Cambiar empresa" value={activeOrganization?.id || ''} onChange={e => {
-                  const org = organizations.find(o => o.id === e.target.value); if (org) { setActiveOrganization(org); setSelectedInsuranceClaimId(''); }
-                }} className="ml-2 rounded-lg border bg-white p-2">
-                  {organizations.map(org => <option key={org.id} value={org.id}>{org.name}</option>)}
-                </select>
-              </label>}
+              <button type="button" onClick={handleCreateClaim} className="contractor-create-claim">
+                <Plus className="size-4" aria-hidden="true" />Nuevo reclamo
+              </button>
+
+              {organizations.length > 1 && companySelector}
               <div className="border-l border-gray-200 pl-4">
                 <NotificationBell
                   userId={session.user.id}
@@ -1879,42 +1935,52 @@ export default function App() {
                   callReminderLeads={[]}
                 />
               </div>
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <button type="button" className="contractor-account-trigger" aria-label="Abrir menú de cuenta">
+                    <UserRound className="size-4" aria-hidden="true" /><span>Mi cuenta</span><ChevronDown className="size-3.5" aria-hidden="true" />
+                  </button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content align="end" sideOffset={8} collisionPadding={12} className="contractor-account-menu">
+                  <DropdownMenu.Label className="contractor-account-identity">
+                    <strong>{profile?.full_name || session.user.user_metadata?.full_name || "Mi cuenta"}</strong>
+                    <span>{session.user.email}</span>
+                  </DropdownMenu.Label>
+                  <DropdownMenu.Separator className="contractor-account-separator" />
+                  <DropdownMenu.Item onSelect={() => navigateToView(ViewType.SETTINGS)} className="contractor-account-item">
+                    <Settings className="size-4" aria-hidden="true" />Configuración
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item onSelect={() => void signOut()} className="contractor-account-item">
+                    <LogOut className="size-4" aria-hidden="true" />Cerrar sesión
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
             </div>
           </div>
         )}
 
         {/* View selections viewport */}
         <div className="crm-content flex flex-col flex-1 overflow-hidden">
+          {stageMoveError && <p role="alert" className="bg-amber-50 p-3 text-sm text-amber-900">{stageMoveError}</p>}
           {leadLoadError && <div role="alert" className="bg-amber-50 p-3 text-sm text-amber-900">{leadLoadError} <button type="button" onClick={() => void fetchLeads()} className="underline">Reintentar</button></div>}
           {userRole === "admin" && estimatePrivacyError && <p role="alert" className="bg-amber-50 p-3 text-sm text-amber-900">{estimatePrivacyError}</p>}
           <Suspense fallback={<div className="flex flex-1 items-center justify-center text-sm font-medium text-slate-500">Cargando sección…</div>}>
           {currentView === ViewType.DASHBOARD && (
             userRole === "contractor" ? (
               <ContractorDashboard
+                companyAddress={organizations.find(organization => organization.id === activeOrganization?.id)?.company_address ?? activeOrganization?.company_address}
                 claims={filteredInsuranceClaims}
                 teamMembers={teamMembers}
                 currentUserId={session.user.id}
-                membershipPlan={activeOrganization?.membership_plan === "pro" || activeOrganization?.membership_plan === "plus" ? activeOrganization.membership_plan : undefined}
                 defaultTaskScope={canManageTeam ? "all" : "mine"}
                 onNavigateToView={navigateToView}
                 onNavigateToLead={handleNavigateToInsuranceClaim}
-                onCreateClaim={() => {
-                  setSelectedInsuranceClaimId("");
-                  setOpenClaimFormOnEnter(true);
-                  navigateToView(ViewType.INSURANCE_CLAIM);
-                }}
+                onCreateClaim={handleCreateClaim}
                 onToggleTask={handleToggleInsuranceClaimTask}
                 onAddTask={handleAddTask}
               />
             ) : (
               <MainDashboard
-                kpis={[
-                  { title: "Casos Activos", value: `${casosActivosCount}`, trend: "", trendDirection: "up", subtitle: "Total bajo gestión", icon: "check-circle" },
-                  { title: "En disputa", value: `${enDisputaCount + esperandoScopeCount}`, trend: "", trendDirection: "up", subtitle: "Trámites con aseguradora", icon: "scale" },
-                  { title: "Construidos", value: `${construidosCount}`, trend: "", trendDirection: "up", subtitle: "Obras finalizadas y en curso", icon: "hard-hat" },
-                  { title: "Esp. Depreciación", value: `${esperandoDepreciacionCount}`, trend: "", trendDirection: "up", subtitle: "Falta recuperar fondos", icon: "clock" },
-                  { title: "Finalizados", value: `${finalizadoCount}`, trend: "", trendDirection: "up", subtitle: "Casos cerrados", icon: "flag" }
-                ]}
                 onNavigateToView={navigateToView}
                 onNavigateToLead={handleNavigateToInsuranceClaim}
                 claims={filteredInsuranceClaims}
@@ -1941,10 +2007,10 @@ export default function App() {
                 onUploadDocuments={handleUploadDocuments}
                 onDeleteDocument={handleDeleteDocument}
                 onUploadImageForTimeline={handleUploadImageForTimeline}
-                viewTitle="Expedientes de Insurance Claim"
+                viewTitle="Reclamos de seguro"
                 viewSubtitle="Cronologías de reclamos de seguros, visitas de peritos y archivos técnicos de propiedad."
-                addButtonLabel="Nuevo Reclamo de Seguro"
-                formTitle="Ficha de Nueva Reclamación de Seguro"
+                addButtonLabel="Nuevo reclamo"
+                formTitle="Nuevo reclamo de seguro"
                 formSubmitLabel="Registrar Reclamación"
                 isInsuranceView={true}
                 organizations={organizations}
@@ -1977,6 +2043,12 @@ export default function App() {
 
           {currentView === ViewType.PRODUCTION && (
             <ProductionView
+              adminMetrics={userRole === "admin" ? { kpis: [
+                  { title: "Casos Activos", value: `${casosActivosCount}`, trend: "", trendDirection: "up", subtitle: "Total bajo gestión", icon: "check-circle" },
+                  { title: "En disputa", value: `${enDisputaCount + esperandoScopeCount}`, trend: "", trendDirection: "up", subtitle: "Trámites con aseguradora", icon: "scale" },
+                  { title: "Esp. Depreciación", value: `${esperandoDepreciacionCount}`, trend: "", trendDirection: "up", subtitle: "Falta recuperar fondos", icon: "clock" },
+                  { title: "Finalizados", value: `${finalizadoCount}`, trend: "", trendDirection: "up", subtitle: "Casos cerrados", icon: "flag" }
+                ], onNavigateToView: navigateToView } : undefined}
               claims={filteredInsuranceClaims}
               onMoveProject={handleMoveProject}
             />
@@ -1987,7 +2059,6 @@ export default function App() {
               claims={directoryClaims}
               onNavigateToClaim={handleNavigateToInsuranceClaim}
               canManageDirectory={userRole === "admin"}
-              isSuperAdmin={userRole === "admin"}
               directoryRefreshKey={insuranceRefreshKey}
               onInsuranceRegistered={userRole === "admin" ? () => setInsuranceRefreshKey(k => k + 1) : undefined}
             />
@@ -2003,6 +2074,10 @@ export default function App() {
 
           {currentView === ViewType.MEMBERSHIP_ACCESS && profile?.role === "super_admin" && (
             <MembershipAccessView organizations={organizations} onSave={handleUpdateMembershipAccess} />
+          )}
+
+          {currentView === ViewType.DOCUMENTS && userRole === "admin" && (
+            <AdminDocumentsView organizations={organizations} claims={insuranceClaims} />
           )}
 
           {currentView === ViewType.TEAM && (

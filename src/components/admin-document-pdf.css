@@ -1,0 +1,135 @@
+.document-pdf-preview {
+  container-type: inline-size;
+  min-width: 0;
+  align-self: start;
+  border: 1px solid #dedfdf;
+  box-shadow: 0 12px 28px #15232b14;
+}
+
+.document-pdf-sheet {
+  --paper-line: #dce1e3;
+  min-height: 650px;
+  padding: clamp(22px, 6cqw, 48px);
+  border-top: 6px solid var(--document-brand);
+  background: #fff;
+  color: #19262e;
+  font: 13px/1.5 "Inter Variable", Arial, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.pdf-letterhead, .pdf-colophon {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.pdf-issuer { display: grid; gap: 7px; min-width: 0; flex: 0 1 38%; }
+.pdf-issuer img { width: 184px; max-width: 100%; height: 74px; object-fit: contain; object-position: left; }
+.pdf-contact { min-width: 0; text-align: right; font-size: 12px; color: #495861; }
+.pdf-title { margin-block: 23px 18px; text-align: center; }
+.pdf-label, .pdf-amounts thead th {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.document-pdf-sheet .pdf-title h2 {
+  margin-top: 5px;
+  font: 400 clamp(29px, 8cqw, 52px)/1.05 Georgia, serif;
+  letter-spacing: -.035em;
+}
+
+.pdf-title::after {
+  display: block;
+  width: 46px;
+  margin-top: 14px;
+  margin-inline: auto;
+  border-bottom: 3px solid var(--document-accent);
+  content: "";
+}
+
+.pdf-project {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-block: 1px solid var(--paper-line);
+  background: #f5f7f7;
+}
+
+.pdf-project > div { min-width: 0; padding: 12px 9px; text-align: center; }
+.pdf-project > div + div { border-inline-start: 1px solid var(--paper-line); }
+.pdf-project dt { margin-bottom: 5px; color: #495861; }
+.pdf-amounts { width: 100%; margin-top: 18px; border-collapse: collapse; }
+.document-pdf-sheet .pdf-amounts :is(th, td) { padding: 8px 10px !important; text-align: left; }
+.document-pdf-sheet .pdf-amounts :is(td, th:last-child:not(:first-child)) { text-align: right; }
+.document-pdf-sheet .pdf-amounts thead th,
+.document-pdf-sheet .pdf-amounts tfoot :is(th, td) {
+  background: var(--document-brand) !important;
+  color: #fff !important;
+  color: contrast-color(var(--document-brand)) !important;
+}
+.document-pdf-sheet .pdf-amounts tbody th { color: #19262e !important; background: transparent !important; font-size: inherit; }
+.pdf-amounts tbody tr { border-bottom: 1px solid var(--paper-line); }
+.pdf-amounts td { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.document-pdf-sheet .pdf-amounts tfoot :is(th, td) {
+  font-size: 14px;
+  font-weight: 700;
+}
+.document-pdf-sheet .pdf-amounts tfoot td { font-size: 19px; }
+.pdf-payment { margin-top: 20px; }
+.pdf-payment strong { display: block; margin-top: 5px; }
+
+.pdf-attestation { margin-top: 22px; }
+.pdf-attestation-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 48ch;
+  margin-inline: auto;
+  text-align: center;
+  font: 17px/1.45 Georgia, serif;
+}
+.pdf-attestation-intro svg { color: var(--document-brand); }
+.pdf-scope { margin-block: 15px; padding: 9px 12px; border-top: 3px solid var(--document-brand); background: #f5f7f7; text-align: center; }
+.pdf-attestation ul { margin-top: 5px; padding-inline-start: 18px; list-style: disc; }
+.pdf-attestation li + li { margin-top: 3px; }
+.pdf-colophon { margin-top: 22px; padding-top: 10px; border-top: 1px solid var(--paper-line); font-size: 11px; }
+.document-pdf-sheet .pdf-colophon span { color: #000; }
+
+@container (max-width: 360px) {
+  .pdf-letterhead { align-items: flex-start; flex-direction: column; }
+  .pdf-contact { text-align: left; }
+  .pdf-project { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pdf-project > div:first-child { grid-column: 1 / -1; border-bottom: 1px solid var(--paper-line); }
+  .pdf-project > div:nth-child(2) { border-inline-start: 0; }
+}
+
+@media screen {
+  .document-pdf-sheet .pdf-amounts { min-width: 0 !important; }
+}
+
+@media print {
+  @page contractor-document { size: letter; margin: .45in; }
+  body:has(.document-pdf-preview) :not(.document-pdf-preview, .document-pdf-preview *, :has(.document-pdf-preview)) { display: none !important; }
+  html:has(.document-pdf-preview), body:has(.document-pdf-preview), body :has(.document-pdf-preview) {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .document-pdf-preview { page: contractor-document; border: 0; box-shadow: none; }
+  .document-pdf-sheet {
+    min-height: 0;
+    padding: .3in .34in;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .pdf-project, .pdf-amounts tr, .pdf-scope, .pdf-colophon { break-inside: avoid; }
+}

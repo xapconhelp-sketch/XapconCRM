@@ -12,7 +12,8 @@ import {
   ChevronRight,
   ShieldCheck,
   ChartNoAxesCombined,
-  KeyRound
+  KeyRound,
+  Files
 } from "lucide-react";
 
 interface SidebarProps {
@@ -25,10 +26,10 @@ interface SidebarProps {
 }
 
 const SECTION_MANAGEMENT = [
-  { type: ViewType.DASHBOARD,       label: "Dashboard",           icon: LayoutDashboard },
-  { type: ViewType.INSURANCE_CLAIM, label: "Insurance Claim",     icon: FileCheck2 },
-  { type: ViewType.CLAIMS,          label: "Retail Estimator",    icon: FileSignature },
-  { type: ViewType.PRODUCTION,      label: "Production Pipeline", icon: HardHat },
+  { type: ViewType.DASHBOARD,       label: "Inicio",               icon: LayoutDashboard },
+  { type: ViewType.INSURANCE_CLAIM, label: "Reclamos de seguro",   icon: FileCheck2 },
+  { type: ViewType.CLAIMS,          label: "Estimador retail",     icon: FileSignature },
+  { type: ViewType.PRODUCTION,      label: "Producción",           icon: HardHat },
 ];
 
 const SECTION_ADMIN = [
@@ -36,11 +37,12 @@ const SECTION_ADMIN = [
   { type: ViewType.MEMBERSHIP_ACCESS, label: "Membresías y privilegios", icon: KeyRound },
   { type: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras",  icon: ShieldCheck },
   { type: ViewType.VALORES_INSURANCE, label: "Valores Insurance", icon: ChartNoAxesCombined },
+  { type: ViewType.DOCUMENTS, label: "Documentos", icon: Files },
 ];
 const DIRECTORY_ITEM = { type: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras", icon: ShieldCheck };
 
 const SECTION_TEAM = [
-  { type: ViewType.TEAM, label: "Personal & Crews", icon: Users2 },
+  { type: ViewType.TEAM, label: "Equipo y cuadrillas", icon: Users2 },
 ];
 
 export default function Sidebar({ currentView, onViewChange, onLogout, userRole = "admin", collapsed, onToggleCollapse }: SidebarProps) {
@@ -57,6 +59,7 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
       [ViewType.MEMBERSHIP_ACCESS]: "insurance",
       [ViewType.TEAM]: "team",
       [ViewType.SETTINGS]: "settings",
+      [ViewType.DOCUMENTS]: "activity",
     };
     const illustration = illustrationByView[item.type] || "claim";
 

@@ -34,6 +34,12 @@ import {
 import ClaimFinances from "./ClaimFinances";
 import { getKnownContactsForInsurance, getAllInsuranceCompanyNames } from "../data/insuranceDirectoryData";
 
+const CLOSED_CLAIM_STATUS: Partial<Record<Lead["status"], { label: string; initial: string; color: string }>> = {
+  Finalizado: { label: "Finalizado", initial: "F", color: "text-emerald-700" },
+  Cancelado: { label: "Cancelado", initial: "C", color: "text-red-700" },
+  Negados: { label: "Negado", initial: "N", color: "text-red-700" },
+};
+
 const DAMAGE_TYPES = [
   "Hail Damage",
   "Wind Damage",
@@ -140,7 +146,7 @@ function HomeownerServicePanel({
     <section className="rounded-xl border border-[#DCE4EB] bg-white p-3.5 sm:p-4" aria-label="Contacto HO">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-bold text-[#102A46]">Contacto HO</h3>
+          <h3 className="claim-record-heading text-sm font-bold text-[#102A46]">Contacto HO</h3>
         </div>
       </div>
 
@@ -293,7 +299,7 @@ function AdminDocumentsSentPanel({
   return (
     <section className="rounded-xl border border-[#DCE4EB] bg-[#FBFCFD] p-3.5 sm:p-4" aria-label="Registro de documentos enviados">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-        <h3 className="text-sm font-bold text-[#102A46]">Documentos Enviados</h3>
+        <h3 className="claim-record-heading text-sm font-bold text-[#102A46]">Documentos Enviados</h3>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -400,7 +406,7 @@ function InsuranceResponsePanel({
 
   return (
     <section className="rounded-xl border border-[#DCE4EB] bg-[#FBFCFD] p-3.5 sm:p-4" aria-label="Última Respuesta Aseguranza o Ajustador">
-      <h3 className="mb-3 text-sm font-bold text-[#102A46]">Última Respuesta Aseguranza o Ajustador</h3>
+      <h3 className="claim-record-heading mb-3 text-sm font-bold text-[#102A46]">Última Respuesta Aseguranza o Ajustador</h3>
       <label className="block">
         <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Fecha de la respuesta</span>
         <RoleInput type="date" value={respondedAt} max={localDateInputValue()} onChange={event => { setRespondedAt(event.target.value); setMessage(""); }} className="w-full rounded-lg border border-[#DCE4EB] bg-white px-3 py-2 text-xs text-[#102A46] outline-none focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15 sm:max-w-sm" />
@@ -526,7 +532,7 @@ function InsuranceCallsPanel({
 
   return (
     <section className="rounded-xl border border-[#DCE4EB] bg-[#FBFCFD] p-3.5 sm:p-4" aria-label="Registro de llamadas a la aseguradora">
-      <h3 className="mb-3 text-sm font-bold text-[#102A46]">Llamadas a aseguradoras o ajustadores</h3>
+      <h3 className="claim-record-heading mb-3 text-sm font-bold text-[#102A46]">Llamadas a aseguradoras o ajustadores</h3>
       <label className="block">
         <span className="mb-1.5 block text-[11px] font-semibold text-[#465D70]">Fecha de la llamada</span>
         <RoleInput type="date" value={calledAt} max={localDateInputValue()} onChange={event => { setCalledAt(event.target.value); setMessage(""); }} className="w-full rounded-lg border border-[#DCE4EB] bg-white px-3 py-2 text-xs text-[#102A46] outline-none focus:border-[#8C6A22] focus:ring-2 focus:ring-[#8C6A22]/15 sm:max-w-sm" />
@@ -574,7 +580,7 @@ interface LeadsViewProps {
   activeOrganizationId?: string;
   openCreateFormOnEnter?: boolean;
   onCreateFormOpened?: () => void;
-  onMoveProject?: (projectId: string, direction: "next" | "prev") => void;
+  onMoveProject: (projectId: string, direction: "next" | "prev") => void;
   insuranceCompanies?: string[];
 }
 
@@ -774,54 +780,6 @@ export default function LeadsView({
 
   const selectedLead = selectedLeadId ? (leads.find((l) => l.id === selectedLeadId) || leads[0]) : null;
 
-  const PIPELINE_STAGES = [
-    "Negados",
-    "Inspección",
-    "En disputa",
-    "Esperando Scope",
-    "Aprobado y Suplementado",
-    "Construcción",
-    "Esperando Depreciación",
-    "Finalizado",
-    "Cancelado"
-  ];
-
-  let currentStageIndex = -1;
-  if (selectedLead) {
-    if (selectedLead.status === "Nuevo") {
-      currentStageIndex = 0; // Treat 'Nuevo' as initial state before Inspección
-    } else {
-      currentStageIndex = PIPELINE_STAGES.indexOf(selectedLead.status);
-      if (currentStageIndex === -1) {
-        currentStageIndex = 1; // Fallback to Inspección for active custom states
-      }
-    }
-  }
-
-  const handleStageMove = (direction: "next" | "prev") => {
-    if (!selectedLead) return;
-
-    let targetIdx = currentStageIndex;
-    if (selectedLead.status === "Nuevo") {
-      targetIdx = direction === "next" ? 1 : 0;
-    } else {
-      if (direction === "next" && targetIdx < PIPELINE_STAGES.length - 1) {
-        targetIdx = targetIdx + 1;
-      } else if (direction === "prev" && targetIdx > 0) {
-        targetIdx = targetIdx - 1;
-      }
-    }
-
-    const newStatus = PIPELINE_STAGES[targetIdx];
-
-    if (onMoveProject) {
-      onMoveProject(selectedLead.id, direction);
-    }
-    if (onUpdateLead && newStatus !== selectedLead.status) {
-      onUpdateLead(selectedLead.id, { status: newStatus });
-    }
-  };
-
   // Filter allowed team members for assignments and mentions
   const allowedTeamMembers = eligibleCaseMembers(teamMembers, selectedLead?.organizationId || activeOrganizationId);
 
@@ -985,7 +943,7 @@ export default function LeadsView({
                 <>
                   <div className="col-span-3">Propietario</div>
                   <div className={isAdminInsuranceView ? "col-span-3" : "col-span-4"}>Propiedad</div>
-                  <div className={isAdminInsuranceView ? "col-span-3" : "col-span-4"}>Aseguradora / claim</div>
+                  <div className={isAdminInsuranceView ? "col-span-3" : "col-span-4"}>Aseguradora / reclamo</div>
                   {isAdminInsuranceView && <div className="col-span-2">Contratista</div>}
                   <div className="col-span-1 text-right">Actividad</div>
                 </>
@@ -1009,6 +967,9 @@ export default function LeadsView({
           ) : (
             filteredLeadsForSearch.map((lead) => {
               const days = getDaysSinceLastUpdate(lead);
+              const activityAge = days === 0 ? "Hoy" : `${days} d`;
+              const activityTitle = `Sin actualización hace ${days} ${days === 1 ? "día" : "días"}`;
+              const closedStatus = CLOSED_CLAIM_STATUS[lead.status];
               const statusBorderClass = ({
                 "Inspección": "lead-card-border-inspeccion",
                 "En disputa": "lead-card-border-disputa",
@@ -1059,13 +1020,23 @@ export default function LeadsView({
                       </div>}
 
                       <div className="lg:col-span-1 flex lg:justify-end">
-                        <span
-                          title={`Sin actualización hace ${days} ${days === 1 ? "día" : "días"}`}
-                          className={`inline-flex min-w-[64px] flex-col items-center rounded-xl px-2 py-1.5 ${days >= 7 ? "bg-rose-50 text-rose-700" : days >= 3 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}
-                        >
-                          <span className="text-sm font-bold leading-5">{days === 0 ? "Hoy" : `${days} d`}</span>
-                          <span className="text-[9px] font-semibold uppercase tracking-wide opacity-70">{days >= 7 ? "Atención" : "Actualizado"}</span>
-                        </span>
+                        {closedStatus ? (
+                          <span className={`grid size-8 shrink-0 place-items-center rounded-lg bg-current/10 text-base font-bold ${closedStatus.color}`}>
+                            <span className="sr-only">{closedStatus.label}</span>
+                            <span aria-hidden="true">{closedStatus.initial}</span>
+                          </span>
+                        ) : (
+                          <span
+                            title={activityTitle}
+                            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 px-2.5 py-1.5 ${days >= 7 ? "text-rose-700" : days >= 3 ? "text-amber-700" : "text-emerald-700"}`}
+                          >
+                            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-current" />
+                            <span className="flex flex-col">
+                              <span className="text-xs font-bold tabular-nums leading-4 text-[#102A46]">{activityAge}</span>
+                              {days >= 7 && <span className="text-[10px] font-semibold leading-3">Atención</span>}
+                            </span>
+                          </span>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -1444,7 +1415,7 @@ export default function LeadsView({
                           <button
                             type="button"
                             onClick={() => setShowExpressDirectoryModal(leadInsurance)}
-                            className="text-[10px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1"
+                            className="text-[10px] text-zinc-600 hover:text-zinc-900 font-semibold flex items-center gap-1"
                           >
                             <BookOpen className="w-3 h-3" />
                             <span>Ver Directorio ({newClaimKnownContacts.emails.length + newClaimKnownContacts.phones.length})</span>
@@ -1462,20 +1433,20 @@ export default function LeadsView({
                       </RoleSelect>
 
                       {(newClaimKnownContacts.emails.length > 0 || newClaimKnownContacts.phones.length > 0) && (
-                        <div className="mt-2 p-2.5 bg-blue-50/80 border border-blue-200/80 rounded-xl flex items-center justify-between gap-2">
-                          <div className="text-[11px] text-blue-900 leading-tight min-w-0">
-                            <span className="font-bold flex items-center gap-1 text-blue-800">
-                              <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <div className="mt-2 p-2.5 bg-zinc-50 border border-zinc-200 rounded-md flex items-center justify-between gap-2">
+                          <div className="text-[11px] text-zinc-700 leading-tight min-w-0">
+                            <span className="font-semibold flex items-center gap-1 text-zinc-700">
+                              <Sparkles className="w-3.5 h-3.5 shrink-0" />
                               Contactos conocidos para {leadInsurance}:
                             </span>
-                            <span className="text-[10px] text-blue-700 block mt-0.5 truncate">
+                            <span className="text-[10px] text-zinc-500 block mt-0.5 truncate">
                               {newClaimKnownContacts.emails[0] || ""} {newClaimKnownContacts.phones[0] ? `• ${newClaimKnownContacts.phones[0]}` : ""}
                             </span>
                           </div>
                           <button
                             type="button"
                             onClick={handleAutofillNewClaim}
-                            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-lg transition-colors shrink-0 shadow-xs flex items-center gap-1"
+                            className="px-2.5 py-1 bg-zinc-900 hover:bg-zinc-800 text-white text-[10px] font-semibold rounded-md transition-colors shrink-0 flex items-center gap-1"
                           >
                             <Sparkles className="w-3 h-3" />
                             <span>Autocompletar</span>
@@ -1700,7 +1671,7 @@ export default function LeadsView({
             <div className="claim-profile-card-header flex items-center justify-between border-b border-gray-100 pb-2 w-full">
               <div className="flex items-center gap-2">
                 <Home className="w-4 h-4 text-[#664A14]" />
-                <h2 className="font-sans text-xs font-bold text-[#102A46]">Información del Homeowner</h2>
+                <h2 className="font-sans text-xs font-bold text-[#102A46]">Datos del propietario</h2>
               </div>
               {!isEditingLead && onUpdateLead && (
                 <button
@@ -2062,7 +2033,7 @@ export default function LeadsView({
             <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
               {/* Renglón 3 conservado: Estado del Caso */}
               <div className="flex items-center gap-2">
-                <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${
+                <span className={`claim-status-badge inline-block px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${
                   selectedLead.status === "Negados"
                     ? "bg-rose-50 text-rose-700 border-rose-200"
                     : selectedLead.status === "Inspección"
@@ -2078,7 +2049,7 @@ export default function LeadsView({
                     : selectedLead.status === "Esperando Depreciación"
                     ? "bg-teal-50 text-teal-700 border-teal-200"
                     : selectedLead.status === "Finalizado"
-                    ? "bg-yellow-50 text-[#854d0e] border-yellow-300"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                     : "bg-slate-50 text-slate-600 border-slate-200"
                 }`}>
                   {selectedLead.status}
@@ -2089,7 +2060,7 @@ export default function LeadsView({
               <div className="claim-stage-controls flex items-center gap-2 mt-1">
                 <button
                   type="button"
-                  onClick={() => handleStageMove("prev")}
+                  onClick={() => onMoveProject(selectedLead.id, "prev")}
                   disabled={selectedLead.status === "Negados"}
                   className="claim-stage-back px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border border-slate-200 shadow-sm active:scale-95 cursor-pointer"
                   title="Retroceder a la etapa anterior en el Kanban"
@@ -2100,7 +2071,7 @@ export default function LeadsView({
 
                 <button
                   type="button"
-                  onClick={() => handleStageMove("next")}
+                  onClick={() => onMoveProject(selectedLead.id, "next")}
                   disabled={selectedLead.status === "Cancelado"}
                   className="claim-stage-next px-3 py-1.5 bg-[#8C6A22] hover:bg-[#664A14] disabled:opacity-40 disabled:cursor-not-allowed text-slate-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer"
                   title="Avanzar a la siguiente etapa en el Kanban"

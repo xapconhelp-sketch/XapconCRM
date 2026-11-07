@@ -43,7 +43,6 @@ interface InsuranceDirectoryViewProps {
   onNavigateToClaim: (claimId: string) => void;
   onInsuranceRegistered?: () => void;
   canManageDirectory?: boolean;
-  isSuperAdmin?: boolean;
   directoryRefreshKey?: number;
 }
 
@@ -56,7 +55,6 @@ export default function InsuranceDirectoryView({
   onNavigateToClaim,
   onInsuranceRegistered,
   canManageDirectory = true,
-  isSuperAdmin = false,
   directoryRefreshKey = 0,
 }: InsuranceDirectoryViewProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -136,10 +134,10 @@ export default function InsuranceDirectoryView({
     const denied = selectedCompany.deniedClaims;
     const active = Math.max(0, total - approved - dispute - denied);
     return [
-      { label: "Aprobados y cerrados", count: approved, color: "bg-emerald-500", text: "text-emerald-700", illustration: "success" as const, icon: CheckCircle2 },
-      { label: "En seguimiento", count: active, color: "bg-blue-500", text: "text-blue-700", illustration: "activity" as const, icon: Activity },
-      { label: "En disputa", count: dispute, color: "bg-amber-500", text: "text-amber-700", illustration: "clock" as const, icon: Clock3 },
-      { label: "Negados", count: denied, color: "bg-rose-500", text: "text-rose-700", illustration: "declined" as const, icon: XCircle },
+      { label: "Aprobados y cerrados", count: approved, color: "bg-emerald-500", legendColor: "text-emerald-500!", icon: CheckCircle2 },
+      { label: "En seguimiento", count: active, color: "bg-blue-500", legendColor: "text-blue-500!", icon: Activity },
+      { label: "En disputa", count: dispute, color: "bg-amber-500", legendColor: "text-amber-500!", icon: Clock3 },
+      { label: "Negados", count: denied, color: "bg-rose-500", legendColor: "text-rose-500!", icon: XCircle },
     ].map((item) => ({ ...item, percent: Math.round((item.count / total) * 100) }));
   }, [selectedCompany]);
 
@@ -267,19 +265,13 @@ export default function InsuranceDirectoryView({
           <div className="pointer-events-none absolute -right-1 -top-16 h-48 w-48 rounded-full border border-white/10" />
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-2xl">
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl"><RoleSectionIcon name="insurance" />Directorio de aseguranzas</h1>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl"><RoleSectionIcon name="insurance" />Aseguradoras</h1>
             </div>
-            {canManageDirectory && <button
-              onClick={() => { setCustomCompanyName(""); setIsAddingNewCompany(true); }}
-              className="admin-primary-3d btn-gold-3d inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#8C6A22] px-4 text-sm font-semibold text-white shadow-lg transition focus:outline-none focus:ring-4 focus:ring-[#8C6A22]/25"
-            >
-              <Plus className="h-4 w-4" /> Nueva aseguradora
-            </button>}
           </div>
-          <div className="relative mt-4 grid grid-cols-1 gap-3 border-t border-white/10 pt-4 sm:grid-cols-3 sm:gap-6">
-            <SummaryMetric label="Aseguradoras en catálogo" value={summary.companies} illustration="insurance" icon={Building2} isSuperAdmin={isSuperAdmin} />
-            <SummaryMetric label="Casos relacionados" value={summary.cases} illustration="claim" icon={FileText} isSuperAdmin={isSuperAdmin} />
-            <SummaryMetric label="Con correo registrado" value={summary.withContacts} illustration="mail" icon={Mail} isSuperAdmin={isSuperAdmin} />
+          <div className="insurance-directory-metrics relative mt-4 grid grid-cols-1 gap-3 border-t border-white/10 pt-4 sm:grid-cols-3 sm:gap-6">
+            <SummaryMetric label="Aseguradoras en catálogo" value={summary.companies} illustration="insurance" />
+            <SummaryMetric label="Casos relacionados" value={summary.cases} illustration="claim" />
+            <SummaryMetric label="Con correo registrado" value={summary.withContacts} illustration="mail" />
           </div>
         </header>
 
@@ -289,23 +281,24 @@ export default function InsuranceDirectoryView({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Aseguradoras</h2>
-                  <p className="mt-1 text-xs text-slate-500">Busca por nombre, contacto o ajustador</p>
+                  {canManageDirectory && <p className="mt-1 text-xs text-slate-500">Busca por nombre, contacto o ajustador</p>}
                 </div>
-                <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold tabular-nums text-slate-600">
+                {canManageDirectory && <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold tabular-nums text-slate-600">
                   {filteredList.length} / {directory.length}
-                </span>
+                </span>}
               </div>
-              <label className="mt-4 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3 py-2.5 transition focus-within:border-[#8C6A22] focus-within:ring-4 focus-within:ring-[#8C6A22]/10">
-                <Search className="h-4 w-4 shrink-0 text-slate-400" />
+              <div className="insurance-directory-search mt-4 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3 py-2.5 transition focus-within:border-[#8C6A22] focus-within:ring-4 focus-within:ring-[#8C6A22]/10">
+                <Search className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
                 <RoleInput
                   type="search"
+                  aria-label="Buscar aseguradora"
                   placeholder="Buscar aseguradora..."
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
-                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+                  className={`min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 ${canManageDirectory ? "" : "border-0! shadow-none! bg-transparent!"}`}
                 />
                 {searchTerm && <button onClick={() => setSearchTerm("")} aria-label="Limpiar búsqueda" className="rounded p-0.5 text-slate-400 hover:text-slate-700"><X className="h-4 w-4" /></button>}
-              </label>
+              </div>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 <FilterPill active={filter === "all"} onClick={() => setFilter("all")}>Todas</FilterPill>
                 <FilterPill active={filter === "with-cases"} onClick={() => setFilter("with-cases")}>Con casos</FilterPill>
@@ -340,7 +333,7 @@ export default function InsuranceDirectoryView({
                   <Search className="mx-auto h-7 w-7 text-slate-300" />
                   <p className="mt-3 text-sm font-medium text-slate-700">Sin resultados</p>
                   <p className="mt-1 text-xs text-slate-500">Prueba otro término o registra una aseguradora nueva.</p>
-                  {canManageDirectory && searchTerm && <button onClick={() => { setCustomCompanyName(searchTerm); setIsAddingNewCompany(true); }} className="mt-3 text-xs font-semibold text-[#664A14] hover:underline">Agregar “{searchTerm}”</button>}
+                  {canManageDirectory && <button onClick={() => { setCustomCompanyName(searchTerm); setIsAddingNewCompany(true); }} className="mt-3 text-xs font-semibold text-[#664A14] hover:underline">{searchTerm ? `Agregar “${searchTerm}”` : "Nueva aseguranza"}</button>}
                 </div>
               )}
             </div>
@@ -350,22 +343,19 @@ export default function InsuranceDirectoryView({
             <section className={`insurance-directory-detail ${showMobileDetail ? "block" : "hidden xl:block"} min-w-0 space-y-5`}>
               <div className="insurance-company-summary overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)]">
                 <div className="border-b border-slate-100 px-5 pt-4 xl:hidden"><button onClick={() => setShowMobileDetail(false)} className="inline-flex items-center gap-1.5 pb-3 text-xs font-semibold text-[#664A14]"><ChevronRight className="h-4 w-4 rotate-180" /> Volver a aseguradoras</button></div>
-                <div className="flex flex-col gap-4 border-b border-slate-100 p-5 xl:flex-row xl:items-start xl:justify-between xl:p-6">
-                  <div className="flex min-w-0 items-center gap-4">
-                    <CompanyMark large />
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 bg-zinc-900 px-3.5 py-1.5 text-zinc-50">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <CompanyMark compact />
                     <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[#664A14]">Ficha de aseguradora</p>
-                      <h2 className="mt-1 truncate text-xl font-semibold tracking-tight text-[#102A46] sm:text-2xl">{selectedCompany.name}</h2>
-                      {selectedCompanyNote && <p className="mt-1 line-clamp-2 text-sm text-slate-500">{selectedCompanyNote}</p>}
+                      <h2 className="break-words text-base font-semibold tracking-tight">{selectedCompany.name}</h2>
+                      {selectedCompanyNote && <p className="mt-0.5 line-clamp-2 text-xs text-zinc-300">{selectedCompanyNote}</p>}
                     </div>
                   </div>
-                  <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-                    {canManageDirectory && <>
-                      <button onClick={openEditCompany} className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:border-[#8C6A22] hover:text-[#664A14]"><Pencil className="h-3.5 w-3.5" /> Editar</button>
-                      <button onClick={() => setIsAddingContact(true)} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#102A46] px-3 text-xs font-semibold text-white transition hover:bg-[#193856]"><Plus className="h-3.5 w-3.5" /> Agregar contacto</button>
-                      <button onClick={() => { setDirectoryActionError(""); setIsConfirmingDelete(true); }} aria-label={`Eliminar ${selectedCompany.name}`} title="Eliminar aseguradora del directorio" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600 transition hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>
-                    </>}
-                  </div>
+                  {canManageDirectory && <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                      <button onClick={openEditCompany} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-zinc-600 px-2.5 text-xs font-semibold text-zinc-50 transition hover:bg-zinc-800"><Pencil className="h-3.5 w-3.5" /> Editar</button>
+                      <button onClick={() => { setCustomCompanyName(""); setIsAddingNewCompany(true); }} className="inline-flex h-8 items-center gap-1.5 rounded-md bg-zinc-50 px-2.5 text-xs font-semibold text-zinc-900 transition hover:bg-zinc-200"><Plus className="h-3.5 w-3.5" /> Nueva aseguranza</button>
+                      <button onClick={() => { setDirectoryActionError(""); setIsConfirmingDelete(true); }} aria-label={`Eliminar ${selectedCompany.name}`} title="Eliminar aseguradora del directorio" className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/70 text-white transition hover:bg-zinc-800"><Trash2 className="h-4 w-4" /></button>
+                  </div>}
                 </div>
 
                 <div className="grid grid-cols-3 divide-x divide-slate-100">
@@ -378,7 +368,7 @@ export default function InsuranceDirectoryView({
               <div className="insurance-directory-contact-grid grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(320px,.82fr)]">
                 <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)] sm:p-6">
                   <div className="flex items-start justify-between gap-3">
-                    <div><SectionEyebrow>Actividad</SectionEyebrow><h3 className="mt-1 text-base font-semibold text-slate-900">Desglose de expedientes</h3></div>
+                    <h3 className="mt-1 text-base font-semibold text-slate-900">Estadística macro</h3>
                     <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600">{selectedCompany.totalClaims} total</span>
                   </div>
                   {statusBreakdown ? <>
@@ -388,7 +378,7 @@ export default function InsuranceDirectoryView({
                     <div className="insurance-status-grid mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {statusBreakdown.map((item) => {
                         return <div key={item.label} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-[#FBFCFD] p-3">
-                          {isSuperAdmin ? <IllustratedIcon name={item.illustration} className={`insurance-status-icon ${item.text}`} /> : <span className={`flex h-9 w-9 items-center justify-center rounded-lg bg-white shadow-sm ${item.text}`}><item.icon className="h-4 w-4" /></span>}
+                          <span className={`insurance-status-icon grid shrink-0 place-items-center ${item.legendColor}`}><item.icon aria-hidden="true" /></span>
                           <span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium text-slate-600">{item.label}</span><span className="mt-0.5 block text-sm font-semibold tabular-nums text-slate-900">{item.count} <span className="text-xs font-normal text-slate-400">· {item.percent}%</span></span></span>
                         </div>;
                       })}
@@ -397,7 +387,7 @@ export default function InsuranceDirectoryView({
                 </section>
 
                 <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)] sm:p-6">
-                  <div><SectionEyebrow>Agenda de trabajo</SectionEyebrow><h3 className="mt-1 text-base font-semibold text-slate-900">Correos registrados</h3></div>
+                  <div><h3 className="mt-1 text-base font-semibold text-slate-900">Correos registrados</h3></div>
                   <div className="mt-4 space-y-2">
                     {selectedCompany.emails.map((email) => <div key={email}><ContactRow value={email} copied={copiedText === email} onCopy={handleCopy} /></div>)}
                     {!selectedCompany.emails.length && <EmptyInline icon={Mail} title="No hay correos guardados" description="Agrega una dirección de reclamos para tenerla a mano." />}
@@ -407,22 +397,31 @@ export default function InsuranceDirectoryView({
               </div>
 
               <div className="insurance-directory-history-grid grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)]">
-                <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)] sm:p-6">
-                  <div><SectionEyebrow>Personas</SectionEyebrow><h3 className="mt-1 text-base font-semibold text-slate-900">Ajustadores asociados</h3></div>
-                  {selectedCompany.adjusters.length ? <div className="mt-4 flex flex-wrap gap-2">
+                <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)]">
+                  <header className="flex min-h-11 items-center bg-zinc-900 px-4 py-2 text-white">
+                    <h3 className="text-base font-semibold">Ajustadores asociados</h3>
+                  </header>
+                  <div className="p-5 sm:p-6">
+                  {selectedCompany.adjusters.length ? <div className="flex flex-wrap gap-2">
                     {selectedCompany.adjusters.map((adjuster) => <span key={adjuster} title={`${selectedCompany.claims.filter((claim) => claim.adjusterName === adjuster).length} casos`} className="inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-[#FBFCFD] px-3 py-2 text-xs font-medium text-slate-700"><Users className="h-3.5 w-3.5 shrink-0 text-slate-400" /><span className="truncate">{adjuster}</span><span className="rounded bg-white px-1.5 py-0.5 text-[10px] tabular-nums text-slate-500">{selectedCompany.claims.filter((claim) => claim.adjusterName === adjuster).length}</span></span>)}
                   </div> : <EmptyInline icon={Users} title="Sin ajustadores asociados" description="Se identificarán a partir de los expedientes vinculados." />}
+                  </div>
                 </section>
 
-                <section className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)] sm:p-6">
-                  <div className="flex items-start justify-between gap-3"><div><SectionEyebrow>Historial</SectionEyebrow><h3 className="mt-1 text-base font-semibold text-slate-900">Expedientes relacionados</h3></div><span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-slate-600">{selectedCompany.claims.length}</span></div>
-                  {selectedCompany.claims.length ? <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-100">
+                <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)]">
+                  <header className="flex min-h-11 items-center justify-between gap-3 bg-zinc-900 px-4 py-2 text-white">
+                    <h3 className="text-base font-semibold">Expedientes relacionados</h3>
+                    <span className="rounded-md bg-zinc-700 px-2 py-0.5 text-xs font-semibold tabular-nums">{selectedCompany.claims.length}</span>
+                  </header>
+                  <div className="p-5 sm:p-6">
+                  {selectedCompany.claims.length ? <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-100">
                     {selectedCompany.claims.map((claim) => <button key={claim.id} type="button" onClick={() => onNavigateToClaim(claim.id)} className="group flex w-full items-center gap-3 p-3 text-left transition hover:bg-[#F8FAFC] sm:px-4">
                       <RoleIconTile name="claim" className="contractor-row-icon"><span className="admin-icon-well admin-icon-well-light flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F3F6F8] text-slate-500 transition group-hover:bg-[#E8EEF2]"><FileText className="h-4 w-4" /></span></RoleIconTile>
-                      <span className="min-w-0 flex-1"><span className="flex min-w-0 items-center gap-2"><span className="truncate text-sm font-semibold text-slate-800">{claim.name}</span>{claim.claimNumber && <span className="hidden shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 sm:inline">#{claim.claimNumber}</span>}</span><span className="mt-1 block truncate text-xs text-slate-500">{claim.address || "Sin dirección"}{claim.adjusterName ? ` · ${claim.adjusterName}` : ""}</span></span>
-                      <span className="hidden max-w-28 truncate rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600 sm:block">{claim.status}</span><ArrowUpRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-[#664A14]" />
+                      <span className="min-w-0 flex-1"><span className="flex min-w-0 items-center gap-2"><span className="truncate text-sm font-semibold text-slate-800">{claim.name}</span>{claim.claimNumber && <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">#{claim.claimNumber}</span>}</span><span className="mt-1 block truncate text-xs text-slate-500">{claim.address || "Sin dirección"}</span></span>
+                      <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-[#664A14]" />
                     </button>)}
                   </div> : <EmptyInline icon={FileText} title="Sin expedientes relacionados" description="Los casos asociados a esta aseguradora aparecerán aquí." />}
+                  </div>
                 </section>
               </div>
             </section>
@@ -469,26 +468,22 @@ export default function InsuranceDirectoryView({
   );
 }
 
-function SummaryMetric({ label, value, illustration, icon: Icon, isSuperAdmin }: { label: string; value: number; illustration: "insurance" | "claim" | "mail"; icon: React.ElementType; isSuperAdmin: boolean }) {
-  return <div className="flex items-center gap-3">{isSuperAdmin ? <IllustratedIcon name={illustration} className="insurance-summary-icon" /> : <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#D5BF7A]"><Icon className="h-4 w-4" /></span>}<span><span className="block text-lg font-semibold tabular-nums text-white">{value.toLocaleString()}</span><span className="block text-[11px] text-slate-300">{label}</span></span></div>;
+function SummaryMetric({ label, value, illustration }: { label: string; value: number; illustration: "insurance" | "claim" | "mail" }) {
+  return <div className="flex items-center gap-3"><IllustratedIcon name={illustration} className="insurance-summary-icon" /><span><span className="block text-lg font-semibold tabular-nums text-white">{value.toLocaleString()}</span><span className="block text-[11px] text-slate-300">{label}</span></span></div>;
 }
 
 function DetailMetric({ label, value }: { label: string; value: number }) {
-  return <div className="px-4 py-3.5 sm:px-5"><span className="block text-lg font-semibold tabular-nums text-slate-900">{value.toLocaleString()}</span><span className="mt-0.5 block text-xs text-slate-500">{label}</span></div>;
+  return <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 px-3.5 py-[9.2px]"><span className="text-base font-semibold tabular-nums text-zinc-900">{value.toLocaleString()}</span><span className="text-xs text-zinc-600">{label}</span></div>;
 }
 
-function CompanyMark({ active = false, large = false }: { active?: boolean; large?: boolean }) {
-  return <span className={`flex shrink-0 items-center justify-center border border-[#D5DDE7] bg-[#EAF0F3] text-[#102A46] ${large ? "h-14 w-14 rounded-2xl" : "h-10 w-10 rounded-xl"} ${active ? "ring-1 ring-[#102A46]/15" : ""}`}>
-    <ShieldCheck aria-hidden="true" className={large ? "h-7 w-7" : "h-5 w-5"} strokeWidth={1.8} />
+function CompanyMark({ active = false, compact = false }: { active?: boolean; compact?: boolean }) {
+  return <span className={`flex shrink-0 items-center justify-center border ${compact ? "size-7 rounded-md border-zinc-700 bg-zinc-800 text-zinc-100" : "size-10 rounded-xl border-[#D5DDE7] bg-[#EAF0F3] text-[#102A46]"} ${active ? "ring-1 ring-[#102A46]/15" : ""}`}>
+    <ShieldCheck aria-hidden="true" className={compact ? "size-4" : "size-5"} strokeWidth={1.8} />
   </span>;
 }
 
 function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return <button type="button" onClick={onClick} className={`rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition ${active ? "bg-[#102A46] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{children}</button>;
-}
-
-function SectionEyebrow({ children }: { children: React.ReactNode }) {
-  return <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-[#664A14]">{children}</p>;
 }
 
 function EmptyInline({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description: string }) {

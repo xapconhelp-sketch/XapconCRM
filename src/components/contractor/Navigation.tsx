@@ -1,7 +1,7 @@
 import IllustratedIcon, { type Illustration } from './IllustratedIcon';
 import { useState } from 'react';
 import xapconLogo from '../../../LogoXapcon-letra.png';
-import { PanelLeftClose, PanelLeftOpen, LogOut, Menu, X, Building2 } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, Menu, X } from 'lucide-react';
 import { cn } from 'cn';
 import { ViewType } from '../../types';
 import { Button } from '../ui/button';
@@ -15,17 +15,18 @@ const sections = [
     { type: ViewType.CLAIMS, label: 'Estimador retail', icon: 'estimate' as Illustration },
     { type: ViewType.PRODUCTION, label: 'Producción', icon: 'production' as Illustration },
   ] },
-  { label: 'ORGANIZACIÓN', items: [
+  { label: 'EQUIPO Y RECURSOS', items: [
     { type: ViewType.TEAM, label: 'Equipo y cuadrillas', icon: 'team' as Illustration },
     { type: ViewType.INSURANCE_DIRECTORY, label: 'Aseguradoras', icon: 'insurance' as Illustration },
   ] },
 ];
 
-export default function ContractorNavigation({ currentView, onViewChange, onLogout, collapsed, onToggleCollapse, company }: {
-  currentView: ViewType; onViewChange: (view: ViewType) => void; onLogout: () => void;
-  collapsed: boolean; onToggleCollapse: () => void; company: string;
+export default function ContractorNavigation({ currentView, onViewChange, collapsed, onToggleCollapse, company, companyLogo }: {
+  currentView: ViewType; onViewChange: (view: ViewType) => void;
+  collapsed: boolean; onToggleCollapse: () => void; company: string; companyLogo?: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const [failedLogo, setFailedLogo] = useState<string | null>(null);
   const navigate = (view: ViewType) => { onViewChange(view); setOpen(false); };
   const links = (compact: boolean) => <>
     <div className="flex flex-1 flex-col gap-7 overflow-y-auto px-3 py-6">
@@ -40,9 +41,11 @@ export default function ContractorNavigation({ currentView, onViewChange, onLogo
     </div>
     <div className="flex flex-col gap-2 p-3">
       <Separator />
-      <Button variant="ghost" className={cn('contractor-nav-link', compact && 'contractor-nav-compact')} title="Configuración" aria-label="Configuración" aria-current={currentView === ViewType.SETTINGS ? 'page' : undefined} onClick={() => navigate(ViewType.SETTINGS)}><IllustratedIcon name="settings" />{!compact && 'Configuración'}</Button>
-      {!compact && <div className="contractor-company"><Building2 className="size-4" /><div className="min-w-0"><p className="truncate">{company}</p><span>Portal de contratistas</span></div></div>}
-      <Button variant="ghost" className={cn('contractor-nav-link', compact && 'contractor-nav-compact')} title="Cerrar sesión" aria-label="Cerrar sesión" onClick={onLogout}><LogOut data-icon="inline-start" />{!compact && 'Cerrar sesión'}</Button>
+      <div className={cn('contractor-company-logo', compact && 'is-compact')}>
+        {companyLogo && failedLogo !== companyLogo
+          ? <img src={companyLogo} alt={`Logo de ${company}`} onError={() => setFailedLogo(companyLogo)} />
+          : <span className="contractor-company-logo-fallback" title={company}>{compact ? company.slice(0, 2).toUpperCase() : company}</span>}
+      </div>
     </div>
   </>;
   const brand = <img src={xapconLogo} alt="Xapcon Group — Back Office Partner" className="contractor-official-logo" />;

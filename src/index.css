@@ -1,6 +1,7 @@
 @import "@fontsource-variable/dm-sans";
 @import "@fontsource-variable/dm-sans/wght-italic.css";
 @import "@fontsource-variable/manrope";
+@import "@fontsource-variable/inter";
 @import "tailwindcss";
 
 /* Shared Xapcon logo blue for both role themes and their portaled dialogs. */
@@ -10,9 +11,9 @@
 }
 
 @theme {
-  --font-sans: "DM Sans Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Inter", ui-monospace, monospace;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
 
   /* Brand palette */
   --color-gold:            #8C6A22;

@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext.tsx';
 import './index.css';
 import './contractor.css';
 import './contractor-modern.css';
+import './utilitarian.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
