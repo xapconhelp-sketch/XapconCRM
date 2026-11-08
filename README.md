@@ -22,7 +22,7 @@ For production, run `npm run build` followed by `npm start`. The production serv
 
 ## Contractor weather
 
-The local development server uses Open-Meteo's open-access endpoints for evaluation and prototyping. Production use requires an Open-Meteo commercial API key in the server-side `OPEN_METEO_API_KEY` environment variable; keep it out of all `VITE_` variables. The geocoder receives only a city/locality or postal code derived from the company address, not the street address or building number. The widget links to Open-Meteo and its CC BY 4.0 attribution; weather condition codes are translated into Spanish.
+The local development server uses Open-Meteo's open-access endpoints for evaluation and prototyping when no WeatherAPI key is configured. Production uses WeatherAPI through the server-side `WEATHERAPI_API_KEY` environment variable; its free plan currently includes 100,000 calls per month. Keep the key out of all `VITE_` variables. Only a city/locality or postal code derived from the company address is sent to the provider, not the street address or building number. WeatherAPI conditions are requested in Spanish; the widget links to the active provider.
 
 Validation: `npm run lint`, `npm test`, and `npm audit`. The production HTTP tests bind an ephemeral loopback port. `npm run clean` removes generated build output using Node on Windows, macOS and Linux.
 

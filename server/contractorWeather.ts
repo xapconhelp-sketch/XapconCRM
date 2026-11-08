@@ -8,6 +8,7 @@ export interface ContractorWeatherResult {
   condition: string;
   isDaytime: boolean;
   updatedAt: string;
+  provider: "WeatherAPI" | "Open-Meteo";
 }
 
 class WeatherLookupError extends Error {
@@ -62,66 +63,99 @@ function describeWeatherCode(code: number): string {
   return "Condiciones variables";
 }
 
-function getOpenMeteoEndpoints() {
-  const apiKey = process.env.OPEN_METEO_API_KEY?.trim();
-  if (process.env.NODE_ENV === "production" && !apiKey) {
-    throw new WeatherLookupError("Falta configurar la clave comercial de Open-Meteo para producción.", 503);
+async function fetchOpenMeteoWeather(searches: string[]): Promise<ContractorWeatherResult> {
+  let place: { latitude: number; longitude: number; name: string; admin1?: string; country?: string } | undefined;
+  for (const search of searches) {
+    const geocoderUrl = new URL("https://geocoding-api.open-meteo.com/v1/search");
+    geocoderUrl.searchParams.set("name", search);
+    geocoderUrl.searchParams.set("count", "5");
+    geocoderUrl.searchParams.set("language", "es");
+    const geocoderData = await fetchJson(geocoderUrl.toString());
+    const results = Array.isArray(geocoderData?.results) ? geocoderData.results : [];
+    place = results.find((result: { latitude?: number; longitude?: number }) =>
+      Number.isFinite(result.latitude) && Number.isFinite(result.longitude),
+    );
+    if (place) break;
+  }
+  if (!place) throw new WeatherLookupError("No se pudo reconocer la ciudad o el código postal de la dirección de la empresa.", 404);
+
+  const forecastUrl = new URL("https://api.open-meteo.com/v1/forecast");
+  forecastUrl.searchParams.set("latitude", String(place.latitude));
+  forecastUrl.searchParams.set("longitude", String(place.longitude));
+  forecastUrl.searchParams.set("current", "temperature_2m,weather_code,is_day");
+  forecastUrl.searchParams.set("temperature_unit", "fahrenheit");
+  forecastUrl.searchParams.set("timezone", "auto");
+  const forecastData = await fetchJson(forecastUrl.toString());
+  const current = forecastData?.current;
+  if (!current || !Number.isFinite(current.temperature_2m) || !Number.isFinite(current.weather_code)) {
+    throw new WeatherLookupError("El servicio meteorológico no devolvió condiciones actuales para esta ubicación.", 502);
   }
   return {
-    apiKey,
-    geocodingHost: apiKey ? "customer-geocoding-api.open-meteo.com" : "geocoding-api.open-meteo.com",
-    forecastHost: apiKey ? "customer-api.open-meteo.com" : "api.open-meteo.com",
+    location: [place.name, place.admin1, place.country].filter(Boolean).join(", "),
+    temperature: current.temperature_2m,
+    temperatureUnit: "F",
+    condition: describeWeatherCode(current.weather_code),
+    isDaytime: current.is_day === 1,
+    updatedAt: current.time ? new Date(current.time).toISOString() : new Date().toISOString(),
+    provider: "Open-Meteo",
+  };
+}
+
+async function fetchWeatherApiWeather(searches: string[], apiKey: string): Promise<ContractorWeatherResult> {
+  let data: any = null;
+  for (let index = 0; index < searches.length; index += 1) {
+    const search = searches[index];
+    const url = new URL("https://api.weatherapi.com/v1/current.json");
+    url.searchParams.set("key", apiKey);
+    url.searchParams.set("q", search);
+    url.searchParams.set("lang", "es");
+    const response = await fetch(url, {
+      headers: { Accept: "application/json", "User-Agent": "XapconCRM contractor weather widget" },
+      signal: AbortSignal.timeout(8000),
+    });
+    const body = await response.json();
+    if (!response.ok || body?.error) {
+      if (body?.error?.code === 1006 && index < searches.length - 1) continue;
+      throw new WeatherLookupError(
+        body?.error?.code === 1006
+          ? "No se pudo reconocer la ciudad o el código postal de la dirección de la empresa."
+          : "El servicio meteorológico respondió con un error temporal.",
+        body?.error?.code === 1006 ? 404 : 502,
+      );
+    }
+    data = body;
+    break;
+  }
+  const current = data?.current;
+  const place = data?.location;
+  if (!current || !Number.isFinite(current.temp_f) || !place?.name) {
+    throw new WeatherLookupError("El servicio meteorológico no devolvió condiciones actuales para esta ubicación.", 502);
+  }
+  return {
+    location: [place.name, place.region, place.country].filter(Boolean).join(", "),
+    temperature: current.temp_f,
+    temperatureUnit: "F",
+    condition: current.condition?.text || "Condiciones variables",
+    isDaytime: current.is_day === 1,
+    updatedAt: current.last_updated_epoch
+      ? new Date(current.last_updated_epoch * 1000).toISOString()
+      : new Date().toISOString(),
+    provider: "WeatherAPI",
   };
 }
 
 async function fetchContractorWeather(locationSearch: string): Promise<ContractorWeatherResult> {
   try {
-    const { apiKey, geocodingHost, forecastHost } = getOpenMeteoEndpoints();
     const searches = locationSearch.split("||").map(part => part.trim()).filter(Boolean);
     if (searches.length === 0) {
       throw new WeatherLookupError("Agrega una ciudad o código postal en la dirección comercial de la empresa.", 400);
     }
-
-    let place: { latitude: number; longitude: number; name: string; admin1?: string; country?: string } | undefined;
-    for (const search of searches) {
-      const geocoderUrl = new URL(`https://${geocodingHost}/v1/search`);
-      geocoderUrl.searchParams.set("name", search);
-      geocoderUrl.searchParams.set("count", "5");
-      geocoderUrl.searchParams.set("language", "es");
-      if (apiKey) geocoderUrl.searchParams.set("apikey", apiKey);
-      const geocoderData = await fetchJson(geocoderUrl.toString());
-      const results = Array.isArray(geocoderData?.results) ? geocoderData.results : [];
-      place = results.find((result: { latitude?: number; longitude?: number }) =>
-        Number.isFinite(result.latitude) && Number.isFinite(result.longitude),
-      );
-      if (place) break;
+    const weatherApiKey = process.env.WEATHERAPI_API_KEY?.trim();
+    if (weatherApiKey) return await fetchWeatherApiWeather(searches, weatherApiKey);
+    if (process.env.NODE_ENV === "production") {
+      throw new WeatherLookupError("Falta configurar la clave gratuita de WeatherAPI para producción.", 503);
     }
-
-    if (!place) {
-      throw new WeatherLookupError("No se pudo reconocer la ciudad o el código postal de la dirección de la empresa.", 404);
-    }
-
-    const forecastUrl = new URL(`https://${forecastHost}/v1/forecast`);
-    forecastUrl.searchParams.set("latitude", String(place.latitude));
-    forecastUrl.searchParams.set("longitude", String(place.longitude));
-    forecastUrl.searchParams.set("current", "temperature_2m,weather_code,is_day");
-    forecastUrl.searchParams.set("temperature_unit", "fahrenheit");
-    forecastUrl.searchParams.set("timezone", "auto");
-    if (apiKey) forecastUrl.searchParams.set("apikey", apiKey);
-    const forecastData = await fetchJson(forecastUrl.toString());
-    const current = forecastData?.current;
-    if (!current || !Number.isFinite(current.temperature_2m) || !Number.isFinite(current.weather_code)) {
-      throw new WeatherLookupError("El servicio meteorológico no devolvió condiciones actuales para esta ubicación.", 502);
-    }
-
-    return {
-      location: [place.name, place.admin1, place.country].filter(Boolean).join(", "),
-      temperature: current.temperature_2m,
-      temperatureUnit: "F",
-      condition: describeWeatherCode(current.weather_code),
-      isDaytime: current.is_day === 1,
-      updatedAt: current.time ? new Date(current.time).toISOString() : new Date().toISOString(),
-    };
+    return await fetchOpenMeteoWeather(searches);
   } catch (error) {
     if (error instanceof WeatherLookupError) throw error;
     console.error("Unable to load contractor weather provider.");

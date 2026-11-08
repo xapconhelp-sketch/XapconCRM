@@ -7,6 +7,7 @@ interface ContractorWeatherData {
   temperatureUnit: string;
   condition: string;
   isDaytime: boolean;
+  provider: "WeatherAPI" | "Open-Meteo";
 }
 
 interface ContractorWeatherProps {
@@ -116,12 +117,14 @@ export default function ContractorWeather({ address }: ContractorWeatherProps) {
     : status === "loading"
       ? "Consultando el clima de la empresa"
       : unavailableReason;
+  const providerLink = weather?.provider === "WeatherAPI" ? "https://www.weatherapi.com/" : "https://open-meteo.com/";
+  const providerLabel = weather?.provider || "Open-Meteo";
 
   return (
     <div className={`contractor-weather is-${status}`} aria-live="polite" title={label}>
       {status === "ready" ? (
-        <a className="contractor-weather-icon" href="https://open-meteo.com/" target="_blank" rel="noreferrer"
-          title="Datos de Open-Meteo · CC BY 4.0" aria-label="Datos meteorológicos de Open-Meteo, licencia CC BY 4.0">
+        <a className="contractor-weather-icon" href={providerLink} target="_blank" rel="noreferrer"
+          title={`Datos de ${providerLabel}`} aria-label={`Datos meteorológicos de ${providerLabel}`}>
           <WeatherArt kind={iconKind} />
         </a>
       ) : <span className="contractor-weather-icon" aria-hidden="true"><WeatherArt kind={iconKind} /></span>}
