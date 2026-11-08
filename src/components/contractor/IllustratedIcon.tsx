@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
-import { House, Files, Calculator, HardHat, UsersRound, ShieldCheck, SlidersHorizontal, CalendarDays, TriangleAlert, LogOut, CircleDollarSign, ListChecks, CheckCircle2, Activity, Clock3, CircleX, Mail, type LucideIcon } from 'lucide-react';
+import { House, Files, Calculator, HardHat, UsersRound, ShieldCheck, SlidersHorizontal, CalendarDays, TriangleAlert, LogOut, CircleDollarSign, ListChecks, CheckCircle2, Activity, Clock3, CircleX, Mail, Crown, FileText, type LucideIcon } from 'lucide-react';
 
-export type Illustration = 'home' | 'claim' | 'estimate' | 'production' | 'team' | 'insurance' | 'settings' | 'calendar' | 'alert' | 'logout' | 'finance' | 'tasks' | 'success' | 'activity' | 'clock' | 'declined' | 'mail';
+export type Illustration = 'home' | 'claim' | 'estimate' | 'production' | 'team' | 'insurance' | 'settings' | 'calendar' | 'alert' | 'logout' | 'finance' | 'tasks' | 'success' | 'activity' | 'clock' | 'declined' | 'mail' | 'membership' | 'document';
 const icons: Record<Illustration, { icon: LucideIcon; color: string }> = {
   home: { icon: House, color: 'var(--xapcon-blue)' },
   claim: { icon: Files, color: '#367ac2' },
@@ -9,6 +9,8 @@ const icons: Record<Illustration, { icon: LucideIcon; color: string }> = {
   production: { icon: HardHat, color: '#b37924' },
   team: { icon: UsersRound, color: '#7962b0' },
   insurance: { icon: ShieldCheck, color: 'var(--xapcon-blue)' },
+  membership: { icon: Crown, color: '#886327' },
+  document: { icon: FileText, color: '#596D80' },
   settings: { icon: SlidersHorizontal, color: '#5c7491' },
   calendar: { icon: CalendarDays, color: '#367ac2' },
   alert: { icon: TriangleAlert, color: '#c26452' },

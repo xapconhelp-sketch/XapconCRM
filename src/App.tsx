@@ -1461,15 +1461,16 @@ export default function App() {
   const handleMoveProject = async (projectId: string, direction: "next" | "prev") => {
     if (!session) return;
     const stages = [
-      "Negados",
-      "Inspección",
+      "Nuevos",
+      "Estimados",
       "En disputa",
-      "Esperando Scope",
+      "Aprobado",
       "Aprobado y Suplementado",
       "Construcción",
-      "Esperando Depreciación",
+      "Solicitud Depreciación",
       "Finalizado",
-      "Cancelado"
+      "Cancelado",
+      "Negados"
     ];
 
     const claim = insuranceClaims.find(c => c.id === projectId);
@@ -1477,7 +1478,14 @@ export default function App() {
 
     const pendingMove = stageMoves.current.get(projectId);
     const currentStatus = pendingMove?.targets.at(-1) ?? claim.status;
-    let currentIdx = stages.indexOf(currentStatus);
+    const legacyStageAliases: Record<string, string> = {
+      "Nuevo": "Nuevos",
+      "Inspección": "Estimados",
+      "Esperando Scope": "Estimados",
+      "Esperando Depreciación": "Solicitud Depreciación",
+    };
+    const normalizedStatus = legacyStageAliases[currentStatus] || currentStatus;
+    let currentIdx = stages.indexOf(normalizedStatus);
     if (currentIdx === -1) {
       if (currentStatus === "Nuevo") {
         currentIdx = 0;
@@ -1660,7 +1668,6 @@ export default function App() {
           setSelectedInsuranceClaimId("");
           setSearchTerm("");
         }}
-        onLogout={signOut}
         userRole={userRole}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -1694,13 +1701,12 @@ export default function App() {
             { id: ViewType.INSURANCE_CLAIM, label: "Insurance Claim" },
             { id: ViewType.PRODUCTION, label: "Production Pipeline" },
             ...(userRole === "admin" ? [
-              { id: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras" },
+              { id: ViewType.INSURANCE_DIRECTORY, label: "Aseguradoras" },
               { id: ViewType.VALORES_INSURANCE, label: "Valores Insurance" },
               { id: ViewType.CONTRACTOR_CASE_REPORTS, label: "Informes por empresa" },
               { id: ViewType.DOCUMENTS, label: "Documentos" },
             ] : []),
-            { id: ViewType.TEAM, label: "Personal & Crews" },
-            { id: ViewType.SETTINGS, label: "Configuración" }
+            { id: ViewType.TEAM, label: "Personal & Crews" }
           ].map((item) => (
             <button
               key={item.id}
@@ -1717,12 +1723,6 @@ export default function App() {
               <span>{item.label}</span>
             </button>
           ))}
-          <button
-            onClick={signOut}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-red-400 hover:text-red-300 hover:bg-white/5 transition-all mt-4 border-t border-white/10 pt-4"
-          >
-            Cerrar Sesión
-          </button>
         </div>
       )}
 
@@ -1818,7 +1818,7 @@ export default function App() {
               )}
             </div>
 
-            {/* Right: Superadmin Badge & Notifications */}
+            {/* Right: Superadmin Badge, Notifications & Account Menu */}
             <div className="flex items-center gap-3">
               <span className="admin-role-badge px-2.5 py-1 border text-xs rounded-md flex items-center gap-1.5">
                 Superadmin
@@ -1836,6 +1836,26 @@ export default function App() {
                   homeownerAlertsEnabled={homeownerAlertsEnabled}
                 />
               </div>
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <button type="button" className="admin-account-trigger" aria-label="Abrir menú de cuenta">
+                    <UserRound className="size-4" aria-hidden="true" /><span>Mi cuenta</span><ChevronDown className="size-3.5" aria-hidden="true" />
+                  </button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content align="end" sideOffset={8} collisionPadding={12} className="admin-account-menu">
+                  <DropdownMenu.Label className="admin-account-identity">
+                    <strong>{profile?.full_name || session.user.user_metadata?.full_name || "Mi cuenta"}</strong>
+                    <span>{session.user.email}</span>
+                  </DropdownMenu.Label>
+                  <DropdownMenu.Separator className="admin-account-separator" />
+                  <DropdownMenu.Item onSelect={() => navigateToView(ViewType.SETTINGS)} className="admin-account-item">
+                    <Settings className="size-4" aria-hidden="true" />Configuración
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item onSelect={() => void signOut()} className="admin-account-item admin-account-item-danger">
+                    <LogOut className="size-4" aria-hidden="true" />Cerrar sesión
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
             </div>
           </div>
         )}
@@ -1969,6 +1989,7 @@ export default function App() {
             userRole === "contractor" ? (
               <ContractorDashboard
                 companyAddress={organizations.find(organization => organization.id === activeOrganization?.id)?.company_address ?? activeOrganization?.company_address}
+                companyScope={activeOrganization?.company_name || activeOrganization?.name || "Tu empresa"}
                 claims={filteredInsuranceClaims}
                 teamMembers={teamMembers}
                 currentUserId={session.user.id}
@@ -1984,6 +2005,8 @@ export default function App() {
                 onNavigateToView={navigateToView}
                 onNavigateToLead={handleNavigateToInsuranceClaim}
                 claims={filteredInsuranceClaims}
+                companyScope={activeOrganization?.name || "Todas las empresas"}
+                companyScopeColor={activeOrganization?.brand_primary_color}
                 onToggleTask={handleToggleInsuranceClaimTask}
                 taskComposer={<ContractorDashboard composerOnly claims={filteredInsuranceClaims} teamMembers={teamMembers}
                   currentUserId={session.user.id} onNavigateToView={navigateToView} onNavigateToLead={handleNavigateToInsuranceClaim}

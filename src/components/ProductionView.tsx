@@ -1,6 +1,5 @@
 import { RoleSectionIcon, RoleIconTile } from "./contractor/DesignSystem";
 import { KPI, Lead, ViewType } from "../types";
-import IllustratedIcon, { type Illustration } from "./contractor/IllustratedIcon";
 import {
   ArrowRight,
   ArrowLeft,
@@ -16,35 +15,27 @@ interface ProductionViewProps {
   onMoveProject: (projectId: string, direction: "next" | "prev") => void;
 }
 
-const metricIllustrations: Record<string, Illustration> = {
-  "users": "team",
-  "file-text": "claim",
-  "hard-hat": "production",
-  "check-circle": "success",
-  "clock": "clock",
-  "trending-up": "activity",
-  "x-circle": "declined",
-  "scale": "estimate",
-  "plus-circle": "claim",
-  "flag": "production",
-};
-
 const PIPELINE_COLUMNS = [
-  { id: "Negados", title: "Negados", accent: "#B6484F", tint: "#F9ECEC" },
-  { id: "Inspección", title: "Inspección", accent: "#4385A4", tint: "#EAF3F7" },
-  { id: "En disputa", title: "En disputa", accent: "#B8794B", tint: "#F7EFE9" },
-  { id: "Esperando Scope", title: "Esperando Scope", accent: "#786A9F", tint: "#F0EEF6" },
-  { id: "Aprobado y Suplementado", title: "Aprobado y Suplementado", accent: "#57846C", tint: "#EDF4EF" },
-  { id: "Construcción", title: "Construcción", accent: "#4F7390", tint: "#EBF1F5" },
-  { id: "Esperando Depreciación", title: "Esperando Depreciación", accent: "#AD8059", tint: "#F7F4E9" },
-  { id: "Finalizado", title: "Finalizado", accent: "#4E8C75", tint: "#EAF4F0" },
-  { id: "Cancelado", title: "Cancelado", accent: "#7B8793", tint: "#E6ECF1" },
+  { id: "Nuevos", title: "Nuevos", accent: "#64748B", tint: "#F1F5F9", header: "#688A72" },
+  { id: "Estimados", title: "Estimados", accent: "#4385A4", tint: "#EAF3F7", header: "#688A72" },
+  { id: "En disputa", title: "En disputa", accent: "#B8794B", tint: "#F7EFE9", header: "#B8794B" },
+  { id: "Aprobado", title: "Aprobado", accent: "#57846C", tint: "#EDF4EF", header: "#688A72" },
+  { id: "Aprobado y Suplementado", title: "Aprobado y Suplementado", accent: "#57846C", tint: "#EDF4EF", header: "#688A72" },
+  { id: "Construcción", title: "Construcción", accent: "#4F7390", tint: "#EBF1F5", header: "#796E9A" },
+  { id: "Solicitud Depreciación", title: "Solicitud Depreciación", accent: "#AD8059", tint: "#F7F4E9" },
+  { id: "Finalizado", title: "Finalizado", accent: "#4E8C75", tint: "#EAF4F0", header: "#617F9B" },
+  { id: "Cancelado", title: "Cancelado", accent: "#7B8793", tint: "#E6ECF1", header: "#777F87" },
+  { id: "Negados", title: "Negados", accent: "#B6484F", tint: "#F9ECEC", header: "#AD5C61" },
 ];
 
-export default function ProductionView({ claims, onMoveProject, adminMetrics }: ProductionViewProps) {
-  const constructionCount = claims.filter((claim) => claim.status === "Construcción").length;
-  const finishedCount = claims.filter((claim) => claim.status === "Finalizado").length;
+const legacyStageAliases: Record<string, string> = {
+  "Nuevo": "Nuevos",
+  "Inspección": "Estimados",
+  "Esperando Scope": "Estimados",
+  "Esperando Depreciación": "Solicitud Depreciación",
+};
 
+export default function ProductionView({ claims, onMoveProject, adminMetrics }: ProductionViewProps) {
   return (
     <div className="production-page crm-workspace flex-1 min-h-0 overflow-y-auto p-5 md:p-7 space-y-6">
       <header className={`flex flex-col gap-5 border-b border-[#DCE3E8] pb-6 ${adminMetrics ? "" : "xl:flex-row xl:items-end xl:justify-between"}`}>
@@ -56,46 +47,13 @@ export default function ProductionView({ claims, onMoveProject, adminMetrics }: 
           </div>
         </div>
 
-        {adminMetrics ? (
-        <section aria-label="Indicadores de producción">
-          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
-            <MetricCard title="Expedientes" value={String(claims.length)} illustration="home" onClick={() => adminMetrics.onNavigateToView(ViewType.INSURANCE_CLAIM)} />
-            {adminMetrics.kpis.map((kpi, index) => {
-              const title = kpi.title.toLowerCase();
-              const illustration = title.includes("constru") ? "production"
-                : title.includes("depre") ? "finance"
-                  : title.includes("disput") || title.includes("negad") ? "alert"
-                    : title.includes("finaliz") ? "success"
-                      : title.includes("activo") ? "claim"
-                        : metricIllustrations[kpi.icon] || "claim";
-              return <MetricCard key={`${kpi.title}-${index}`} title={kpi.title} value={kpi.value} illustration={illustration} onClick={() => adminMetrics.onNavigateToView(kpi.title.toLowerCase().includes("constru") ? ViewType.PRODUCTION : ViewType.INSURANCE_CLAIM)} />;
-            })}
-          </div>
-        </section>
-        ) : (
-        <div className="grid grid-cols-3 gap-2 sm:min-w-[390px] sm:gap-3">
-          <div className="rounded-2xl border border-[#DCE4EB] bg-white px-3 py-3 shadow-sm sm:px-4">
-            <p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#5C6D7D]">Expedientes</p>
-            <p className="mt-1 text-2xl font-bold leading-none text-[#102A46]">{claims.length}</p>
-          </div>
-          <div className="rounded-2xl border border-[#DCE4EB] bg-white px-3 py-3 shadow-sm sm:px-4">
-            <p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#5C6D7D]">En construcción</p>
-            <p className="mt-1 text-2xl font-bold leading-none text-[#4F7390]">{constructionCount}</p>
-          </div>
-          <div className="rounded-2xl border border-[#DCE4EB] bg-white px-3 py-3 shadow-sm sm:px-4">
-            <p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#5C6D7D]">Finalizados</p>
-            <p className="mt-1 text-2xl font-bold leading-none text-[#4E8C75]">{finishedCount}</p>
-          </div>
-        </div>
-        )}
       </header>
 
       <div className="flex snap-x gap-4 overflow-x-auto pb-4 select-none">
         {PIPELINE_COLUMNS.map((column, index) => {
-          const knownStatuses = PIPELINE_COLUMNS.map((item) => item.id);
           const projects = claims.filter((claim) => {
-            if (column.id === "Inspección" && !knownStatuses.includes(claim.status)) return true;
-            return claim.status === column.id;
+            const stage = legacyStageAliases[claim.status] || claim.status;
+            return stage === column.id;
           });
 
           return (
@@ -104,13 +62,13 @@ export default function ProductionView({ claims, onMoveProject, adminMetrics }: 
               aria-label={`${column.title}: ${projects.length} expedientes`}
               className="flex h-[min(70vh,720px)] min-h-[420px] w-[300px] shrink-0 snap-start flex-col overflow-hidden rounded-[20px] border border-[#DFE5EA] bg-[#EEF2F5] shadow-[0_3px_12px_rgba(23,49,74,0.04)] md:w-[320px]"
             >
-              <div className="border-b border-[#E1E7EB] bg-white/80 px-4 pb-2 pt-3">
-                <div className="mb-2 h-1 w-9 rounded-full" style={{ backgroundColor: column.accent }} />
+              <div className="border-b border-[#E1E7EB] px-4 pb-2 pt-3" style={column.header ? { backgroundColor: column.header } : { backgroundColor: "#ffffff" }}>
+                <div className="mb-2 h-1 w-9 rounded-full" style={{ backgroundColor: column.header ? "#ffffff99" : column.accent }} />
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="min-w-0 truncate text-[13px] font-bold text-[#263B50]">{column.title}</h2>
+                  <h2 className={`min-w-0 truncate text-[13px] font-bold ${column.header ? "text-white" : "text-[#263B50]"}`}>{column.title}</h2>
                   <span
-                    className="flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-[11px] font-bold tabular-nums"
-                    style={{ color: column.accent, backgroundColor: column.tint }}
+                    className={`flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-[11px] font-bold tabular-nums ${column.header ? "text-white" : ""}`}
+                    style={column.header ? { backgroundColor: "#00000026" } : { color: column.accent, backgroundColor: column.tint }}
                   >
                     {projects.length}
                   </span>
@@ -178,22 +136,9 @@ export default function ProductionView({ claims, onMoveProject, adminMetrics }: 
 
       <div className="flex items-center gap-2 text-[11px] text-[#84919D]">
         <HardHat className="h-3.5 w-3.5 text-[#735818]" />
-        Desplázate horizontalmente para recorrer todas las etapas del proyecto.
+        <span className="text-black">Desplázate horizontalmente para recorrer todas las etapas del proyecto.</span>
         <CheckCircle2 className="ml-auto hidden h-4 w-4 text-[#4E8C75] sm:block" />
       </div>
     </div>
-  );
-}
-
-function MetricCard({ title, value, illustration, onClick }: { title: string; value: string; illustration: Illustration; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} className="admin-metric-card group relative flex min-h-[96px] min-w-0 flex-col justify-between overflow-hidden rounded-lg border border-zinc-200 bg-white px-4 py-3 text-left transition-colors hover:border-zinc-400 hover:bg-zinc-50 focus-visible:outline-[#755613]">
-      <span className="admin-metric-accent" aria-hidden="true" />
-      <span className="admin-metric-topline flex min-w-0 items-center justify-between gap-2">
-        <span title={title} className="block truncate text-[10px] font-medium uppercase leading-tight tracking-[0.08em] text-zinc-500">{title}</span>
-        <IllustratedIcon name={illustration} className="admin-metric-illustration" />
-      </span>
-      <span className="admin-metric-value block truncate text-[27px] font-semibold leading-none tracking-tight tabular-nums text-zinc-950">{value}</span>
-    </button>
   );
 }

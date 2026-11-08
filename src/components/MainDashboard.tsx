@@ -1,8 +1,6 @@
 import React from "react";
 import {
-  Activity,
   AlertCircle,
-  ArrowDownRight,
   ArrowRight,
   Check,
   CheckCircle2,
@@ -10,20 +8,21 @@ import {
 } from "lucide-react";
 import { Lead, TaskItem, ViewType } from "../types";
 import { isContractorTask } from "../lib/taskCategories";
-import IllustratedIcon from "./contractor/IllustratedIcon";
+import PortfolioByStage from "./PortfolioByStage";
+import WeeklyCasesChart from "./WeeklyCasesChart";
 
 interface MainDashboardProps {
   taskComposer?: React.ReactNode;
   onNavigateToView: (view: ViewType) => void;
   onNavigateToLead: (leadId: string) => void;
   claims: Lead[];
+  companyScope: string;
+  companyScopeColor?: string | null;
   onToggleTask?: (leadId: string, taskId: string) => void;
 }
 
 type TaskRow = { claimId: string; claimName: string; claimStatus: string; task: TaskItem };
 type InactivityRow = { claim: Lead; days: number };
-type TaskFilter = "all" | "urgent";
-
 const activeClaim = (claim: Lead) => !["Finalizado", "Cancelado", "Negados"].includes(claim.status);
 
 function parseEventDate(event: Lead["timeline"][number]) {
@@ -89,28 +88,18 @@ function TaskPanel({
   onNavigateToLead: (leadId: string) => void;
   onToggleTask?: (leadId: string, taskId: string) => void;
 }) {
-  const [taskFilter, setTaskFilter] = React.useState<TaskFilter>("all");
   const urgentCount = tasks.filter(({ task }) => daysOverdue(task) > 0).length;
-  const visibleTasks = taskFilter === "urgent"
-    ? tasks.filter(({ task }) => daysOverdue(task) > 0)
-    : tasks;
 
   return (
     <section className="h-fit self-start overflow-hidden rounded-2xl border border-[#E0E5E8] border-t-[3px] border-t-[#8C6A22] bg-white shadow-[0_5px_22px_rgba(23,49,74,0.045)]" aria-label={title}>
-      <div className="admin-task-panel-heading flex flex-wrap items-center justify-between gap-2.5 border-b border-[#E9EDEF] bg-[#FCFCFA] px-3.5 py-3 sm:px-4">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <IllustratedIcon name="tasks" className="admin-task-heading-icon" />
-          <div className="min-w-0"><h2 className="truncate text-[13px] font-bold text-[#102A46]">{title}</h2><p className="mt-0.5 text-[9px] font-medium text-[#78858D]">{tasks.length} {tasks.length === 1 ? "pendiente" : "pendientes"}</p></div>
-        </div>
-        <div className="flex w-fit rounded-lg border border-[#E3E7E7] bg-white p-0.5 shadow-[0_1px_2px_rgba(23,49,74,0.04)]" role="group" aria-label={`Filtrar ${title}`}>
-          <FilterButton active={taskFilter === "all"} onClick={() => setTaskFilter("all")}>Todas</FilterButton>
-          <FilterButton active={taskFilter === "urgent"} onClick={() => setTaskFilter("urgent")}>Vencidas <span className="ml-1 tabular-nums">{urgentCount}</span></FilterButton>
-        </div>
+      <div className="admin-task-panel-heading flex min-h-[50px] flex-wrap items-center justify-between gap-2.5 border-b border-[#E9EDEF] bg-[#FCFCFA] px-3.5 py-2 sm:px-4">
+        <h2 className="min-w-0 truncate text-[13px] font-bold text-[#102A46]">{title}</h2>
+        <span className="inline-flex min-w-7 shrink-0 items-center justify-center rounded-full border border-[#D3B566]/20 bg-[#8C6A22]/15 px-2.5 py-1 text-[10px] font-bold tabular-nums text-[#D8C68A]">{tasks.length}</span>
       </div>
       <div className="max-h-[430px] divide-y divide-[#F0F2F3] overflow-y-auto">
-        {visibleTasks.length === 0 ? (
-          <EmptyState icon={<CheckCircle2 className="h-5 w-5" />} title={taskFilter === "urgent" ? "Sin tareas vencidas" : "Todo al día"} description={taskFilter === "urgent" ? "No hay tareas pendientes que hayan superado su fecha límite." : `No hay tareas pendientes en ${title.toLowerCase()}.`} />
-        ) : visibleTasks.map(({ claimId, claimName, claimStatus, task }) => {
+        {tasks.length === 0 ? (
+          <EmptyState icon={<CheckCircle2 className="h-5 w-5" />} title="Todo al día" description={`No hay tareas pendientes en ${title.toLowerCase()}.`} />
+        ) : tasks.map(({ claimId, claimName, claimStatus, task }) => {
           const age = daysOverdue(task);
           const isUrgent = age > 0;
           return (
@@ -142,6 +131,8 @@ export default function MainDashboard({
   onNavigateToView,
   onNavigateToLead,
   claims = [],
+  companyScope,
+  companyScopeColor,
   onToggleTask,
   taskComposer,
 }: MainDashboardProps) {
@@ -180,52 +171,44 @@ export default function MainDashboard({
           </div>
         </section>
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12 xl:gap-5">
-          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:col-span-7">
-            <TaskPanel title="Tareas Xapcon" tasks={xapconTasks} onNavigateToView={onNavigateToView} onNavigateToLead={onNavigateToLead} onToggleTask={onToggleTask} />
-            <TaskPanel title="Tareas Contratistas" tasks={contractorTasks} onNavigateToView={onNavigateToView} onNavigateToLead={onNavigateToLead} onToggleTask={onToggleTask} />
-          </div>
-
-          <section className="overflow-hidden rounded-2xl border border-[#E0E5E8] bg-white shadow-[0_5px_22px_rgba(23,49,74,0.045)] xl:col-span-5" aria-labelledby="followup-heading">
-            <div className="admin-followup-heading border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] px-4 py-3 sm:px-5">
-              <div className="flex items-center gap-3">
-                <span className="admin-followup-icon contractor-illustration" style={{ "--icon-accent": "var(--xapcon-blue)" } as React.CSSProperties}><Activity className="h-5 w-5" /></span>
-                <div className="min-w-0 flex-1"><h2 id="followup-heading" className="text-sm font-bold text-white">Seguimiento de expedientes</h2><p className="mt-0.5 text-[10px] text-[#CBD6DE]">Casos sin movimiento reciente</p></div>
+        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12 xl:gap-5">
+          <section className="min-w-0 overflow-hidden rounded-2xl border border-[#E0E5E8] bg-white shadow-[0_5px_22px_rgba(23,49,74,0.045)] xl:col-span-4" aria-labelledby="followup-heading">
+            <div className="admin-followup-heading flex min-h-[46px] items-center border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] px-4 py-2 sm:px-5">
+              <div className="flex w-full items-center justify-between gap-3">
+                <h2 id="followup-heading" className="min-w-0 flex-1 text-sm font-bold text-white">Seguimiento de Casos</h2>
                 <span className="rounded-full border border-[#D3B566]/20 bg-[#8C6A22]/15 px-2.5 py-1 text-[10px] font-bold tabular-nums text-[#D8C68A]">{visibleClaims.length}</span>
               </div>
             </div>
             <div className="max-h-[430px] divide-y divide-[#F0F2F3] overflow-y-auto">
-              {visibleClaims.length === 0 ? <EmptyState icon={<CheckCircle2 className="h-5 w-5" />} title="Cartera al día" description="No hay expedientes sin actividad por 3 días o más." /> : visibleClaims.map(({ claim, days }) => {
-                const urgency = days >= 14
-                  ? { dot: "bg-[#B5493B]", pill: "bg-[#FCEDEA] text-[#A64035]", label: "Prioridad alta" }
-                  : days >= 7
-                    ? { dot: "bg-[#D28B43]", pill: "bg-[#FBF2E7] text-[#96652B]", label: "Revisar" }
-                    : { dot: "bg-[#8C9BA6]", pill: "bg-[#F1F4F5] text-[#657783]", label: "En seguimiento" };
-                return (
-                  <button type="button" key={claim.id} onClick={() => onNavigateToLead(claim.id)} className="group flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-[#FAFBFB] focus-visible:relative focus-visible:z-10 sm:px-5">
-                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${urgency.dot}`} />
-                    <span className="min-w-0 flex-1">
-                      <span className="flex min-w-0 items-center gap-2"><span className="truncate text-xs font-bold text-[#1D3449] group-hover:text-[#755613]">{claim.name}</span><span className={`hidden shrink-0 rounded-full px-2 py-0.5 text-[8px] font-bold sm:inline-flex ${urgency.pill}`}>{urgency.label}</span></span>
-                      <span className="mt-1 block truncate text-[10px] text-slate-500">{claim.address || "Sin dirección"} <span className="px-0.5 text-slate-300">·</span> {claim.status}</span>
-                    </span>
-                    <span className="flex shrink-0 items-center gap-1 rounded-lg bg-[#F5F6F7] px-2 py-1 text-[10px] font-bold tabular-nums text-[#465D70]">{days} d <ArrowDownRight className="h-3 w-3 text-[#9AA8B0]" /></span>
-                  </button>
-                );
-              })}
+              {visibleClaims.length === 0 ? <EmptyState icon={<CheckCircle2 className="h-5 w-5" />} title="Cartera al día" description="No hay expedientes sin actividad por 3 días o más." /> : visibleClaims.map(({ claim, days }) => (
+                <button type="button" key={claim.id} onClick={() => onNavigateToLead(claim.id)} className="group flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-[#FAFBFB] focus-visible:relative focus-visible:z-10 sm:px-5">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-bold text-[#1D3449] group-hover:text-[#755613]">{claim.name}</span>
+                    <span className="mt-1 block truncate text-[10px] text-slate-500">{claim.status}</span>
+                  </span>
+                  <span className="flex shrink-0 items-center rounded-lg bg-[#F5F6F7] px-2 py-1 text-[10px] font-bold tabular-nums text-[#465D70]">{days} d</span>
+                </button>
+              ))}
             </div>
             <div className="flex items-center justify-between border-t border-[#EDF0F1] bg-[#FAFBFB] px-4 py-3 sm:px-5">
               <div className="flex items-center gap-2 text-[9px] text-slate-500"><span className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-[#B5493B]" />14+ d</span><span className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-[#D28B43]" />7+ d</span></div>
               <button type="button" onClick={() => onNavigateToView(ViewType.INSURANCE_CLAIM)} className="inline-flex items-center gap-1 text-[10px] font-bold text-[#2F5270] transition hover:text-[#755613]">Revisar cartera <ArrowRight className="h-3 w-3" /></button>
             </div>
           </section>
+
+          <div className="min-w-0 xl:col-span-8">
+            <WeeklyCasesChart claims={claims} companyScope={companyScope} companyScopeColor={companyScopeColor} />
+            <div className="mt-4"><PortfolioByStage claims={claims} idPrefix="admin" /></div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:gap-5">
+          <TaskPanel title="Tareas Xapcon" tasks={xapconTasks} onNavigateToView={onNavigateToView} onNavigateToLead={onNavigateToLead} onToggleTask={onToggleTask} />
+          <TaskPanel title="Tareas Contratistas" tasks={contractorTasks} onNavigateToView={onNavigateToView} onNavigateToLead={onNavigateToLead} onToggleTask={onToggleTask} />
         </div>
       </div>
     </main>
   );
-}
-
-function FilterButton({ active, onClick, children, dark = false }: { key?: React.Key; active: boolean; onClick: () => void; children: React.ReactNode; dark?: boolean }) {
-  return <button type="button" aria-pressed={active} onClick={onClick} className={`whitespace-nowrap rounded-md px-2.5 py-1.5 text-[9px] font-bold transition focus-visible:outline-[#755613] ${active ? "bg-white text-[#102A46] shadow-sm" : dark ? "text-[#CFD9E1] hover:bg-white/10 hover:text-white" : "text-[#596D78] hover:bg-white/70 hover:text-[#2F5270]"}`}>{children}</button>;
 }
 
 function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {

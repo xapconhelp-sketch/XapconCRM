@@ -12,14 +12,13 @@ import {
   ChevronRight,
   ShieldCheck,
   ChartNoAxesCombined,
-  KeyRound,
-  Files
+  Crown,
+  FileText
 } from "lucide-react";
 
 interface SidebarProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
-  onLogout: () => void;
   userRole?: "admin" | "contractor";
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -34,18 +33,18 @@ const SECTION_MANAGEMENT = [
 
 const SECTION_ADMIN = [
   { type: ViewType.CONTRACTOR_CASE_REPORTS, label: "Informes por empresa", icon: ChartNoAxesCombined },
-  { type: ViewType.MEMBERSHIP_ACCESS, label: "Membresías y privilegios", icon: KeyRound },
-  { type: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras",  icon: ShieldCheck },
+  { type: ViewType.MEMBERSHIP_ACCESS, label: "Membresías y privilegios", icon: Crown },
+  { type: ViewType.INSURANCE_DIRECTORY, label: "Aseguradoras",  icon: ShieldCheck },
   { type: ViewType.VALORES_INSURANCE, label: "Valores Insurance", icon: ChartNoAxesCombined },
-  { type: ViewType.DOCUMENTS, label: "Documentos", icon: Files },
+  { type: ViewType.DOCUMENTS, label: "Documentos", icon: FileText },
 ];
-const DIRECTORY_ITEM = { type: ViewType.INSURANCE_DIRECTORY, label: "Directorio Aseguradoras", icon: ShieldCheck };
+const DIRECTORY_ITEM = { type: ViewType.INSURANCE_DIRECTORY, label: "Aseguradoras", icon: ShieldCheck };
 
 const SECTION_TEAM = [
   { type: ViewType.TEAM, label: "Equipo y cuadrillas", icon: Users2 },
 ];
 
-export default function Sidebar({ currentView, onViewChange, onLogout, userRole = "admin", collapsed, onToggleCollapse }: SidebarProps) {
+export default function Sidebar({ currentView, onViewChange, userRole = "admin", collapsed, onToggleCollapse }: SidebarProps) {
   const renderItem = (item: { type: ViewType; label: string; icon: React.ElementType }) => {
     const isActive = currentView === item.type;
     const illustrationByView: Partial<Record<ViewType, Illustration>> = {
@@ -56,10 +55,10 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
       [ViewType.INSURANCE_DIRECTORY]: "insurance",
       [ViewType.VALORES_INSURANCE]: "estimate",
       [ViewType.CONTRACTOR_CASE_REPORTS]: "activity",
-      [ViewType.MEMBERSHIP_ACCESS]: "insurance",
+      [ViewType.MEMBERSHIP_ACCESS]: "membership",
       [ViewType.TEAM]: "team",
       [ViewType.SETTINGS]: "settings",
-      [ViewType.DOCUMENTS]: "activity",
+      [ViewType.DOCUMENTS]: "document",
     };
     const illustration = illustrationByView[item.type] || "claim";
 
@@ -142,31 +141,6 @@ export default function Sidebar({ currentView, onViewChange, onLogout, userRole 
         {SECTION_TEAM.map(renderItem)}
       </div>
 
-      {/* Footer */}
-      <div className="px-2 py-4 border-t border-white/10 space-y-1">
-        <button
-          onClick={() => onViewChange(ViewType.SETTINGS)}
-          aria-current={currentView === ViewType.SETTINGS ? "page" : undefined}
-          className={`btn-responsive flex items-center gap-3 text-sm transition-all duration-150 ${
-            currentView === ViewType.SETTINGS ? "nav-item-active" : "nav-item-inactive"
-          } ${collapsed ? "w-10 h-10 rounded-lg justify-center mx-auto" : "w-full px-4 py-2.5 rounded-lg"}`}
-          title="Configuración"
-        >
-          <IllustratedIcon name="settings" className="admin-nav-illustration" />
-          {!collapsed && <span className="font-medium tracking-tight">Configuración</span>}
-        </button>
-
-        <button
-          onClick={onLogout}
-          className={`btn-responsive flex items-center gap-3 text-sm font-medium transition-all duration-150 text-[#EF4444]/70 hover:text-[#EF4444] hover:bg-white/5 rounded-lg ${
-            collapsed ? "w-10 h-10 justify-center mx-auto" : "w-full px-4 py-2.5"
-          }`}
-          title="Cerrar Sesión"
-        >
-          <IllustratedIcon name="logout" className="admin-nav-illustration" />
-          {!collapsed && <span>Cerrar Sesión</span>}
-        </button>
-      </div>
     </nav>
   );
 }

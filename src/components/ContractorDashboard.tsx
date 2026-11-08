@@ -1,9 +1,11 @@
 import IllustratedIcon from './contractor/IllustratedIcon';
 import ContractorWeather from './ContractorWeather';
+import PortfolioByStage from "./PortfolioByStage";
+import WeeklyCasesChart from "./WeeklyCasesChart";
 import { RoleInput, RoleSelect } from "./contractor/DesignSystem";
 import React from "react";
 import { Button } from './ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
+import { Card } from './ui/card';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from './ui/empty';
 import { RoleField, RoleFieldGroup } from './contractor/DesignSystem';
@@ -34,6 +36,7 @@ type NewTaskDetails = {
 
 interface ContractorDashboardProps {
   companyAddress?: string | null;
+  companyScope?: string;
   claims: Lead[];
   currentUserId: string;
   defaultTaskScope?: "all" | "mine";
@@ -99,6 +102,7 @@ const taskCategoryOptions = [
 
 export default function ContractorDashboard({
   companyAddress,
+  companyScope = "Tu empresa",
   claims,
   currentUserId,
   defaultTaskScope = "all",
@@ -216,6 +220,13 @@ export default function ContractorDashboard({
         </section>
         </div>
 
+        <div className="grid min-w-0 grid-cols-1 items-start gap-4 xl:grid-cols-12 xl:gap-5">
+          <div className="min-w-0 xl:col-span-8">
+            <WeeklyCasesChart claims={claims} companyScope={companyScope} showCompanyScope={false} />
+          </div>
+          <FollowupPanel inactivity={inactivity} onNavigateToLead={onNavigateToLead} onNavigateToView={onNavigateToView} />
+        </div>
+
         <section className="contractor-actionbar flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" aria-label="Acciones rápidas">
           <div className="contractor-day-controls">
             <div>
@@ -230,44 +241,10 @@ export default function ContractorDashboard({
           </div>
         </section>
 
-        <div className="contractor-dashboard-grid grid grid-cols-1 gap-5 xl:grid-cols-12">
-          <section className="contractor-panel overflow-hidden rounded-2xl border border-[#E0E5E6] bg-white shadow-[0_5px_20px_rgba(23,49,74,0.04)] xl:col-span-7" aria-labelledby="agenda-heading">
-            <div className="contractor-panel-head flex items-center justify-between border-b border-[#EEF2F5] px-5 py-4 sm:px-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F4E9] text-[#755613]"><CalendarDays className="h-5 w-5" /></div>
-                <div><h2 id="agenda-heading" className="text-sm font-bold text-[#102A46]">Agenda próxima</h2><p className="mt-0.5 text-[11px] text-slate-500">Inspecciones, citas e instalaciones · próximos 7 días</p></div>
-              </div>
-              <span className="rounded-full bg-[#F4F6F6] px-2.5 py-1 text-[10px] font-bold text-[#61717A]">{scheduled.length}</span>
-            </div>
-            {scheduled.length === 0 ? (
-              <EmptyState icon={<CalendarDays className="h-5 w-5" />} title="No hay actividades agendadas" detail="Agenda una inspección, una cita o una instalación para verla aquí." />
-            ) : (
-              <div className="divide-y divide-[#F0F2F2]">
-                {scheduled.slice(0, 6).map(({ claim, task }) => (
-                  <button key={`${claim.id}-${task.id}`} onClick={() => onNavigateToLead(claim.id)} className="group flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-[#FAFBFC] sm:px-6">
-                    <div className="flex w-[62px] shrink-0 flex-col items-center rounded-xl bg-[#F1F4F7] px-2 py-2 text-center group-hover:bg-white">
-                      <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{formatDate(task.dueDate, { weekday: "short" })}</span>
-                      <span className="mt-0.5 text-[14px] font-extrabold leading-none text-[#102A46]">{formatDate(task.dueDate, { day: "numeric" })}</span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-xs font-bold text-[#102A46]">{task.title}</p>
-                        <span className="rounded-md bg-[#F7F4E9] px-1.5 py-0.5 text-[9px] font-bold text-[#905A39]">{kindLabels[task.kind || "inspection"]}</span>
-                      </div>
-                      <p className="mt-1 truncate text-[11px] text-slate-500">{claim.name}{claim.address ? ` · ${claim.address}` : ""}{task.scheduledTime ? <span className="sm:hidden"> · {formatTime(task.scheduledTime)}</span> : null}</p>
-                    </div>
-                    <div className="hidden shrink-0 text-right sm:block">
-                      {task.scheduledTime && <p className="text-xs font-bold text-[#102A46]">{formatTime(task.scheduledTime)}</p>}
-                      {task.assignedTo && <p className="mt-1 text-[10px] text-slate-500">{task.assignedTo}</p>}
-                    </div>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#755613]" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
+        <div className="contractor-dashboard-grid grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-12">
+          <PortfolioByStage claims={claims} idPrefix="contractor" className="md:col-span-1 xl:col-span-4" />
 
-          <section className="contractor-panel overflow-hidden rounded-2xl border border-[#E0E5E6] bg-white shadow-[0_5px_20px_rgba(23,49,74,0.04)] xl:col-span-5" aria-labelledby="tasks-heading">
+          <section className="contractor-panel overflow-hidden rounded-2xl border border-[#E0E5E6] bg-white shadow-[0_5px_20px_rgba(23,49,74,0.04)] md:col-span-2 xl:col-span-4" aria-labelledby="tasks-heading">
             <div className="contractor-panel-head flex items-center justify-between border-b border-[#EEF2F5] px-5 py-4 sm:px-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF0F4] text-[#2F5270]"><ClipboardList className="h-5 w-5" /></div>
@@ -300,46 +277,7 @@ export default function ContractorDashboard({
               </div>
             )}
           </section>
-        </div>
-
-        <div className="contractor-dashboard-grid grid grid-cols-1 gap-5 xl:grid-cols-12">
-          <section className="contractor-panel overflow-hidden rounded-2xl border border-[#E0E5E6] bg-white shadow-[0_5px_20px_rgba(23,49,74,0.04)] xl:col-span-7" aria-labelledby="followup-heading">
-            <div className="contractor-panel-head flex items-center justify-between border-b border-[#EEF2F5] px-5 py-4 sm:px-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F0E5] text-[#9B7135]"><RotateCcw className="h-5 w-5" /></div>
-                <div><h2 id="followup-heading" className="text-sm font-bold text-[#102A46]">Casos que requieren seguimiento</h2><p className="mt-0.5 text-[11px] text-slate-500">Sin actividad registrada en los últimos 7 días</p></div>
-              </div>
-              <button onClick={() => onNavigateToView(ViewType.INSURANCE_CLAIM)} className="inline-flex items-center gap-1 text-[10px] font-bold text-[#465D70] hover:text-[#755613]">Todos los reclamos <ArrowRight className="h-3 w-3" /></button>
-            </div>
-            {inactivity.length === 0 ? (
-              <EmptyState icon={<CheckCheck className="h-5 w-5" />} title="Buen ritmo de seguimiento" detail="Ningún reclamo activo lleva 7 días sin actividad." />
-            ) : (
-              <div className="divide-y divide-[#F0F2F2]">
-                {inactivity.map(({ claim, days }) => (
-                  <button key={claim.id} onClick={() => onNavigateToLead(claim.id)} className="group flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-[#FAFBFC] sm:px-6">
-                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${days >= 14 ? "bg-[#C45645]" : "bg-[#D29447]"}`} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-bold text-[#102A46] group-hover:text-[#755613]">{claim.name}</p>
-                      <p className="mt-1 truncate text-[10px] text-slate-500">{claim.address || "Sin dirección"} · {claim.status}</p>
-                    </div>
-                    <span className={`shrink-0 rounded-lg px-2.5 py-1 text-[10px] font-bold ${days >= 14 ? "bg-[#FCEDEA] text-[#B5493B]" : "bg-[#FBF3E8] text-[#96652B]"}`}>{days} días</span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 group-hover:text-[#755613]" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <Card className="contractor-progress">
-            <CardHeader><CardTitle>Estado de tus proyectos</CardTitle><CardDescription>Distribución de los reclamos activos.</CardDescription></CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              {activeClaims.length === 0 ? <p className="text-sm text-muted-foreground">Tus proyectos aparecerán aquí al registrar el primer reclamo.</p> : Array.from(new Set(activeClaims.map(claim => claim.status))).map(status => {
-                const count = activeClaims.filter(claim => claim.status === status).length;
-                return <div className="contractor-progress-row" key={status}><span>{status}</span><strong>{count}</strong><div className="contractor-progress-track" role="meter" aria-label={status} aria-valuenow={count} aria-valuemin={0} aria-valuemax={activeClaims.length}><span style={{ width: `${count / activeClaims.length * 100}%` }} /></div></div>;
-              })}
-            </CardContent>
-            <CardFooter><Button variant="ghost" onClick={() => onNavigateToView(ViewType.PRODUCTION)}>Ver producción<ArrowRight data-icon="inline-end" /></Button></CardFooter>
-          </Card>
+          <AgendaPanel scheduled={scheduled} onNavigateToLead={onNavigateToLead} className="md:col-span-1 xl:col-span-4" />
         </div>
       </div>
 
@@ -376,6 +314,69 @@ export default function ContractorDashboard({
       )}
     </div>
   );
+}
+
+function AgendaPanel({ scheduled, onNavigateToLead, className = "" }: { scheduled: TaskRow[]; onNavigateToLead: (leadId: string) => void; className?: string }) {
+  return <section className={`contractor-panel min-w-0 overflow-hidden rounded-2xl border border-[#E0E5E6] bg-white shadow-[0_5px_20px_rgba(23,49,74,0.04)] ${className}`} aria-labelledby="agenda-heading">
+    <div className="contractor-panel-head flex items-center justify-between border-b border-[#EEF2F5] px-5 py-4 sm:px-6">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F4E9] text-[#755613]"><CalendarDays className="h-5 w-5" /></div>
+        <div><h2 id="agenda-heading" className="text-sm font-bold text-[#102A46]">Agenda próxima</h2><p className="mt-0.5 text-[11px] text-slate-500">Inspecciones, citas e instalaciones · próximos 7 días</p></div>
+      </div>
+      <span className="rounded-full bg-[#F4F6F6] px-2.5 py-1 text-[10px] font-bold text-[#61717A]">{scheduled.length}</span>
+    </div>
+    {scheduled.length === 0 ? (
+      <EmptyState icon={<CalendarDays className="h-5 w-5" />} title="No hay actividades agendadas" detail="Agenda una inspección, una cita o una instalación para verla aquí." />
+    ) : (
+      <div className="divide-y divide-[#F0F2F2]">
+        {scheduled.slice(0, 6).map(({ claim, task }) => (
+          <button key={`${claim.id}-${task.id}`} onClick={() => onNavigateToLead(claim.id)} className="group flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-[#FAFBFC] sm:px-6">
+            <div className="flex w-[62px] shrink-0 flex-col items-center rounded-xl bg-[#F1F4F7] px-2 py-2 text-center group-hover:bg-white">
+              <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{formatDate(task.dueDate, { weekday: "short" })}</span>
+              <span className="mt-0.5 text-[14px] font-extrabold leading-none text-[#102A46]">{formatDate(task.dueDate, { day: "numeric" })}</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate text-xs font-bold text-[#102A46]">{task.title}</p>
+                <span className="rounded-md bg-[#F7F4E9] px-1.5 py-0.5 text-[9px] font-bold text-[#905A39]">{kindLabels[task.kind || "inspection"]}</span>
+              </div>
+              <p className="mt-1 truncate text-[11px] text-slate-500">{claim.name}{claim.address ? ` · ${claim.address}` : ""}{task.scheduledTime ? <span className="sm:hidden"> · {formatTime(task.scheduledTime)}</span> : null}</p>
+            </div>
+            <div className="hidden shrink-0 text-right sm:block">
+              {task.scheduledTime && <p className="text-xs font-bold text-[#102A46]">{formatTime(task.scheduledTime)}</p>}
+              {task.assignedTo && <p className="mt-1 text-[10px] text-slate-500">{task.assignedTo}</p>}
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-[#755613]" />
+          </button>
+        ))}
+      </div>
+    )}
+  </section>;
+}
+
+function FollowupPanel({ inactivity, onNavigateToLead, onNavigateToView }: { inactivity: { claim: Lead; days: number }[]; onNavigateToLead: (leadId: string) => void; onNavigateToView: (view: ViewType) => void }) {
+  return <section className="contractor-panel min-w-0 overflow-hidden rounded-2xl border border-[#E0E5E6] bg-white shadow-[0_5px_20px_rgba(23,49,74,0.04)] xl:col-span-4" aria-labelledby="followup-heading">
+    <div className="contractor-panel-head flex items-center justify-between border-b border-[#EEF2F5] px-4 py-3 sm:px-5">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F7F0E5] text-[#9B7135]"><RotateCcw className="h-4 w-4" /></div>
+        <div className="min-w-0"><h2 id="followup-heading" className="truncate text-sm font-bold text-[#102A46]">Casos que requieren seguimiento</h2><p className="mt-0.5 truncate text-[11px] text-slate-500">Sin actividad en los últimos 7 días</p></div>
+      </div>
+      <button onClick={() => onNavigateToView(ViewType.INSURANCE_CLAIM)} className="ml-2 inline-flex shrink-0 items-center gap-1 text-[10px] font-bold text-[#465D70] hover:text-[#755818]" aria-label="Ver todos los reclamos"><ArrowRight className="h-3.5 w-3.5" /></button>
+    </div>
+    {inactivity.length === 0 ? (
+      <EmptyState icon={<CheckCheck className="h-5 w-5" />} title="Buen ritmo de seguimiento" detail="Ningún reclamo activo lleva 7 días sin actividad." />
+    ) : (
+      <div className="max-h-[360px] divide-y divide-[#F0F2F2] overflow-y-auto">
+        {inactivity.map(({ claim, days }) => (
+          <button key={claim.id} onClick={() => onNavigateToLead(claim.id)} className="group flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-[#FAFBFC] sm:px-5">
+            <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${days >= 14 ? "bg-[#C45645]" : "bg-[#D29447]"}`} />
+            <span className="min-w-0 flex-1"><span className="block truncate text-xs font-bold text-[#102A46] group-hover:text-[#755613]">{claim.name}</span><span className="mt-1 block truncate text-[10px] text-slate-500">{claim.status}</span></span>
+            <span className={`shrink-0 rounded-lg px-2.5 py-1 text-[10px] font-bold ${days >= 14 ? "bg-[#FCEDEA] text-[#B5493B]" : "bg-[#FBF3E8] text-[#96652B]"}`}>{days} d</span>
+          </button>
+        ))}
+      </div>
+    )}
+  </section>;
 }
 
 function SummaryMetric({ label, value, icon, alert = false }: { label: string; value: number; icon: React.ReactNode; alert?: boolean }) {

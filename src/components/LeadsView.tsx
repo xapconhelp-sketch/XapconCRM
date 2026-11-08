@@ -11,7 +11,6 @@ import { AdminClaimRecord, AdminHomeownerContact, Lead, TimelineEvent, DocumentI
 import {
   Users,
   MapPin,
-  Phone,
   Building,
   FileCheck2,
   CalendarDays,
@@ -2023,39 +2022,33 @@ export default function LeadsView({
                     </span>
                   )}
                 </h2>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-[#566A7E] font-medium">
-                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-[#664A14]" /> {selectedLead.address}</span>
-                  <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {selectedLead.phone}</span>
+                <div className="mt-2">
+                  <span className={`claim-status-badge inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-bold shadow-sm ${
+                    selectedLead.status === "Negados"
+                      ? "bg-rose-50 text-rose-700 border-rose-200"
+                      : selectedLead.status === "Inspección"
+                      ? "bg-sky-50 text-sky-700 border-sky-200"
+                      : selectedLead.status === "En disputa"
+                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                      : selectedLead.status === "Esperando Scope"
+                      ? "bg-violet-50 text-violet-700 border-violet-200"
+                      : selectedLead.status === "Aprobado y Suplementado"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : selectedLead.status === "Construcción"
+                      ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                      : selectedLead.status === "Esperando Depreciación"
+                      ? "bg-teal-50 text-teal-700 border-teal-200"
+                      : selectedLead.status === "Finalizado"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-slate-50 text-slate-700 border-slate-300"
+                  }`}>
+                    {selectedLead.status}
+                  </span>
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
-              {/* Renglón 3 conservado: Estado del Caso */}
-              <div className="flex items-center gap-2">
-                <span className={`claim-status-badge inline-block px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${
-                  selectedLead.status === "Negados"
-                    ? "bg-rose-50 text-rose-700 border-rose-200"
-                    : selectedLead.status === "Inspección"
-                    ? "bg-sky-50 text-sky-700 border-sky-200"
-                    : selectedLead.status === "En disputa"
-                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                    : selectedLead.status === "Esperando Scope"
-                    ? "bg-violet-50 text-violet-700 border-violet-200"
-                    : selectedLead.status === "Aprobado y Suplementado"
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : selectedLead.status === "Construcción"
-                    ? "bg-indigo-50 text-indigo-700 border-indigo-200"
-                    : selectedLead.status === "Esperando Depreciación"
-                    ? "bg-teal-50 text-teal-700 border-teal-200"
-                    : selectedLead.status === "Finalizado"
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : "bg-slate-50 text-slate-600 border-slate-200"
-                }`}>
-                  {selectedLead.status}
-                </span>
-              </div>
-
               {/* Botones de Retroceder y Avanzar para cambiar el estado automáticamente */}
               <div className="claim-stage-controls flex items-center gap-2 mt-1">
                 <button

@@ -119,7 +119,7 @@ function ValueEntryCard({ title, subtitle, kind, entries, onChange, onSave, onDe
               {kind === "estimate" ? <label className={`group flex h-11 cursor-pointer items-center gap-2.5 rounded-lg border px-3 text-[12px] font-semibold transition ${entry.estimate_sent ? "border-[#BCD7C7] bg-[#F0F7F2] text-[#477B62]" : "border-[#E1E6EA] bg-white text-[#536879] hover:border-[#CED7DE]"}`}>
                 <input type="checkbox" checked={entry.estimate_sent} onChange={(event) => onChange(entry.entry_number, "estimate_sent", event.target.checked)} className="h-4 w-4 accent-[#477B62]" />
                 Estimado enviado
-              </label> : <div className="flex h-11 items-center rounded-lg border border-[#E8ECEF] bg-white px-3 text-[12px] font-medium text-[#596D80]">{kind === "sow" ? "Presupuesto recibido del seguro" : "Suplemento preparado"}</div>}
+              </label> : null}
             </div>
             <label className="block"><span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#596D78]">{kind === "estimate" ? "Monto del estimado" : "Monto"}</span><span className="flex h-11 items-center rounded-lg border border-[#E1E6EA] bg-white px-3 transition focus-within:border-[#8C6A22]/60 focus-within:ring-4 focus-within:ring-[#8C6A22]/[0.08]"><span className="mr-2 text-[13px] font-medium text-[#755613]">$</span><input type="number" min="0" step="0.01" inputMode="decimal" value={entry.amount} onChange={(event) => onChange(entry.entry_number, "amount", event.target.value)} placeholder="0.00" className="w-full bg-transparent text-[13px] font-medium tabular-nums text-[#102A46] outline-none placeholder:text-[#B0BAC2]" /></span></label>
             <label className="block"><span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#596D78]">{kind === "sow" ? "Fecha recibido" : kind === "supplement" ? "Fecha preparado" : "Fecha enviado"}</span><span className="flex h-11 items-center gap-2 rounded-lg border border-[#E1E6EA] bg-white px-3 transition focus-within:border-[#8C6A22]/60 focus-within:ring-4 focus-within:ring-[#8C6A22]/[0.08]"><CalendarDays className="h-4 w-4 shrink-0 text-[#755613]" /><input type="date" value={entry.event_date || ""} onChange={(event) => onChange(entry.entry_number, "event_date", event.target.value || null)} className="w-full bg-transparent text-[12px] font-medium text-[#536879] outline-none" /></span></label>
@@ -138,14 +138,20 @@ function AnalyticsStat({ label, value, detail, icon: Icon, tone = "blue" }: {
   label: string; value: string; detail: string; icon: React.ElementType; tone?: "blue" | "gold" | "green" | "slate";
 }) {
   const tones = {
-    blue: "bg-[#EEF3F7] text-[#254C68]",
-    gold: "bg-[#F7F2E5] text-[#80621F]",
-    green: "bg-[#EDF5F0] text-[#39705A]",
-    slate: "bg-[#F0F3F5] text-[#596D78]",
+    blue: "text-[#8AB9F3]",
+    gold: "text-[#E8C879]",
+    green: "text-[#74C9A0]",
+    slate: "text-[#CFD8E0]",
   };
-  return <article className="min-h-[116px] min-w-0 rounded-2xl border border-[#DDE3E8] bg-white p-3.5 shadow-[0_5px_18px_rgba(23,49,74,0.035)] sm:p-4">
-    <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-[9px] font-bold uppercase tracking-[.09em] text-[#687C89]">{label}</p><p className="mt-1.5 truncate font-display text-[22px] font-semibold tracking-[-.035em] text-[#122B40] sm:text-[25px] xl:text-[19px] 2xl:text-[25px]">{value}</p></div><span className={`values-analytics-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}><Icon className="h-[18px] w-[18px]" /></span></div>
-    <p className="mt-1.5 line-clamp-2 min-h-[2rem] text-[10px] leading-4 text-[#637782]">{detail}</p>
+  return <article className="min-h-[122px] min-w-0 overflow-hidden rounded-lg border border-[#DDE2E7] bg-white shadow-[0_2px_8px_rgba(24,36,48,.045)]">
+    <div className="flex min-h-10 items-center justify-between gap-2 bg-[#18181B] px-3 py-2">
+      <p title={label} className="line-clamp-2 min-w-0 text-[9px] font-semibold uppercase leading-[1.35] tracking-[.08em] text-zinc-100">{label}</p>
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/[.08]"><Icon className={`h-4 w-4 ${tones[tone]}`} /></span>
+    </div>
+    <div className="px-3 py-2.5">
+      <p title={value} className="truncate font-display text-[20px] font-semibold leading-tight tracking-[-.03em] tabular-nums text-[#17191D] sm:text-[22px] xl:text-[19px] 2xl:text-[22px]">{value}</p>
+      <p title={detail} className="mt-1 line-clamp-2 min-h-[1.75rem] text-[9px] leading-[1.4] text-[#687687]">{detail}</p>
+    </div>
   </article>;
 }
 
@@ -245,31 +251,10 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
       rcv: acc.rcv + row.rcv,
       acv: acc.acv + row.acv,
     }), { estimates: 0, firstSow: 0, latestSow: 0, additionalSow: 0, rcv: 0, acv: 0 });
-    const carrierMap = new Map<string, typeof claimRows>();
-    for (const row of claimRows) {
-      const carrier = row.claim.insuranceProvider?.trim() || "Aseguradora sin registrar";
-      carrierMap.set(carrier, [...(carrierMap.get(carrier) || []), row]);
-    }
-    const carriers = [...carrierMap.entries()].map(([name, rows]) => {
-      const comparable = rows.filter((row) => row.gap !== null);
-      const responseTimes = rows.map((row) => row.daysToFirstSow).filter((days): days is number => days !== null);
-      return {
-        name, claims: rows.length,
-        estimates: rows.reduce((sum, row) => sum + row.estimateAmount, 0),
-        latestSows: rows.reduce((sum, row) => sum + row.sowAmount, 0),
-        avgGap: comparable.length ? comparable.reduce((sum, row) => sum + (row.gap || 0), 0) / comparable.length : null,
-        avgResponse: responseTimes.length ? responseTimes.reduce((sum, days) => sum + days, 0) / responseTimes.length : null,
-        comparable: comparable.length,
-      };
-    }).sort((a, b) => b.claims - a.claims || a.name.localeCompare(b.name));
-    const statuses = [...new Set(claimRows.map((row) => row.claim.status || "Sin etapa"))].map((status) => ({
-      status, count: claimRows.filter((row) => row.claim.status === status).length,
-    })).sort((a, b) => b.count - a.count);
-    const maxStatus = Math.max(1, ...statuses.map((row) => row.count));
     const claimsWithSow = claimRows.filter((row) => row.latestSow).length;
     const claimsWithFirstSow = claimRows.filter((row) => row.firstSow).length;
     const comparableSowCount = claimRows.filter((row) => row.sowChange !== null).length;
-    return { claimRows, totals, carriers, statuses, maxStatus, claimsWithSow, claimsWithFirstSow, comparableSowCount };
+    return { claimRows, totals, claimsWithSow, claimsWithFirstSow, comparableSowCount };
   }, [claims, values, finances]);
 
   const selectedCase = analysis.claimRows.find((row) => row.claim.id === selectedCaseId);
@@ -290,7 +275,7 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
 
   return <div className="space-y-5">
     {errors.length > 0 && <div role="alert" className="rounded-xl border border-[#E9D9B2] bg-[#FBF7EB] px-4 py-3 text-[11px] leading-5 text-[#765B22]">{errors.join(" ")}</div>}
-    <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 xl:grid-cols-5">
       <AnalyticsStat label="Expedientes de seguro" value={String(claims.length)} detail={`${analysis.claimRows.filter((row) => row.claim.status !== "Finalizado" && row.claim.status !== "Cancelado" && row.claim.status !== "Negados").length} activos según etapa actual`} icon={ShieldCheck} />
       <AnalyticsStat label="Total esperado" value={money(analysis.totals.estimates)} detail="Suma de los montos que se esperan cobrar al seguro en todos los expedientes" icon={BadgeDollarSign} tone="gold" />
       <AnalyticsStat label="Total recibido · primer SOW" value={money(analysis.totals.firstSow)} detail={`Suma del primer SOW recibido en ${analysis.claimsWithFirstSow} expedientes`} icon={CircleDollarSign} tone="slate" />
@@ -337,19 +322,6 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
         </div>
       </div> : <div className="px-5 py-12 text-center text-sm text-[#637782]">{claims.length ? "Busca un cliente para consultar su desempeño por caso." : "No hay expedientes para mostrar."}</div>}
     </section>
-
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,.85fr)]">
-      <section className="overflow-hidden rounded-2xl border border-[#DDE3E8] bg-white shadow-[0_6px_22px_rgba(23,49,74,0.035)]">
-        <header className="border-b border-[#E9EDF0] px-5 py-4"><h2 className="font-display text-[15px] font-semibold text-[#122B40]">Comparativo por aseguradora</h2><p className="mt-1 text-[11px] text-[#637782]">Diferencia entre el estimado y el SOW más reciente registrado por fecha.</p></header>
-        <div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left"><thead className="bg-[#F4F6F7] text-[9px] uppercase tracking-[.1em] text-[#627582]"><tr><th className="px-5 py-3">Aseguradora</th><th className="px-4 py-3 text-right">Casos</th><th className="px-4 py-3 text-right">Estimado</th><th className="px-4 py-3 text-right">Último SOW</th><th className="px-4 py-3 text-right">Brecha media</th><th className="px-5 py-3 text-right">Días al 1.er SOW</th></tr></thead><tbody className="divide-y divide-[#EDF0F2]">{analysis.carriers.map((carrier) => <tr key={carrier.name} className="text-[11px] text-[#405766]"><td className="max-w-[200px] truncate px-5 py-3 font-semibold text-[#183249]">{carrier.name}</td><td className="px-4 py-3 text-right tabular-nums">{carrier.claims}</td><td className="px-4 py-3 text-right tabular-nums">{money(carrier.estimates)}</td><td className="px-4 py-3 text-right tabular-nums">{money(carrier.latestSows)}</td><td className={`px-4 py-3 text-right font-semibold tabular-nums ${carrier.avgGap !== null && carrier.avgGap > 0 ? "text-[#956C22]" : "text-[#536879]"}`}>{carrier.avgGap === null ? "—" : money(carrier.avgGap)}<span className="ml-1 text-[9px] font-normal text-[#8997A0]">{carrier.comparable ? `n=${carrier.comparable}` : ""}</span></td><td className="px-5 py-3 text-right tabular-nums">{carrier.avgResponse === null ? "—" : `${carrier.avgResponse.toFixed(1)} d`}</td></tr>)}{analysis.carriers.length === 0 && <tr><td colSpan={6} className="px-5 py-10 text-center text-xs text-[#6B7E89]">Todavía no hay casos para comparar.</td></tr>}</tbody></table></div>
-      </section>
-
-      <section className="rounded-2xl border border-[#DDE3E8] bg-white p-5 shadow-[0_6px_22px_rgba(23,49,74,0.035)]">
-        <div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-[#82621e]" /><h2 className="font-display text-[15px] font-semibold text-[#122B40]">Cartera por etapa</h2></div>
-        <div className="mt-4 space-y-3">{analysis.statuses.map((row) => <div key={row.status}><div className="mb-1.5 flex items-center justify-between gap-2 text-[10px]"><span className="truncate font-medium text-[#425968]">{row.status}</span><span className="font-bold tabular-nums text-[#183249]">{row.count}</span></div><div className="h-2 overflow-hidden rounded-full bg-[#EEF2F4]"><div className="h-full rounded-full bg-[#234662]" style={{ width: `${(row.count / analysis.maxStatus) * 100}%` }} /></div></div>)}{analysis.statuses.length === 0 && <p className="py-8 text-center text-xs text-[#6B7E89]">Sin expedientes.</p>}</div>
-        <div className="mt-5 grid grid-cols-2 gap-2 border-t border-[#E9EDF0] pt-4"><div className="rounded-xl bg-[#F5F7F8] p-3"><p className="text-[9px] font-bold uppercase tracking-wide text-[#72838D]">RCV registrado</p><p className="mt-1 text-[14px] font-semibold tabular-nums text-[#183249]">{money(analysis.totals.rcv)}</p></div><div className="rounded-xl bg-[#F5F7F8] p-3"><p className="text-[9px] font-bold uppercase tracking-wide text-[#72838D]">ACV registrado</p><p className="mt-1 text-[14px] font-semibold tabular-nums text-[#183249]">{money(analysis.totals.acv)}</p></div></div>
-      </section>
-    </div>
 
   </div>;
 }

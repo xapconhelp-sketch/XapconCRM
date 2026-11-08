@@ -2,6 +2,8 @@ import { RoleSectionIcon, RoleIconTile } from "./contractor/DesignSystem";
 import { RoleModal } from "./contractor/DesignSystem";
 import { RoleInput, RoleTextarea } from "./contractor/DesignSystem";
 import IllustratedIcon from "./contractor/IllustratedIcon";
+import InsuranceCarrierComparison from "./InsuranceCarrierComparison";
+import { CHART_PALETTE } from "../lib/chartPalette";
 import React, { useEffect, useMemo, useState } from "react";
 import { Lead } from "../types";
 import {
@@ -76,6 +78,7 @@ export default function InsuranceDirectoryView({
   const [editNotes, setEditNotes] = useState("");
   const [directoryActionError, setDirectoryActionError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [directoryTab, setDirectoryTab] = useState<"directory" | "statistics">("directory");
 
   useEffect(() => {
     fetchDbInsuranceCompanies().then(() => setRefreshKey((key) => key + 1));
@@ -134,10 +137,10 @@ export default function InsuranceDirectoryView({
     const denied = selectedCompany.deniedClaims;
     const active = Math.max(0, total - approved - dispute - denied);
     return [
-      { label: "Aprobados y cerrados", count: approved, color: "bg-emerald-500", legendColor: "text-emerald-500!", icon: CheckCircle2 },
-      { label: "En seguimiento", count: active, color: "bg-blue-500", legendColor: "text-blue-500!", icon: Activity },
-      { label: "En disputa", count: dispute, color: "bg-amber-500", legendColor: "text-amber-500!", icon: Clock3 },
-      { label: "Negados", count: denied, color: "bg-rose-500", legendColor: "text-rose-500!", icon: XCircle },
+      { label: "Aprobados y cerrados", count: approved, color: CHART_PALETTE.green, icon: CheckCircle2 },
+      { label: "En seguimiento", count: active, color: CHART_PALETTE.blue, icon: Activity },
+      { label: "En disputa", count: dispute, color: CHART_PALETTE.orange, icon: Clock3 },
+      { label: "Negados", count: denied, color: CHART_PALETTE.red, icon: XCircle },
     ].map((item) => ({ ...item, percent: Math.round((item.count / total) * 100) }));
   }, [selectedCompany]);
 
@@ -260,6 +263,11 @@ export default function InsuranceDirectoryView({
   return (
     <div className="insurance-directory-page flex-1 min-h-0 overflow-y-auto bg-[#F5F7FA] text-slate-800">
       <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
+        {canManageDirectory && <nav aria-label="Secciones de aseguradoras" className="flex w-fit gap-1 rounded-lg border border-[#E0E5E9] bg-white p-1 shadow-sm">
+          <button type="button" onClick={() => setDirectoryTab("directory")} aria-current={directoryTab === "directory" ? "page" : undefined} className={`rounded-md px-4 py-2 text-xs font-semibold transition ${directoryTab === "directory" ? "bg-[#18181B] text-white shadow-sm" : "text-[#586575] hover:bg-[#F3F5F7]"}`}>Directorio</button>
+          <button type="button" onClick={() => setDirectoryTab("statistics")} aria-current={directoryTab === "statistics" ? "page" : undefined} className={`rounded-md px-4 py-2 text-xs font-semibold transition ${directoryTab === "statistics" ? "bg-[#18181B] text-white shadow-sm" : "text-[#586575] hover:bg-[#F3F5F7]"}`}>Estadística</button>
+        </nav>}
+        {directoryTab === "directory" || !canManageDirectory ? <>
         <header className="insurance-directory-hero relative overflow-hidden rounded-[26px] bg-[#142B40] px-5 py-4 text-white shadow-[0_18px_50px_-26px_rgba(20,43,64,.65)] sm:px-8 sm:py-5">
           <div className="pointer-events-none absolute -right-10 -top-24 h-64 w-64 rounded-full border border-white/10" />
           <div className="pointer-events-none absolute -right-1 -top-16 h-48 w-48 rounded-full border border-white/10" />
@@ -366,20 +374,17 @@ export default function InsuranceDirectoryView({
               </div>
 
               <div className="insurance-directory-contact-grid grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(320px,.82fr)]">
-                <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)] sm:p-6">
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="mt-1 text-base font-semibold text-slate-900">Estadística macro</h3>
-                    <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600">{selectedCompany.totalClaims} total</span>
-                  </div>
+                <section className={`relative overflow-hidden border bg-white ${canManageDirectory ? "rounded-xl border-[#E2E7EB] p-4 shadow-[0_4px_14px_rgba(23,49,74,.035)] sm:p-5" : "rounded-2xl border-slate-200/80 p-5 shadow-[0_8px_28px_-22px_rgba(15,23,42,.38)] sm:p-6"}`}>
+                  <div className="flex items-center justify-between gap-3"><h3 className={`${canManageDirectory ? "text-sm text-[#202B38]" : "text-base text-slate-900"} font-semibold`}>Estadística macro</h3><span className={`inline-flex items-center gap-1.5 font-semibold tabular-nums ${canManageDirectory ? "rounded-md border border-[#E5E9ED] bg-[#F7F8FA] px-2.5 py-1 text-[10px] text-[#4E5B69]" : "rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs text-slate-600"}`}>{canManageDirectory && <span className="h-1.5 w-1.5 rounded-full bg-[#4D8A6A]" />}{selectedCompany.totalClaims}{canManageDirectory ? " casos" : " total"}</span></div>
                   {statusBreakdown ? <>
-                    <div className="mt-5 flex h-2.5 overflow-hidden rounded-full bg-slate-100" aria-label="Distribución de casos por estado">
-                      {statusBreakdown.map((item) => item.count > 0 && <div key={item.label} title={`${item.label}: ${item.count}`} style={{ width: `${item.percent}%` }} className={`${item.color} transition-all`} />)}
+                    <div className={`${canManageDirectory ? "mt-4 h-2" : "mt-5 h-2.5"} flex overflow-hidden rounded-full bg-slate-100`} aria-label="Distribución de casos por estado">
+                      {statusBreakdown.map((item) => item.count > 0 && <div key={item.label} title={`${item.label}: ${item.count}`} style={{ width: `${item.percent}%`, backgroundColor: item.color }} className="transition-all" />)}
                     </div>
-                    <div className="insurance-status-grid mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className={`insurance-status-grid ${canManageDirectory ? "mt-3 gap-2" : "mt-5 gap-2"} grid grid-cols-1 sm:grid-cols-2`}>
                       {statusBreakdown.map((item) => {
-                        return <div key={item.label} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-[#FBFCFD] p-3">
-                          <span className={`insurance-status-icon grid shrink-0 place-items-center ${item.legendColor}`}><item.icon aria-hidden="true" /></span>
-                          <span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium text-slate-600">{item.label}</span><span className="mt-0.5 block text-sm font-semibold tabular-nums text-slate-900">{item.count} <span className="text-xs font-normal text-slate-400">· {item.percent}%</span></span></span>
+                        return <div key={item.label} className={`flex min-w-0 items-center ${canManageDirectory ? "gap-2.5 rounded-lg border border-[#EEF1F3] bg-[#FAFBFC] px-2.5 py-2" : "gap-3 rounded-xl border border-slate-100 bg-[#FBFCFD] p-3"}`}>
+                          <span className="insurance-status-icon grid shrink-0 place-items-center rounded-md bg-[#F0F3F6]" style={{ color: item.color }}><item.icon aria-hidden="true" /></span>
+                          <span className="min-w-0 flex-1"><span className={`block truncate font-medium ${canManageDirectory ? "text-[10px] text-[#657181]" : "text-xs text-slate-600"}`}>{item.label}</span><span className={`mt-0.5 block font-semibold tabular-nums ${canManageDirectory ? "text-[12px] text-[#263544]" : "text-sm text-slate-900"}`}>{item.count} <span className="text-[10px] font-medium text-[#8994A1]">· {item.percent}%</span></span></span>
                         </div>;
                       })}
                     </div>
@@ -429,6 +434,7 @@ export default function InsuranceDirectoryView({
             <div className="max-w-sm"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F5F1EC] text-[#664A14]"><Building2 className="h-6 w-6" /></span><h2 className="mt-4 text-lg font-semibold text-slate-900">Elige una aseguradora</h2><p className="mt-2 text-sm leading-6 text-slate-500">Selecciona un registro del catálogo para consultar su actividad y datos de contacto.</p></div>
           </section>}
         </main>
+        </> : <InsuranceCarrierComparison claims={claims.filter((claim) => claim.is_insurance_claim)} />}
       </div>
 
       {canManageDirectory && isAddingContact && selectedCompany && <Dialog title="Agregar dato de contacto" subtitle={`Completa la agenda de ${selectedCompany.name}.`} onClose={() => setIsAddingContact(false)}>
