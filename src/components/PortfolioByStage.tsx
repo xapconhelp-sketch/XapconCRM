@@ -9,11 +9,27 @@ const STAGE_COLORS: Record<string, string> = {
   "Finalizado": CHART_PALETTE.blue, "Cancelado": CHART_PALETTE.slate, "Negados": CHART_PALETTE.red,
 };
 
+const STAGE_LABELS: Record<string, string> = {
+  "nuevo": "Nuevos",
+  "nuevos": "Nuevos",
+  "estimado": "Estimados",
+  "estimados": "Estimados",
+  "inspección": "Estimados",
+  "esperando scope": "Estimados",
+  "esperando depreciación": "Solicitud Depreciación",
+  "solicitud depreciación": "Solicitud Depreciación",
+};
+
+function normalizeStageLabel(status?: string | null) {
+  const label = status?.trim() || "Sin etapa";
+  return STAGE_LABELS[label.toLocaleLowerCase("es")] || label;
+}
+
 export default function PortfolioByStage({ claims, idPrefix = "portfolio", className = "" }: { claims: Lead[]; idPrefix?: string; className?: string }) {
   const stages = React.useMemo(() => {
     const counts = new Map<string, number>();
     claims.forEach((claim) => {
-      const stage = claim.status || "Sin etapa";
+      const stage = normalizeStageLabel(claim.status);
       counts.set(stage, (counts.get(stage) || 0) + 1);
     });
     return [...counts.entries()].sort((a, b) => b[1] - a[1]);
