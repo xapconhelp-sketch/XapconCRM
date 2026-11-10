@@ -1,6 +1,6 @@
 import { queryAll } from "../lib/queryAll.js";
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertCircle, BadgeDollarSign, BarChart3, CalendarDays, Check, CheckCircle2, ChevronRight, CircleDollarSign, FileCheck2, FilePlus2, LoaderCircle, Plus, Search, ShieldCheck, Trash2, TrendingUp } from "lucide-react";
+import { BadgeDollarSign, CircleDollarSign, FileCheck2, LoaderCircle, Search, ShieldCheck, TrendingUp } from "lucide-react";
 import { Lead } from "../types";
 import { supabase } from "../lib/supabase";
 import IllustratedIcon from "./contractor/IllustratedIcon";
@@ -16,10 +16,8 @@ type ValueEntry = {
   event_date: string | null;
   estimate_sent: boolean;
 };
-type EntryDraft = Omit<Pick<ValueEntry, "record_type" | "entry_number" | "event_date" | "estimate_sent">, "amount"> & { amount: string; id?: string };
 type AnalyticsValue = Pick<ValueEntry, "lead_id" | "record_type" | "entry_number" | "amount" | "event_date" | "estimate_sent">;
 type AnalyticsFinance = { claim_id: string; rcv: number | null; acv: number | null };
-const MAX_REPEATED_ENTRIES = 4;
 const money = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(amount);
 const terminalCaseStatuses = new Set(["Finalizado", "Negados", "Cancelado"]);
 
@@ -30,6 +28,83 @@ function parseCaseDate(value?: string | null): Date | null {
     ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
     : new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function searchText(value: string): string {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+function ClaimSmartSearch({ claims, query, onQuery, onSelect }: {
+  claims: Lead[];
+  query: string;
+  onQuery: (value: string) => void;
+  onSelect: (claim: Lead) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const normalizedQuery = searchText(query);
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+  const matches = tokens.length ? claims.map((claim) => {
+    const name = searchText(claim.name || "");
+    const number = searchText(claim.claimNumber || "");
+    const searchable = searchText(`${claim.name} ${claim.claimNumber} ${claim.company} ${claim.insuranceProvider}`);
+    const allTokensMatch = tokens.every((token) => searchable.includes(token));
+    const rank = name === normalizedQuery || number === normalizedQuery ? 0
+      : name.startsWith(normalizedQuery) || number.startsWith(normalizedQuery) ? 1
+      : searchable.includes(normalizedQuery) ? 2 : 3;
+    return { claim, allTokensMatch, rank };
+  }).filter((item) => item.allTokensMatch).sort((a, b) => a.rank - b.rank || a.claim.name.localeCompare(b.claim.name)).slice(0, 8) : [];
+
+  const choose = (claim: Lead) => {
+    onSelect(claim);
+    setOpen(false);
+  };
+
+  return <div className="relative z-30 w-full sm:max-w-[390px]">
+    <label className="group relative block">
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8593A1] transition-colors group-focus-within:text-[#D3B566]" />
+      <input
+        value={query}
+        onChange={(event) => { onQuery(event.target.value); setActiveIndex(0); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" && matches.length) { event.preventDefault(); setActiveIndex((index) => (index + 1) % matches.length); setOpen(true); }
+          if (event.key === "ArrowUp" && matches.length) { event.preventDefault(); setActiveIndex((index) => (index - 1 + matches.length) % matches.length); setOpen(true); }
+          if (event.key === "Enter" && matches[activeIndex]) { event.preventDefault(); choose(matches[activeIndex].claim); }
+          if (event.key === "Escape") setOpen(false);
+        }}
+        role="combobox"
+        aria-label="Buscar expediente por nombre o número de reclamo"
+        aria-autocomplete="list"
+        aria-expanded={open && Boolean(normalizedQuery)}
+        aria-controls="values-insurance-search-results"
+        aria-activedescendant={open && matches[activeIndex] ? `values-insurance-result-${matches[activeIndex].claim.id}` : undefined}
+        placeholder="Buscar homeowner o número de reclamo"
+        className="h-10 w-full rounded-lg border border-white/20 bg-white pl-10 pr-3 text-[11px] text-[#19344F] outline-none transition placeholder:text-[#8997A4] focus:border-[#D3B566] focus:ring-4 focus:ring-[#D3B566]/[.16]"
+      />
+    </label>
+    {open && normalizedQuery && <div id="values-insurance-search-results" role="listbox" className="absolute inset-x-0 top-[calc(100%+7px)] max-h-[min(55vh,360px)] overflow-y-auto rounded-xl border border-[#DDE3E8] bg-white p-1.5 text-[#19344F] shadow-[0_14px_36px_rgba(12,32,54,.22)]">
+      {matches.length ? <>
+        <p className="px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[.08em] text-[#81909D]">Coincidencias · selecciona un expediente</p>
+        {matches.map(({ claim }, index) => <button
+          id={`values-insurance-result-${claim.id}`}
+          key={claim.id}
+          type="button"
+          role="option"
+          aria-selected={index === activeIndex}
+          onMouseDown={(event) => event.preventDefault()}
+          onMouseEnter={() => setActiveIndex(index)}
+          onClick={() => choose(claim)}
+          className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition ${index === activeIndex ? "bg-[#F0F4F7]" : "hover:bg-[#F6F8FA]"}`}
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EAF0F4] text-[#315D82]"><FileCheck2 className="h-4 w-4" /></span>
+          <span className="min-w-0 flex-1"><span className="block truncate text-[11px] font-semibold">{claim.name}</span><span className="mt-0.5 block truncate text-[9px] text-[#778797]">{claim.claimNumber || "Sin número"} · {claim.company || claim.insuranceProvider || "Empresa sin identificar"}</span></span>
+          <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[8px] font-medium text-[#65788A]">{claim.status || "Sin etapa"}</span>
+        </button>)}
+      </> : <p className="px-3 py-5 text-center text-[10px] text-[#718194]">No encontramos expedientes con esos términos.</p>}
+    </div>}
+  </div>;
 }
 
 function formatCaseDate(date: Date | null): string {
@@ -47,91 +122,6 @@ function getCaseClosureDate(claim: Lead): Date | null {
 
 function daysBetween(start: Date, end: Date): number {
   return Math.max(0, Math.floor((end.getTime() - start.getTime()) / 86_400_000));
-}
-
-function newDraft(recordType: "sow" | "supplement", entryNumber: number): EntryDraft {
-  return { record_type: recordType, entry_number: entryNumber, amount: "", event_date: null, estimate_sent: false };
-}
-
-function ClaimSelector({ claims, selectedId, onSelect, query, onQuery }: {
-  claims: Lead[]; selectedId: string; onSelect: (id: string) => void; query: string; onQuery: (value: string) => void;
-}) {
-  const visible = claims.filter((claim) => `${claim.name} ${claim.claimNumber} ${claim.company} ${claim.insuranceProvider}`.toLowerCase().includes(query.trim().toLowerCase()));
-  return (
-    <aside className="overflow-hidden rounded-[20px] border border-[#DDE3E8] bg-white shadow-[0_8px_30px_rgba(23,49,74,0.045)]">
-      <div className="values-selector-heading border-b border-white/10 bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] p-3 sm:p-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-display text-[16px] font-semibold tracking-[-0.02em] text-white">Expedientes</h2>
-          <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[#D3B566]/20 bg-[#8C6A22]/15 px-2 font-sans text-[11px] font-semibold text-[#D8C68A]">{claims.length}</span>
-        </div>
-        <label className="group relative mt-3 block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#AFC0CD] transition-colors group-focus-within:text-[#D3B566]" />
-          <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Buscar por nombre o reclamo" className="h-10 w-full rounded-xl border border-white/15 bg-[#0C2036]/55 pl-9 pr-3 text-[12px] text-white outline-none transition placeholder:text-[#AFC0CD] focus:border-[#D3B566]/60 focus:bg-[#0C2036]/75 focus:ring-4 focus:ring-[#8C6A22]/[0.14]" />
-        </label>
-      </div>
-      <div className="max-h-[min(68vh,720px)] space-y-1 overflow-y-auto p-2.5">
-        {visible.map((claim) => {
-          const active = selectedId === claim.id;
-          return <button key={claim.id} type="button" onClick={() => onSelect(claim.id)} className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-xl border px-3 py-3 text-left transition duration-200 ${active ? "border-[#E8D8CB] bg-[#FBF9F2] shadow-[0_3px_12px_rgba(166,101,62,0.08)]" : "border-transparent text-[#344C60] hover:border-[#EDF0F2] hover:bg-[#FAFBFC]"}`}>
-            {active && <span className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-[#8C6A22]" />}
-            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${active ? "bg-[#F1E2D6] text-[#664A14]" : "bg-[#F0F3F5] text-[#668095] group-hover:bg-white"}`}><FileCheck2 className="h-4 w-4" /></span>
-            <span className="min-w-0 flex-1"><span className={`block truncate font-sans text-[12px] font-semibold ${active ? "text-[#102A46]" : "text-[#344C60]"}`}>{claim.name}</span><span className="mt-1 block truncate font-sans text-[10px] tracking-[0.005em] text-[#82909C]">{claim.claimNumber} <span className="text-[#B0BAC2]">·</span> {claim.company || "Empresa sin identificar"}</span></span>
-            <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition ${active ? "translate-x-0 text-[#755613]" : "-translate-x-1 text-[#C1CAD1] opacity-0 group-hover:translate-x-0 group-hover:opacity-100"}`} />
-          </button>;
-        })}
-        {visible.length === 0 && <div className="px-3 py-10 text-center"><Search className="mx-auto h-5 w-5 text-[#BBC4CB]" /><p className="mt-2 text-[10px] font-medium text-[#82909C]">No encontramos expedientes.</p></div>}
-      </div>
-    </aside>
-  );
-}
-
-function ValueEntryCard({ title, subtitle, kind, entries, onChange, onSave, onDelete, savingId, onAdd }: {
-  title: string; subtitle: string; kind: "estimate" | "sow" | "supplement"; entries: EntryDraft[];
-  onChange: (entryNumber: number, field: "amount" | "event_date" | "estimate_sent", value: number | string | boolean | null) => void;
-  onSave: (entry: EntryDraft) => void; onDelete: (entry: EntryDraft) => void; savingId: string | null; onAdd?: () => void;
-}) {
-  const sum = entries.reduce((total, entry) => total + (Number(entry.amount) || 0), 0);
-  const count = kind === "estimate" ? "01 / 01" : `${String(entries.length).padStart(2, "0")} / 04`;
-  return (
-    <section className="overflow-hidden rounded-[20px] border border-[#DDE3E8] bg-white shadow-[0_8px_30px_rgba(23,49,74,0.045)] transition-shadow duration-200 hover:shadow-[0_12px_34px_rgba(23,49,74,0.065)]">
-      <header className="values-entry-heading flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-zinc-800 px-4 py-2 sm:px-5">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-display text-[15px] font-semibold tracking-[-0.02em]">{title}</h3>
-            <span className="rounded-md px-2 py-0.5 text-[10px] font-semibold tracking-wide">{count}</span>
-          </div>
-          <p className="mt-0.5 text-xs leading-4">{subtitle}</p>
-        </div>
-        {kind !== "estimate" && <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
-          <div className="sm:text-right"><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#87949F]">Total registrado</p><span className="mt-0.5 block text-[13px] font-semibold tabular-nums text-[#344C60]">{money(sum)}</span></div>
-          {onAdd && <button type="button" onClick={onAdd} disabled={entries.length >= MAX_REPEATED_ENTRIES} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#102A46] px-3 text-xs font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"><Plus className="h-3.5 w-3.5" />Agregar {kind === "sow" ? "SOW" : "suplemento"}</button>}
-        </div>}
-      </header>
-
-      {entries.length === 0 && kind !== "estimate" && <div className="flex min-h-[84px] items-center gap-3 px-5 py-4"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F4F6F8] text-[#9AA6AF]"><Plus className="h-4 w-4" /></span><div><p className="text-[12px] font-semibold text-[#526879]">Aún no hay {kind === "sow" ? "SOW" : "suplementos"} en este caso</p><p className="mt-1 text-[11px] text-[#81909D]">Agrega un registro cuando lo recibas o prepares.</p></div></div>}
-      {entries.map((entry) => {
-        const saving = savingId === `${entry.record_type}:${entry.entry_number}`;
-        const label = kind === "estimate" ? "Estimado único" : `${kind === "sow" ? "SOW" : "Suplemento"} ${entry.entry_number}`;
-        return <div key={`${entry.record_type}-${entry.entry_number}`} className="border-b border-[#EDF0F2] px-4 py-4 last:border-b-0 sm:px-5 sm:py-4.5">
-          <div className="grid grid-cols-1 gap-3 rounded-xl bg-[#FAFBFC] p-3 sm:grid-cols-[minmax(150px,1.05fr)_minmax(145px,1fr)_minmax(150px,1fr)_auto] sm:items-end sm:gap-3.5 sm:p-3.5">
-            <div>
-              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#596D78]">{label}</p>
-              {kind === "estimate" ? <label className={`group flex h-11 cursor-pointer items-center gap-2.5 rounded-lg border px-3 text-[12px] font-semibold transition ${entry.estimate_sent ? "border-[#BCD7C7] bg-[#F0F7F2] text-[#477B62]" : "border-[#E1E6EA] bg-white text-[#536879] hover:border-[#CED7DE]"}`}>
-                <input type="checkbox" checked={entry.estimate_sent} onChange={(event) => onChange(entry.entry_number, "estimate_sent", event.target.checked)} className="h-4 w-4 accent-[#477B62]" />
-                Estimado enviado
-              </label> : null}
-            </div>
-            <label className="block"><span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#596D78]">{kind === "estimate" ? "Monto del estimado" : "Monto"}</span><span className="flex h-11 items-center rounded-lg border border-[#E1E6EA] bg-white px-3 transition focus-within:border-[#8C6A22]/60 focus-within:ring-4 focus-within:ring-[#8C6A22]/[0.08]"><span className="mr-2 text-[13px] font-medium text-[#755613]">$</span><input type="number" min="0" step="0.01" inputMode="decimal" value={entry.amount} onChange={(event) => onChange(entry.entry_number, "amount", event.target.value)} placeholder="0.00" className="w-full bg-transparent text-[13px] font-medium tabular-nums text-[#102A46] outline-none placeholder:text-[#B0BAC2]" /></span></label>
-            <label className="block"><span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#596D78]">{kind === "sow" ? "Fecha recibido" : kind === "supplement" ? "Fecha preparado" : "Fecha enviado"}</span><span className="flex h-11 items-center gap-2 rounded-lg border border-[#E1E6EA] bg-white px-3 transition focus-within:border-[#8C6A22]/60 focus-within:ring-4 focus-within:ring-[#8C6A22]/[0.08]"><CalendarDays className="h-4 w-4 shrink-0 text-[#755613]" /><input type="date" value={entry.event_date || ""} onChange={(event) => onChange(entry.entry_number, "event_date", event.target.value || null)} className="w-full bg-transparent text-[12px] font-medium text-[#536879] outline-none" /></span></label>
-            <div className="flex items-center gap-2 sm:pb-0.5">
-              <button type="button" onClick={() => onSave(entry)} disabled={saving} className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#102A46] px-3.5 text-[12px] font-bold text-white shadow-[0_3px_8px_rgba(23,49,74,0.13)] transition hover:-translate-y-px hover:bg-[#193856] hover:shadow-[0_5px_12px_rgba(23,49,74,0.18)] disabled:cursor-wait disabled:opacity-60 sm:flex-none"><Check className="h-4 w-4" />{saving ? "Guardando" : "Guardar"}</button>
-              {kind !== "estimate" && <button type="button" onClick={() => onDelete(entry)} disabled={saving} aria-label={`Eliminar ${label}`} title={`Eliminar ${label}`} className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#E4E8EB] bg-white text-[#A57272] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /></button>}
-            </div>
-          </div>
-        </div>;
-      })}
-    </section>
-  );
 }
 
 function AnalyticsStat({ label, value, detail, icon: Icon, tone = "blue" }: {
@@ -171,14 +161,11 @@ function CaseMetric({ label, value, detail, tone = "blue" }: {
   </article>;
 }
 
-function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
+function ValuesInsuranceAnalytics({ claims, selectedCaseId, query }: { claims: Lead[]; selectedCaseId: string; query: string }) {
   const [values, setValues] = useState<AnalyticsValue[]>([]);
   const [finances, setFinances] = useState<AnalyticsFinance[]>([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<string[]>([]);
-  const [selectedCaseId, setSelectedCaseId] = useState("");
-  const [caseQuery, setCaseQuery] = useState("");
-  const [caseSearchOpen, setCaseSearchOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -257,7 +244,14 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
     return { claimRows, totals, claimsWithSow, claimsWithFirstSow, comparableSowCount };
   }, [claims, values, finances]);
 
-  const selectedCase = analysis.claimRows.find((row) => row.claim.id === selectedCaseId);
+  const normalizedQuery = query.trim().toLowerCase();
+  const matchingClaims = normalizedQuery
+    ? analysis.claimRows.filter((row) => `${row.claim.name} ${row.claim.claimNumber} ${row.claim.company} ${row.claim.insuranceProvider}`.toLowerCase().includes(normalizedQuery))
+    : [];
+  const exactMatch = normalizedQuery ? matchingClaims.find((row) => [row.claim.name, row.claim.claimNumber].some((value) => value.trim().toLowerCase() === normalizedQuery)) : undefined;
+  const selectedCase = normalizedQuery
+    ? analysis.claimRows.find((row) => row.claim.id === selectedCaseId && matchingClaims.some((match) => match.claim.id === row.claim.id)) || exactMatch || (matchingClaims.length === 1 ? matchingClaims[0] : undefined)
+    : analysis.claimRows.find((row) => row.claim.id === selectedCaseId);
   const caseStartDate = selectedCase
     ? parseCaseDate(selectedCase.claim.created_at) || parseCaseDate(selectedCase.claim.createdAt)
     : null;
@@ -266,14 +260,8 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
   const caseDurationDays = caseStartDate && (!isCaseTerminal || caseClosureDate)
     ? daysBetween(caseStartDate, caseClosureDate || new Date())
     : null;
-  const hasCaseQuery = Boolean(caseQuery.trim());
-  const matchingCases = hasCaseQuery ? analysis.claimRows.filter(({ claim }) =>
-    `${claim.name} ${claim.claimNumber} ${claim.insuranceProvider} ${claim.company}`.toLowerCase().includes(caseQuery.trim().toLowerCase()),
-  ).slice(0, 8) : [];
-
-  if (loading) return <div className="flex min-h-[300px] items-center justify-center gap-2 rounded-2xl border border-[#DDE3E8] bg-white text-sm text-[#596D80]"><LoaderCircle className="h-4 w-4 animate-spin" />Calculando análisis de cartera…</div>;
-
-  return <div className="space-y-5">
+  return <div className="min-w-0 space-y-5">
+    {loading ? <div className="flex min-h-[230px] items-center justify-center gap-2 rounded-xl border border-[#DDE3E8] bg-white text-sm text-[#596D80]"><LoaderCircle className="h-4 w-4 animate-spin" />Calculando análisis de cartera…</div> : <>
     {errors.length > 0 && <div role="alert" className="rounded-xl border border-[#E9D9B2] bg-[#FBF7EB] px-4 py-3 text-[11px] leading-5 text-[#765B22]">{errors.join(" ")}</div>}
     <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 xl:grid-cols-5">
       <AnalyticsStat label="Expedientes de seguro" value={String(claims.length)} detail={`${analysis.claimRows.filter((row) => row.claim.status !== "Finalizado" && row.claim.status !== "Cancelado" && row.claim.status !== "Negados").length} activos según etapa actual`} icon={ShieldCheck} />
@@ -286,14 +274,6 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
     <section className="overflow-hidden rounded-2xl border border-[#DDE3E8] bg-white shadow-[0_6px_22px_rgba(23,49,74,0.04)]">
       <header className="values-analytics-heading flex flex-col gap-4 border-b border-[#E9EDF0] bg-[linear-gradient(112deg,#102945_0%,#102A46_65%,#1A3854_100%)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div><div className="flex items-center gap-2"><CircleDollarSign className="h-4 w-4 text-[#D3B566]" /><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#D3B566]">Lectura por expediente</p></div><h2 className="mt-1 font-display text-[17px] font-semibold tracking-[-.02em] text-white">Desempeño del caso</h2></div>
-        <div className="relative w-full sm:max-w-[350px]">
-          <label className="relative block"><Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#738596]" /><input value={caseQuery} onFocus={() => setCaseSearchOpen(true)} onBlur={() => setCaseSearchOpen(false)} onChange={(event) => { setCaseQuery(event.target.value); setSelectedCaseId(""); setCaseSearchOpen(true); }} placeholder="Buscar cliente, reclamo o aseguradora" className="h-10 w-full rounded-xl border border-white/15 bg-white px-3 pl-9 text-[12px] text-[#183249] outline-none placeholder:text-[#82909A] focus:border-[#D3B566] focus:ring-4 focus:ring-[#D3B566]/20" /></label>
-          {caseSearchOpen && hasCaseQuery && <div role="listbox" className="absolute right-0 top-full z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-[#DDE3E8] bg-white p-1.5 text-[#183249] shadow-[0_16px_40px_rgba(8,27,44,.25)]">
-            {matchingCases.length ? matchingCases.map((row) => <button key={row.claim.id} type="button" role="option" aria-selected={selectedCaseId === row.claim.id} onMouseDown={(event) => event.preventDefault()} onClick={() => { setSelectedCaseId(row.claim.id); setCaseQuery(row.claim.name); setCaseSearchOpen(false); }} className="flex w-full flex-col items-start rounded-lg px-3 py-2 text-left transition hover:bg-[#F1F5F8]">
-              <span className="w-full truncate text-[12px] font-semibold">{row.claim.name}</span><span className="mt-0.5 w-full truncate text-[10px] text-[#687D8C]">{row.claim.claimNumber || "Sin número de reclamo"} <span className="mx-1 text-[#A6843D]">·</span> {row.claim.insuranceProvider || "Aseguradora sin registrar"}</span>
-            </button>) : <p className="px-3 py-3 text-[11px] text-[#687D8C]">No encontramos casos con esa búsqueda.</p>}
-          </div>}
-        </div>
       </header>
       {selectedCase ? <div className="space-y-4 p-4 sm:p-5">
         <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-5">
@@ -320,9 +300,9 @@ function ValuesInsuranceAnalytics({ claims }: { claims: Lead[] }) {
             <p className="mt-0.5 text-[10px] text-[#81909D]">{caseDurationDays === null ? "Requiere fechas de inicio y cierre" : isCaseTerminal ? "Desde su creación hasta el cierre" : "Desde su creación hasta hoy"}</p>
           </div>
         </div>
-      </div> : <div className="px-5 py-12 text-center text-sm text-[#637782]">{claims.length ? "Busca un cliente para consultar su desempeño por caso." : "No hay expedientes para mostrar."}</div>}
+      </div> : <div className="px-5 py-12 text-center text-sm text-[#637782]">{normalizedQuery ? matchingClaims.length > 1 ? `Hay ${matchingClaims.length} coincidencias. Escribe el nombre completo o el número de reclamo para precisar la búsqueda.` : "No encontramos un expediente con esa búsqueda." : claims.length ? "Busca un expediente por nombre o número de reclamo para consultar su desempeño." : "No hay expedientes para mostrar."}</div>}
     </section>
-
+    </>}
   </div>;
 }
 
@@ -330,15 +310,8 @@ export default function ValuesInsuranceView({ claims, activeOrganizationId }: { 
   const activeClaims = useMemo(() => claims.filter((claim) =>
     claim.is_insurance_claim && (!activeOrganizationId || claim.organizationId === activeOrganizationId),
   ), [claims, activeOrganizationId]);
-  const [sectionTab, setSectionTab] = useState<"records" | "analysis">("records");
   const [selectedClaimId, setSelectedClaimId] = useState("");
   const [query, setQuery] = useState("");
-  const [estimate, setEstimate] = useState<EntryDraft>({ record_type: "estimate", entry_number: 1, amount: "", event_date: null, estimate_sent: false });
-  const [sows, setSows] = useState<EntryDraft[]>([]);
-  const [supplements, setSupplements] = useState<EntryDraft[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
     if (!activeClaims.length) {
@@ -348,167 +321,28 @@ export default function ValuesInsuranceView({ claims, activeOrganizationId }: { 
     if (!activeClaims.some((claim) => claim.id === selectedClaimId)) setSelectedClaimId(activeClaims[0].id);
   }, [activeClaims, selectedClaimId]);
 
-  const selectedClaim = activeClaims.find((claim) => claim.id === selectedClaimId);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!selectedClaim) return;
-    setLoading(true);
-    setNotice(null);
-    setEstimate({ record_type: "estimate", entry_number: 1, amount: "", event_date: null, estimate_sent: false });
-    setSows([]);
-    setSupplements([]);
-
-    const loadEntries = async () => {
-      try {
-        const { data, error } = await supabase.from("admin_insurance_values").select("*").eq("lead_id", selectedClaim.id).order("record_type").order("entry_number");
-        if (cancelled) return;
-        if (error) {
-          const message = error.code === "42P01" || error.code === "PGRST205"
-            ? "Falta aplicar schema_admin_insurance_values.sql a la base de datos."
-            : `No se pudieron cargar los valores: ${error.message}`;
-          setNotice({ kind: "error", message });
-          return;
-        }
-        const rows = (data || []) as ValueEntry[];
-        const estimateRow = rows.find((row) => row.record_type === "estimate");
-        if (estimateRow) setEstimate({ id: estimateRow.id, record_type: "estimate", entry_number: 1, amount: estimateRow.amount === null ? "" : String(estimateRow.amount), event_date: estimateRow.event_date, estimate_sent: estimateRow.estimate_sent });
-        setSows(rows.filter((row) => row.record_type === "sow").map(({ id, record_type, entry_number, amount, event_date, estimate_sent }) => ({ id, record_type, entry_number, amount: amount === null ? "" : String(amount), event_date, estimate_sent })));
-        setSupplements(rows.filter((row) => row.record_type === "supplement").map(({ id, record_type, entry_number, amount, event_date, estimate_sent }) => ({ id, record_type, entry_number, amount: amount === null ? "" : String(amount), event_date, estimate_sent })));
-      } catch (error) {
-        if (!cancelled) setNotice({ kind: "error", message: `No se pudieron cargar los valores: ${error instanceof Error ? error.message : "Error de conexión"}` });
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    void loadEntries();
-
-    return () => { cancelled = true; };
-  }, [selectedClaim?.id]);
-
-  const updateEntry = (kind: EntryKind, entryNumber: number, field: "amount" | "event_date" | "estimate_sent", value: number | string | boolean | null) => {
-    const updater = (entry: EntryDraft) => entry.entry_number === entryNumber ? { ...entry, [field]: value } : entry;
-    if (kind === "estimate") setEstimate(updater);
-    if (kind === "sow") setSows((rows) => rows.map(updater));
-    if (kind === "supplement") setSupplements((rows) => rows.map(updater));
-    setNotice(null);
-  };
-
-  const saveEntry = async (entry: EntryDraft) => {
-    if (!selectedClaim?.organizationId) {
-      setNotice({ kind: "error", message: "Este expediente no tiene una empresa vinculada." });
-      return;
-    }
-    const key = `${entry.record_type}:${entry.entry_number}`;
-    const amount = entry.amount.trim() === "" ? null : Number(entry.amount);
-    if (amount !== null && (!Number.isFinite(amount) || amount < 0)) {
-      setNotice({ kind: "error", message: "Ingresa un monto válido mayor o igual a cero." });
-      return;
-    }
-    setSavingId(key);
-    setNotice(null);
-    const payload = {
-      lead_id: selectedClaim.id,
-      organization_id: selectedClaim.organizationId,
-      record_type: entry.record_type,
-      entry_number: entry.entry_number,
-      amount,
-      event_date: entry.event_date || null,
-      estimate_sent: entry.record_type === "estimate" && entry.estimate_sent,
-    };
-    const { data, error } = await supabase.from("admin_insurance_values").upsert(payload, { onConflict: "lead_id,record_type,entry_number" }).select("*").single();
-    if (error) {
-      setNotice({ kind: "error", message: `No se pudo guardar: ${error.message}` });
-    } else {
-      const row = data as ValueEntry;
-      const saved: EntryDraft = { id: row.id, record_type: row.record_type, entry_number: row.entry_number, amount: row.amount === null ? "" : String(row.amount), event_date: row.event_date, estimate_sent: row.estimate_sent };
-      if (saved.record_type === "estimate") setEstimate(saved);
-      if (saved.record_type === "sow") setSows((rows) => rows.map((item) => item.entry_number === saved.entry_number ? saved : item));
-      if (saved.record_type === "supplement") setSupplements((rows) => rows.map((item) => item.entry_number === saved.entry_number ? saved : item));
-      setNotice({ kind: "success", message: "Cambios guardados en el expediente." });
-    }
-    setSavingId(null);
-  };
-
-  const addEntry = (kind: "sow" | "supplement") => {
-    const rows = kind === "sow" ? sows : supplements;
-    if (rows.length >= MAX_REPEATED_ENTRIES) return;
-    const occupied = new Set(rows.map((row) => row.entry_number));
-    const entryNumber = [1, 2, 3, 4].find((value) => !occupied.has(value)) || rows.length + 1;
-    const draft = newDraft(kind, entryNumber);
-    if (kind === "sow") setSows((current) => [...current, draft].sort((a, b) => a.entry_number - b.entry_number));
-    if (kind === "supplement") setSupplements((current) => [...current, draft].sort((a, b) => a.entry_number - b.entry_number));
-    setNotice(null);
-  };
-
-  const deleteEntry = async (entry: EntryDraft) => {
-    if (!selectedClaim) return;
-    if (!entry.id) {
-      if (entry.record_type === "sow") setSows((rows) => rows.filter((row) => row.entry_number !== entry.entry_number));
-      if (entry.record_type === "supplement") setSupplements((rows) => rows.filter((row) => row.entry_number !== entry.entry_number));
-      return;
-    }
-    const label = entry.record_type === "sow" ? `SOW ${entry.entry_number}` : `Suplemento ${entry.entry_number}`;
-    if (!window.confirm(`¿Eliminar ${label} de este expediente? Esta acción no se puede deshacer.`)) return;
-    const key = `${entry.record_type}:${entry.entry_number}`;
-    setSavingId(key);
-    setNotice(null);
-    const { error } = await supabase.from("admin_insurance_values").delete().eq("id", entry.id).eq("lead_id", selectedClaim.id);
-    if (error) setNotice({ kind: "error", message: `No se pudo eliminar: ${error.message}` });
-    else {
-      if (entry.record_type === "sow") setSows((rows) => rows.filter((row) => row.entry_number !== entry.entry_number));
-      if (entry.record_type === "supplement") setSupplements((rows) => rows.filter((row) => row.entry_number !== entry.entry_number));
-      setNotice({ kind: "success", message: "Registro eliminado del expediente." });
-    }
-    setSavingId(null);
-  };
-
   return (
     <main className="crm-workspace min-h-0 flex-1 overflow-y-auto bg-[#F2F4F6]" aria-label="Valores Insurance, superadministrador">
       <div className="mx-auto w-full max-w-[1500px] space-y-5 px-4 py-5 sm:px-6 sm:py-7 xl:px-8">
-        <header className="values-page-header relative isolate overflow-hidden rounded-[22px] border border-[#29465D] bg-[linear-gradient(112deg,#102945_0%,#102A46_58%,#1A3854_100%)] px-5 py-3.5 shadow-[0_12px_32px_rgba(23,49,74,0.16)] sm:px-6 sm:py-4">
-          <div className="pointer-events-none absolute -right-10 -top-20 -z-10 h-52 w-52 rounded-full border border-[#8C6A22]/20" />
-          <div className="pointer-events-none absolute -right-1 -top-11 -z-10 h-36 w-36 rounded-full border border-[#D3B566]/30" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 w-1/2 bg-[radial-gradient(ellipse_at_top_right,rgba(183,122,75,0.18),transparent_68%)]" />
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <header className="values-page-header relative isolate overflow-visible rounded-[22px] border border-[#29465D] bg-[linear-gradient(112deg,#102945_0%,#102A46_58%,#1A3854_100%)] px-5 py-3.5 shadow-[0_12px_32px_rgba(23,49,74,0.16)] sm:px-6 sm:py-4">
+          <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[22px]">
+            <div className="absolute -right-10 -top-20 h-52 w-52 rounded-full border border-[#8C6A22]/20" />
+            <div className="absolute -right-1 -top-11 h-36 w-36 rounded-full border border-[#D3B566]/30" />
+            <div className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,rgba(183,122,75,0.18),transparent_68%)]" />
+          </div>
+          <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3.5">
               <IllustratedIcon name="finance" className="admin-values-header-icon" />
               <h1 className="font-display text-[23px] font-semibold tracking-[-0.04em] text-white sm:text-[25px]">Valores Insurance</h1>
             </div>
-            <span className="values-access-badge ml-[58px] inline-flex w-fit items-center rounded-md border px-3 py-1.5 text-[11px] font-semibold sm:ml-0">Solo superadmin</span>
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+              <ClaimSmartSearch claims={activeClaims} query={query} onQuery={setQuery} onSelect={(claim) => { setSelectedClaimId(claim.id); setQuery(claim.name); }} />
+              <span className="values-access-badge inline-flex w-fit items-center rounded-md border border-black bg-black px-3 py-1.5 text-[11px] font-semibold text-white">Solo superadmin</span>
+            </div>
           </div>
         </header>
 
-        <div role="tablist" aria-label="Secciones de Valores Insurance" className="inline-flex w-fit rounded-xl border border-[#DDE3E8] bg-white p-1 shadow-[0_3px_12px_rgba(23,49,74,0.04)]">
-          <button type="button" role="tab" aria-selected={sectionTab === "records"} onClick={() => setSectionTab("records")} className={`inline-flex h-9 items-center gap-2 rounded-lg px-4 text-[12px] font-semibold transition ${sectionTab === "records" ? "bg-[#102A46] text-white shadow-sm" : "text-[#526879] hover:bg-[#F3F6F8] hover:text-[#183249]"}`}><FileCheck2 className="h-4 w-4" />Registro</button>
-          <button type="button" role="tab" aria-selected={sectionTab === "analysis"} onClick={() => setSectionTab("analysis")} className={`inline-flex h-9 items-center gap-2 rounded-lg px-4 text-[12px] font-semibold transition ${sectionTab === "analysis" ? "bg-[#102A46] text-white shadow-sm" : "text-[#526879] hover:bg-[#F3F6F8] hover:text-[#183249]"}`}><BarChart3 className="h-4 w-4" />Análisis</button>
-        </div>
-
-        {sectionTab === "analysis" ? <ValuesInsuranceAnalytics claims={activeClaims} /> : activeClaims.length === 0 ? <section className="rounded-[20px] border border-dashed border-[#CED7DE] bg-white px-5 py-16 text-center shadow-[0_6px_24px_rgba(23,49,74,0.035)]"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F1F4F6] text-[#8294A2]"><FilePlus2 className="h-5 w-5" /></span><h2 className="mt-4 font-display text-[15px] font-semibold text-[#102A46]">No hay expedientes de seguro</h2><p className="mx-auto mt-1.5 max-w-sm text-[11px] leading-relaxed text-[#596D80]">Cuando la cartera tenga casos, podrás registrar sus estimados, SOW y suplementos aquí.</p></section> : <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
-          <ClaimSelector claims={activeClaims} selectedId={selectedClaimId} onSelect={setSelectedClaimId} query={query} onQuery={setQuery} />
-          <div className="min-w-0 space-y-4 sm:space-y-5">
-            {selectedClaim && <section className="values-selected-case relative overflow-hidden rounded-[20px] border border-[#29465D] bg-[linear-gradient(112deg,#102945_0%,#102A46_62%,#1A3854_100%)] px-4 py-4 shadow-[0_10px_28px_rgba(23,49,74,0.15)] sm:px-5 sm:py-[18px]">
-              <span className="absolute inset-y-4 left-0 w-[3px] rounded-r-full bg-gradient-to-b from-[#D3B566] via-[#8C6A22] to-[#D5BF7A]" />
-              <span aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 h-40 w-40 rounded-full border border-[#D3B566]/15" />
-              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                <div className="flex min-w-0 items-center gap-3">
-                  <IllustratedIcon name="claim" className="admin-values-header-icon" />
-                  <div className="min-w-0"><h2 className="truncate font-sans text-[18px] font-semibold tracking-[-0.015em] text-white">{selectedClaim.name}</h2><p className="mt-1 truncate font-sans text-[12px] text-[#CBD6DE]">{selectedClaim.company} <span className="mx-1 text-[#D3B566]/70">·</span> {selectedClaim.insuranceProvider}</p></div>
-                </div>
-                <span className="values-claim-number ml-[52px] w-fit max-w-full rounded-md border px-2.5 py-1.5 font-mono text-base font-semibold break-all sm:ml-0">{selectedClaim.claimNumber}</span>
-              </div>
-            </section>}
-
-            {notice && <div role={notice.kind === "error" ? "alert" : "status"} className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-[10px] font-medium shadow-[0_3px_12px_rgba(23,49,74,0.035)] ${notice.kind === "error" ? "border-[#F0D1D1] bg-[#FFF8F7] text-[#9E4D4D]" : "border-[#CFE2D6] bg-[#F5FAF6] text-[#477B62]"}`}>{notice.kind === "error" ? <AlertCircle className="h-4 w-4 shrink-0" /> : <CheckCircle2 className="h-4 w-4 shrink-0" />}{notice.message}</div>}
-
-            {loading ? <div className="flex min-h-[260px] items-center justify-center gap-2 rounded-[20px] border border-[#DDE3E8] bg-white text-[11px] font-medium text-[#596D80] shadow-[0_8px_30px_rgba(23,49,74,0.04)]"><LoaderCircle className="h-4 w-4 animate-spin text-[#755613]" />Cargando valores guardados…</div> : selectedClaim && <>
-              <ValueEntryCard title="Estimado" subtitle="Solo puede registrarse un estimado por expediente." kind="estimate" entries={[estimate]} onChange={(number, field, value) => updateEntry("estimate", number, field, value)} onSave={saveEntry} onDelete={deleteEntry} savingId={savingId} />
-              <ValueEntryCard title="SOW recibidos" subtitle="Presupuestos enviados por la aseguradora · máximo 4." kind="sow" entries={sows} onChange={(number, field, value) => updateEntry("sow", number, field, value)} onSave={saveEntry} onDelete={deleteEntry} savingId={savingId} onAdd={() => addEntry("sow")} />
-              <ValueEntryCard title="Suplementos" subtitle="Suplementos preparados por el equipo · máximo 4." kind="supplement" entries={supplements} onChange={(number, field, value) => updateEntry("supplement", number, field, value)} onSave={saveEntry} onDelete={deleteEntry} savingId={savingId} onAdd={() => addEntry("supplement")} />
-              <p className="px-1 text-[9px] leading-relaxed text-[#5C6D7D]">Cada registro se guarda en el expediente seleccionado. El botón Guardar confirma los cambios de cada fila.</p>
-            </>}
-          </div>
-        </div>}
+        <ValuesInsuranceAnalytics claims={activeClaims} selectedCaseId={selectedClaimId} query={query} />
       </div>
     </main>
   );

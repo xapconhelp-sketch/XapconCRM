@@ -31,6 +31,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import ClaimFinances from "./ClaimFinances";
+import AdminCaseFinanceValues from "./AdminCaseFinanceValues";
 import { getKnownContactsForInsurance, getAllInsuranceCompanyNames } from "../data/insuranceDirectoryData";
 
 const CLOSED_CLAIM_STATUS: Partial<Record<Lead["status"], { label: string; initial: string; color: string }>> = {
@@ -433,23 +434,26 @@ function AdminClaimRecordsList({ leadId, records, type, onDelete }: {
   const filteredRecords = records.filter(record => record.type === type);
   if (filteredRecords.length === 0) return null;
   return (
-    <div className="mt-4 border-t border-[#E6ECF1] pt-3">
-      <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#566A7E]">Registros guardados</p>
-      <ul className="space-y-2">
+    <div className="admin-claim-records-list mt-5 border-t border-[#E6ECF1] pt-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div><h4 className="text-[11px] font-bold tracking-[.02em] text-[#183249]">Registros guardados</h4><p className="mt-0.5 text-[9px] text-[#7A8998]">Historial de actividad del caso</p></div>
+        <span className="rounded-full border border-[#DCE4EB] bg-white px-2.5 py-1 text-[9px] font-semibold tabular-nums text-[#536879]">{filteredRecords.length} {filteredRecords.length === 1 ? "registro" : "registros"}</span>
+      </div>
+      <ul className="admin-claim-record-list space-y-2.5">
         {filteredRecords.map(record => (
-          <li key={record.id} className="overflow-hidden rounded-xl border border-[#E1E8EF] bg-white shadow-[0_1px_2px_rgba(16,42,70,0.04)]">
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 bg-[#F5F8FB] px-3 py-2.5">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#D9E5F0] bg-white text-[#1F5C91]">
+          <li key={record.id} className="admin-claim-record-card">
+            <div className="admin-claim-record-card-header">
+              <div className="admin-claim-record-identity">
+                <span className="admin-claim-record-icon">
                   {type === "documents_sent" ? <FileCheck2 aria-hidden="true" className="h-4 w-4" /> : <CalendarDays aria-hidden="true" className="h-4 w-4" />}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#718398]">{type === "documents_sent" ? "Documentos enviados" : type === "insurance_response" ? "Respuesta del seguro" : "Llamada al seguro"}</p>
-                  <p className="mt-0.5 text-xs font-bold text-[#102A46]">{formatAdminDate(record.date)}</p>
+                  <p className="admin-claim-record-type">{type === "documents_sent" ? "Documentos enviados" : type === "insurance_response" ? "Respuesta del seguro" : "Llamada al seguro"}</p>
+                  <time className="admin-claim-record-date" dateTime={record.date}>{formatAdminDate(record.date)}</time>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-[#718096]">Guardado {formatAdminDate(record.createdAt.slice(0, 10))}</span>
+              <div className="admin-claim-record-actions">
+                <span className="admin-claim-record-saved"><span>Guardado</span><time dateTime={record.createdAt}>{formatAdminDate(record.createdAt.slice(0, 10))}</time></span>
                 <button
                   type="button"
                   onClick={async () => {
@@ -468,16 +472,16 @@ function AdminClaimRecordsList({ leadId, records, type, onDelete }: {
                   disabled={Boolean(deletingRecordId)}
                   aria-label={`Eliminar registro del ${formatAdminDate(record.date)}`}
                   title="Eliminar registro"
-                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#718096] transition hover:bg-[#FCEDEA] hover:text-[#B5493B] disabled:cursor-wait disabled:opacity-50"
+                  className="admin-claim-record-delete"
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               </div>
             </div>
-            <div className="space-y-2.5 px-3 py-3">
-              {record.documentTypes.length > 0 && <div className="flex flex-wrap gap-1.5" aria-label="Tipos de documentos enviados">{record.documentTypes.map(documentType => <span key={documentType} className="inline-flex items-center rounded-md border border-[#D7E3EE] bg-[#F2F7FB] px-2 py-1 text-[10px] font-semibold leading-none text-[#244F75]">{documentType}</span>)}</div>}
-              {record.note && <p className="whitespace-pre-wrap break-words text-[11px] leading-relaxed text-[#465D70]">{record.note}</p>}
-              {!record.note && record.documentTypes.length === 0 && <p className="text-[11px] italic text-[#8795A3]">Sin detalle adicional.</p>}
+            <div className="admin-claim-record-body">
+              {record.documentTypes.length > 0 && <div className="admin-claim-record-document-types" aria-label="Tipos de documentos enviados">{record.documentTypes.map(documentType => <span key={documentType}>{documentType}</span>)}</div>}
+              {record.note && <p className="admin-claim-record-note">{record.note}</p>}
+              {!record.note && record.documentTypes.length === 0 && <p className="admin-claim-record-empty">Sin detalle adicional.</p>}
             </div>
           </li>
         ))}
@@ -629,8 +633,8 @@ export default function LeadsView({
   const [activeRecordTab, setActiveRecordTab] = useState<"nosotros" | "homeowner" | "aseguranza">("nosotros");
 
   useEffect(() => {
-    if (userRole === "admin" && activeTab === "finances") setActiveTab("timeline");
-  }, [activeTab, userRole]);
+    if (userRole === "admin" && !isAdminInsuranceView && activeTab === "finances") setActiveTab("timeline");
+  }, [activeTab, userRole, isAdminInsuranceView]);
   const [newNote, setNewNote] = useState("");
   const [selectedOrgId, setSelectedOrgId] = useState(activeOrganizationId || "");
   const lastActiveOrganizationId = useRef(activeOrganizationId || "");
@@ -1660,7 +1664,7 @@ export default function LeadsView({
 
       {/* Main Content Pane */}
       {selectedLead && (
-        <div className="claim-case-layout grid grid-cols-1 xl:grid-cols-[310px_minmax(0,1fr)] gap-5 items-start">
+        <div className={`claim-case-layout grid grid-cols-1 xl:grid-cols-[310px_minmax(0,1fr)] gap-5 items-start ${isAdminInsuranceView ? "admin-insurance-case-layout" : ""}`}>
 
         {/* Columna 2: Ficha Técnica (Dividida en 2 Cuadros: Homeowner e Información del Seguro) */}
         <div className="claim-case-sidebar flex flex-col gap-4">
@@ -1996,7 +2000,7 @@ export default function LeadsView({
         </div>
 
         {/* Columna 3: Expediente Completo */}
-        <div className="claim-workspace bg-white border border-[#DCE4EB]/30 rounded-2xl p-6 shadow-sm flex flex-col space-y-6">
+        <div className={`claim-workspace bg-white border border-[#DCE4EB]/30 rounded-2xl p-6 shadow-sm flex flex-col space-y-6 ${isAdminInsuranceView ? "admin-insurance-case-workspace" : ""}`}>
 
           {/* Header Metadata of Selected Lead */}
           <div className="claim-case-header flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#E6ECF1] pb-4">
@@ -2078,7 +2082,7 @@ export default function LeadsView({
 
           {/* Tab Control */}
           <div className={`claim-tabs flex border-b border-[#E6ECF1] pb-1.5 gap-4 ${isAdminInsuranceView ? "claim-admin-tabs" : ""}`} role="tablist" aria-label="Secciones del expediente">
-            {["timeline", "documents", ...(isAdminInsuranceView ? ["records"] : []), ...(userRole === "contractor" ? ["finances"] : [])].map((tab) => (
+            {["timeline", "documents", ...(isAdminInsuranceView ? ["records", "finances"] : []), ...(userRole === "contractor" ? ["finances"] : [])].map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -2242,12 +2246,12 @@ export default function LeadsView({
                   </form>
 
                   {/* Chronological Timeline feed */}
-                  <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
+                  <div className={`space-y-4 max-h-[380px] overflow-y-auto pr-1 ${isAdminInsuranceView ? "admin-insurance-timeline-feed" : ""}`}>
                     {selectedLead.timeline.length === 0 ? (
                       <p className="text-xs text-[#566A7E] text-center py-6 font-medium">No hay eventos ni notas registradas.</p>
                     ) : (
                       selectedLead.timeline.map((ev) => (
-                        <div key={ev.id} className="claim-timeline-entry p-3.5 bg-[#F4F6F8] border border-[#DCE4EB]/20 rounded-xl flex items-start gap-3">
+                        <div key={ev.id} className={`claim-timeline-entry p-3.5 bg-[#F4F6F8] border border-[#DCE4EB]/20 rounded-xl flex items-start gap-3 ${isAdminInsuranceView ? "admin-insurance-timeline-entry" : ""}`}>
                           <div className="w-6 h-6 rounded-full bg-slate-200 text-[#102A46] font-bold text-[9px] flex items-center justify-center shrink-0 border mt-0.5">
                             {(ev.author || ev.title || "?").charAt(0).toUpperCase()}
                           </div>
@@ -2361,6 +2365,10 @@ export default function LeadsView({
                     )}
                   </div>
                 </div>
+              )}
+
+              {isAdminInsuranceView && activeTab === "finances" && selectedLead && (
+                <AdminCaseFinanceValues key={selectedLead.id} claim={selectedLead} />
               )}
 
               {userRole === "contractor" && activeTab === "finances" && selectedLead && (

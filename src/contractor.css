@@ -464,3 +464,124 @@
   .admin-app .claim-admin-tabs { overflow-x:auto; }
   .admin-app .claim-admin-tabs button { flex:0 0 auto; }
 }
+
+@media (min-width: 1101px) {
+  .admin-app .admin-insurance-case-layout {
+    grid-template-columns: minmax(303px, 339px) minmax(0, 1fr) !important;
+  }
+  .admin-app .admin-insurance-case-layout > .claim-workspace {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+.admin-app .admin-insurance-case-layout .contractor-homeowner-card .case-profile-row:first-child dd {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+.admin-app .admin-insurance-timeline-feed {
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  scrollbar-gutter: auto !important;
+}
+.admin-app .admin-insurance-timeline-entry {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14px 18px !important;
+  overflow: visible;
+  border: 1px solid #dfe5ec !important;
+  border-radius: 12px !important;
+  background: #f7f9fc !important;
+  box-shadow: 0 2px 6px rgba(25, 42, 61, .055) !important;
+}
+.admin-app .admin-insurance-timeline-entry:hover {
+  border-color: #cbd5e1 !important;
+  background: #f3f6fa !important;
+  box-shadow: 0 4px 12px rgba(25, 42, 61, .08) !important;
+}
+
+.admin-app .admin-claim-record-list { margin:0; padding:0; list-style:none; }
+.admin-app .admin-claim-record-card { overflow:hidden; border:1px solid #dbe3eb; border-radius:13px; background:#fff; box-shadow:0 2px 8px rgba(24,45,66,.045); transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease; }
+.admin-app .admin-claim-record-card:hover { transform:translateY(-1px); border-color:#becbd8; box-shadow:0 6px 16px rgba(24,45,66,.08); }
+.admin-app .admin-claim-record-card-header { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 14px; border-bottom:1px solid #e7edf2; background:linear-gradient(105deg,#f6f8fb,#fbfcfd); }
+.admin-app .admin-claim-record-identity { display:flex; min-width:0; align-items:center; gap:11px; }
+.admin-app .admin-claim-record-icon { display:flex; width:36px; height:36px; flex:0 0 36px; align-items:center; justify-content:center; border:1px solid #d8e2ec; border-radius:10px; background:#fff; color:#315c83; }
+.admin-app .admin-claim-record-type { margin:0; color:#64768a; font-size:9px; font-weight:750; letter-spacing:.09em; line-height:1.35; text-transform:uppercase; }
+.admin-app .admin-claim-record-date { display:block; margin-top:3px; color:#1d3854; font-size:12px; font-weight:700; line-height:1.35; }
+.admin-app .admin-claim-record-actions { display:flex; flex:0 0 auto; align-items:center; gap:10px; }
+.admin-app .admin-claim-record-saved { display:flex; flex-direction:column; align-items:flex-end; gap:2px; color:#8190a0; font-size:8px; line-height:1.25; }
+.admin-app .admin-claim-record-saved time { color:#617286; font-size:9px; font-weight:600; white-space:nowrap; }
+.admin-app .admin-claim-record-delete { display:inline-flex; width:30px; height:30px; flex:0 0 30px; align-items:center; justify-content:center; border:1px solid #e3e8ed; border-radius:9px; background:#fff; color:#8b98a5; transition:background .16s ease,border-color .16s ease,color .16s ease; }
+.admin-app .admin-claim-record-delete:hover { border-color:#efceca; background:#fff5f3; color:#b5493b; }
+.admin-app .admin-claim-record-delete:disabled { cursor:wait; opacity:.5; }
+.admin-app .admin-claim-record-body { display:grid; gap:9px; padding:12px 14px 13px; }
+.admin-app .admin-claim-record-document-types { display:flex; flex-wrap:wrap; gap:6px; }
+.admin-app .admin-claim-record-document-types > span { display:inline-flex; min-height:24px; align-items:center; border:1px solid #dce6ef; border-radius:7px; background:#f4f8fb; padding:4px 8px; color:#365a7d; font-size:9px; font-weight:650; line-height:1.25; }
+.admin-app .admin-claim-record-note { margin:0; color:#46596c; font-size:11px; line-height:1.6; overflow-wrap:anywhere; white-space:pre-wrap; }
+.admin-app .admin-claim-record-empty { margin:0; color:#8a97a5; font-size:10px; font-style:italic; }
+
+@media (max-width: 640px) {
+  .admin-app .admin-claim-record-card-header { align-items:flex-start; }
+  .admin-app .admin-claim-record-saved { display:none; }
+}
+
+/* Compact financial register for the superadmin claim workspace. */
+.admin-app .values-page-header { overflow:visible; }
+.admin-app .values-page-header .values-access-badge { border-color:#000 !important; background:#000 !important; color:#fff !important; }
+.admin-app .admin-finance-card {
+  overflow: hidden;
+  border: 1px solid #dce4eb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(25, 42, 61, .045);
+}
+.admin-app .admin-finance-card-header {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 13px;
+  border-bottom: 1px solid #e7edf2;
+  background: #f7f9fb;
+}
+.admin-app .admin-finance-card-heading { display:flex; min-width:0; align-items:center; gap:10px; }
+.admin-app .admin-finance-card-heading h3 { margin:0; color:#19344f; font-size:12px; font-weight:720; line-height:1.25; }
+.admin-app .admin-finance-card-heading > span { display:inline-flex; min-height:20px; align-items:center; border:1px solid #dce5ed; border-radius:999px; background:#fff; padding:2px 7px; color:#718194; font-size:9px; font-weight:650; white-space:nowrap; }
+.admin-app .admin-finance-add { display:inline-flex; min-height:29px; flex:0 0 auto; align-items:center; justify-content:center; gap:5px; border:1px solid #19344f; border-radius:7px; background:#19344f; padding:0 10px; color:#fff; font-size:10px; font-weight:650; transition:background .15s ease,border-color .15s ease; }
+.admin-app .admin-finance-add:hover:not(:disabled) { border-color:#285477; background:#285477; }
+.admin-app .admin-finance-add:disabled { cursor:not-allowed; opacity:.45; }
+.admin-app .admin-finance-empty { margin:0; padding:15px; color:#8391a0; font-size:10px; text-align:center; }
+.admin-app .admin-finance-rows { display:grid; }
+.admin-app .admin-finance-row { display:grid; grid-template-columns:minmax(95px,.62fr) minmax(120px,1fr) minmax(142px,1fr) auto; align-items:end; gap:11px; padding:9px 13px; }
+.admin-app .admin-finance-row + .admin-finance-row { border-top:1px solid #edf1f4; }
+.admin-app .admin-finance-entry-name { display:flex; min-width:0; min-height:34px; flex-wrap:wrap; align-content:center; align-items:center; gap:5px 8px; }
+.admin-app .admin-finance-entry-name strong { color:#29435d; font-size:10px; font-weight:670; }
+.admin-app .admin-finance-entry-name label { display:inline-flex; align-items:center; gap:4px; color:#758598; font-size:9px; white-space:nowrap; }
+.admin-app .admin-finance-entry-name input { width:13px; height:13px; accent-color:#315d82; }
+.admin-app .admin-finance-field { display:grid; min-width:0; gap:4px; color:#8593a1; font-size:8px; font-weight:700; letter-spacing:.045em; text-transform:uppercase; }
+.admin-app .admin-finance-input { display:flex; min-width:0; height:34px; align-items:center; gap:7px; border:1px solid #dbe3ea; border-radius:7px; background:#fff; padding:0 9px; color:#53687d; transition:border-color .15s ease,box-shadow .15s ease; }
+.admin-app .admin-finance-input:focus-within { border-color:#8ba8c1; box-shadow:0 0 0 3px rgba(49,93,130,.09); }
+.admin-app .admin-finance-input b { color:#728295; font-size:10px; font-weight:600; }
+.admin-app .admin-finance-input input { width:100%; min-width:0; border:0; outline:0; background:transparent; color:#19344f; font-family:inherit; font-size:11px; font-weight:560; letter-spacing:normal; text-transform:none; }
+.admin-app .admin-finance-date { gap:6px; }
+.admin-app .admin-finance-date > svg { flex:0 0 auto; color:#7d8d9d; }
+.admin-app .admin-finance-date input { font-size:10px; }
+.admin-app .admin-finance-actions { display:flex; min-height:34px; align-items:center; gap:6px; }
+.admin-app .admin-finance-save { display:inline-flex; height:32px; align-items:center; justify-content:center; gap:5px; border:1px solid #19344f; border-radius:7px; background:#19344f; padding:0 10px; color:#fff; font-size:9px; font-weight:650; white-space:nowrap; transition:background .15s ease,opacity .15s ease; }
+.admin-app .admin-finance-save:hover:not(:disabled) { background:#285477; }
+.admin-app .admin-finance-save:disabled { cursor:default; opacity:.44; }
+.admin-app .admin-finance-delete { display:inline-flex; width:32px; height:32px; flex:0 0 32px; align-items:center; justify-content:center; border:1px solid #e1e7ec; border-radius:7px; background:#fff; color:#9a7771; transition:background .15s ease,border-color .15s ease,color .15s ease; }
+.admin-app .admin-finance-delete:hover:not(:disabled) { border-color:#ebcbc6; background:#fff6f4; color:#a94e43; }
+.admin-app .admin-finance-delete:disabled { cursor:wait; opacity:.45; }
+
+@media (max-width: 760px) {
+  .admin-app .admin-finance-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:9px 11px; }
+  .admin-app .admin-finance-entry-name { align-self:end; }
+  .admin-app .admin-finance-actions { grid-column:1 / -1; justify-content:flex-end; }
+}
