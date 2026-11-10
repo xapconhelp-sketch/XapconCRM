@@ -12,6 +12,7 @@ const sections = [
   { label: 'ESPACIO DE TRABAJO', items: [
     { type: ViewType.DASHBOARD, label: 'Inicio', icon: 'home' as Illustration },
     { type: ViewType.INSURANCE_CLAIM, label: 'Reclamos de seguro', icon: 'claim' as Illustration },
+    { type: ViewType.VISIT_MAP, label: 'Mapa de visitas', icon: 'map' as Illustration },
     { type: ViewType.CLAIMS, label: 'Estimador retail', icon: 'estimate' as Illustration },
     { type: ViewType.PRODUCTION, label: 'Producción', icon: 'production' as Illustration },
   ] },

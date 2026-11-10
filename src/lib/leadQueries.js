@@ -9,7 +9,7 @@ const summaryFields = [
 ];
 
 export function leadSummarySelect(includeEstimates = false) {
-  return [...summaryFields, ...(includeEstimates ? ['estimate'] : []), 'organizations(name)'].join(',');
+  return [...summaryFields, ...(includeEstimates ? ['estimate'] : [])].join(',');
 }
 
 export function preserveCaseDocuments(previous, next, cache = new Map()) {

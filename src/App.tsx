@@ -14,6 +14,7 @@ import ContractorNavigation from "./components/contractor/Navigation";
 import { ContractorDesignContext } from "./components/contractor/DesignSystem";
 const MainDashboard = lazy(() => import("./components/MainDashboard"));
 const ContractorDashboard = lazy(() => import("./components/ContractorDashboard"));
+const ContractorVisitMap = lazy(() => import("./components/ContractorVisitMap"));
 const LeadsView = lazy(() => import("./components/LeadsView"));
 const EstimatorView = lazy(() => import("./components/EstimatorView"));
 const AdminDocumentsView = lazy(() => import("./components/AdminDocumentsView"));
@@ -75,6 +76,7 @@ function normalizeViewForRole(view: ViewType | null, role: AppRole): ViewType {
   if (role === "contractor" && view === ViewType.MEMBERSHIP_ACCESS) return ViewType.DASHBOARD;
   if (role === "contractor" && view === ViewType.DOCUMENTS) return ViewType.DASHBOARD;
   if (role === "admin" && view === ViewType.CLAIMS) return ViewType.DASHBOARD;
+  if (role === "admin" && view === ViewType.VISIT_MAP) return ViewType.DASHBOARD;
   return view;
 }
 
@@ -155,8 +157,10 @@ export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>(() =>
     parseAppRoute(window.location.pathname).view || ViewType.DASHBOARD
   );
+  const [mapEstimateLeadId, setMapEstimateLeadId] = useState("");
   dataContext.current = `${session?.user.id || ""}:${activeOrganization?.id || ""}:${userRole}:${currentView}`;
   const navigateToView = (requestedView: ViewType, organizationId: string | null | undefined = activeOrganization?.id) => {
+    setMapEstimateLeadId("");
     const nextView = normalizeViewForRole(requestedView, userRole);
     const nextPath = buildAppPath(nextView, userRole, organizationId);
     if (window.location.pathname !== nextPath) window.history.pushState({ xapconApp: true }, "", nextPath);
@@ -461,7 +465,7 @@ export default function App() {
           timeline: item.timeline || [],
           documents: item.documents || [],
           tasks: caseTasks,
-          company: item.organizations?.name || "Desconocida",
+          company: organizations.find(organization => organization.id === item.organization_id)?.name || "Desconocida",
           organizationId: item.organization_id,
           is_insurance_claim: item.is_insurance_claim,
           estimate: item.estimate ? { ...publicEstimate(item.estimate), ...(userRole === "admin" ? (privateEstimates.get(item.id) || { profitMargin: item.estimate.profitMargin }) : {}) } as Estimate : null,
@@ -2016,6 +2020,26 @@ export default function App() {
           )}
 
 
+          {currentView === ViewType.VISIT_MAP && userRole === "contractor" && activeOrganization && (
+            leadDataContext === dataContext.current ? (
+              <ErrorBoundary key={dataContext.current}>
+                <ContractorVisitMap
+                  organizationId={activeOrganization.id}
+                  cases={[...filteredInsuranceClaims, ...leads].filter(lead => lead.organizationId === activeOrganization.id)}
+                  currentUserId={session.user.id}
+                  showTeamVisits={canManageTeam}
+                  onOpenCase={lead => {
+                    if (lead.is_insurance_claim) handleNavigateToInsuranceClaim(lead.id);
+                    else {
+                      navigateToView(ViewType.CLAIMS);
+                      setMapEstimateLeadId(lead.id);
+                    }
+                  }}
+                />
+              </ErrorBoundary>
+            ) : <p role="status" className="p-6 text-sm text-slate-500">Cargando casos para el mapa…</p>
+          )}
+
           {currentView === ViewType.INSURANCE_CLAIM && (
             <ErrorBoundary>
               <LeadsView
@@ -2058,6 +2082,7 @@ export default function App() {
           {currentView === ViewType.CLAIMS && userRole === "contractor" && leadDataContext === dataContext.current && (
             <EstimatorView
               leads={leads}
+              initialLeadId={mapEstimateLeadId}
               onUpdateLeadEstimate={handleUpdateLeadEstimate}
               onAddLead={handleAddLead}
               onDeleteLead={handleDeleteLead}

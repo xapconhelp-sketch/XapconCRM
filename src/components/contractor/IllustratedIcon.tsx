@@ -1,10 +1,11 @@
 import type { CSSProperties } from 'react';
-import { House, Files, Calculator, HardHat, UsersRound, ShieldCheck, SlidersHorizontal, CalendarDays, TriangleAlert, LogOut, CircleDollarSign, ListChecks, CheckCircle2, Activity, Clock3, CircleX, Mail, Crown, FileText, type LucideIcon } from 'lucide-react';
+import { House, Files, Calculator, HardHat, UsersRound, ShieldCheck, SlidersHorizontal, CalendarDays, TriangleAlert, LogOut, CircleDollarSign, ListChecks, CheckCircle2, Activity, Clock3, CircleX, Mail, Crown, FileText, MapPinned, type LucideIcon } from 'lucide-react';
 
-export type Illustration = 'home' | 'claim' | 'estimate' | 'production' | 'team' | 'insurance' | 'settings' | 'calendar' | 'alert' | 'logout' | 'finance' | 'tasks' | 'success' | 'activity' | 'clock' | 'declined' | 'mail' | 'membership' | 'document';
+export type Illustration = 'home' | 'claim' | 'estimate' | 'production' | 'team' | 'insurance' | 'settings' | 'calendar' | 'alert' | 'logout' | 'finance' | 'tasks' | 'success' | 'activity' | 'clock' | 'declined' | 'mail' | 'membership' | 'document' | 'map';
 const icons: Record<Illustration, { icon: LucideIcon; color: string }> = {
   home: { icon: House, color: 'var(--xapcon-blue)' },
   claim: { icon: Files, color: '#367ac2' },
+  map: { icon: MapPinned, color: '#278574' },
   estimate: { icon: Calculator, color: '#886327' },
   production: { icon: HardHat, color: '#b37924' },
   team: { icon: UsersRound, color: '#7962b0' },
