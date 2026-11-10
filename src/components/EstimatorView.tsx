@@ -30,7 +30,6 @@ const DEFAULT_TERMS_TEXT = "ALL WORK WILL BE COMPLETED IN FULL IN ACCORDANCE WIT
 
 interface EstimatorViewProps {
   leads: Lead[];
-  initialLeadId?: string;
   onUpdateLeadEstimate: (leadId: string, estimate: Estimate) => Promise<void> | void;
   onAddLead: (lead: Omit<Lead, "id" | "timeline" | "documents" | "tasks" | "createdAt">) => Promise<void> | void;
   onDeleteLead?: (leadId: string) => Promise<void> | void;
@@ -38,7 +37,6 @@ interface EstimatorViewProps {
 
 export default function EstimatorView({
   leads,
-  initialLeadId = "",
   onUpdateLeadEstimate,
   onAddLead,
   onDeleteLead
@@ -52,7 +50,7 @@ export default function EstimatorView({
   const pdfCompanyName = activeOrganization?.company_name || activeOrganization?.name || (userRole === "contractor" ? profile?.full_name : "Xapcon Group") || "Roofing Contractor";
 
   // Master-Detail State
-  const [selectedLeadId, setSelectedLeadId] = useState(initialLeadId);
+  const [selectedLeadId, setSelectedLeadId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddingLead, setIsAddingLead] = useState(false);
 

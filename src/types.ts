@@ -1,7 +1,6 @@
 export enum ViewType {
   DASHBOARD = "dashboard",
   INSURANCE_CLAIM = "insurance_claim",
-  VISIT_MAP = "visit_map",
   CLAIMS = "claims",
   PRODUCTION = "production",
   INSURANCE_DIRECTORY = "insurance_directory",
