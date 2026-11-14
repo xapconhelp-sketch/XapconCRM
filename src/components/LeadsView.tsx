@@ -30,7 +30,7 @@ import {
   BookOpen,
   ShieldCheck,
 } from "lucide-react";
-import ClaimFinances from "./ClaimFinances";
+import ClaimFinancialModule from "./ClaimFinancialModule";
 import AdminCaseFinanceValues from "./AdminCaseFinanceValues";
 import { getKnownContactsForInsurance, getAllInsuranceCompanyNames } from "../data/insuranceDirectoryData";
 
@@ -2372,9 +2372,7 @@ export default function LeadsView({
               )}
 
               {userRole === "contractor" && activeTab === "finances" && selectedLead && (
-                <div key={`${selectedLead.id}:${selectedLead.organizationId || activeOrganizationId}`}>
-                  <ClaimFinances claimId={selectedLead.id} organizationId={selectedLead.organizationId || activeOrganizationId} />
-                </div>
+                <ClaimFinancialModule key={`${selectedLead.id}:${selectedLead.organizationId || activeOrganizationId}`} claimId={selectedLead.id} organizationId={selectedLead.organizationId || activeOrganizationId} />
               )}
             </div>
           </div>

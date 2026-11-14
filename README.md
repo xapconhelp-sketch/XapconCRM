@@ -44,4 +44,14 @@ The hardening script replaces existing policies on the CRM tenant tables and set
 
 For an existing installation that already applied steps 1–4, run only step 5. If earlier scripts are re-run later, re-run step 5 last. The new client requires its RPCs; until this upgrade is applied, login displays an actionable database update message.
 
+## Contractor claim-finance module
+
+After the base CRM schema, `schema_security_hardening.sql`, and `schema_auth_membership_tasks.sql` are installed, run these SQL scripts in the Supabase SQL Editor, in order:
+
+1. `schema_contractor_claim_finances.sql`
+2. `schema_contractor_payment_receipts.sql`
+3. `schema_contractor_financial_module.sql`
+
+These scripts add organization-scoped financial summaries, payments and private receipts, supplements, and job costs. The commission calculator intentionally remains client-side and does not write commission settings or payouts to the database.
+
 See [the activation and verification guide](docs/auth-membership-activation.md). `npm test` runs the finance tests plus the actual SQL migrations, triggers, RPCs and RLS tests in local PostgreSQL through PGlite. It does not create accounts or send emails in the connected Supabase project.

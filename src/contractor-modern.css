@@ -324,6 +324,12 @@
   .contractor-app .contractor-panel-head > div > div:first-child > svg { width:20px; height:20px; }
   .contractor-app .lucide:not(.animate-spin) { transform:none !important; }
 }
+
+@media (min-width: 1101px) {
+  .contractor-app .claim-case-layout {
+    grid-template-columns: minmax(303px, 339px) minmax(0, 1fr);
+  }
+}
 /* Requested compact layouts and matching icon tiles, contractor session only. */
 @media screen {
   .contractor-app .contractor-illustration.contractor-row-icon { width:40px; height:40px; padding:9px; border-radius:12px; }
