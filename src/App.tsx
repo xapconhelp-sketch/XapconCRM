@@ -19,6 +19,7 @@ const EstimatorView = lazy(() => import("./components/EstimatorView"));
 const AdminDocumentsView = lazy(() => import("./components/AdminDocumentsView"));
 const ProductionView = lazy(() => import("./components/ProductionView"));
 const InsuranceDirectoryView = lazy(() => import("./components/InsuranceDirectoryView"));
+const ContractorAnalyticsView = lazy(() => import("./components/contractor/ContractorAnalyticsView"));
 const ValuesInsuranceView = lazy(() => import("./components/ValuesInsuranceView"));
 const ContractorCaseReportsView = lazy(() => import("./components/ContractorCaseReportsView"));
 const MembershipAccessView = lazy(() => import("./components/MembershipAccessView"));
@@ -75,6 +76,7 @@ function normalizeViewForRole(view: ViewType | null, role: AppRole): ViewType {
   if (role === "contractor" && view === ViewType.MEMBERSHIP_ACCESS) return ViewType.DASHBOARD;
   if (role === "contractor" && view === ViewType.DOCUMENTS) return ViewType.DASHBOARD;
   if (role === "admin" && view === ViewType.CLAIMS) return ViewType.DASHBOARD;
+  if (role === "admin" && [ViewType.ANALYTICS, ViewType.ANALYTICS_RETAIL, ViewType.ANALYTICS_SPECIALIZED_INSURANCE, ViewType.ANALYTICS_SPECIALIZED_RETAIL].includes(view)) return ViewType.DASHBOARD;
   return view;
 }
 
@@ -2062,6 +2064,11 @@ export default function App() {
               onAddLead={handleAddLead}
               onDeleteLead={handleDeleteLead}
             />
+          )}
+
+          {userRole === "contractor" && [ViewType.ANALYTICS, ViewType.ANALYTICS_RETAIL, ViewType.ANALYTICS_SPECIALIZED_INSURANCE, ViewType.ANALYTICS_SPECIALIZED_RETAIL].includes(currentView) && (
+            <ContractorAnalyticsView claims={filteredInsuranceClaims} organizationId={activeOrganization?.id || ""}
+              variant={currentView === ViewType.ANALYTICS_RETAIL ? "general-retail" : currentView === ViewType.ANALYTICS_SPECIALIZED_INSURANCE ? "specialized-insurance" : currentView === ViewType.ANALYTICS_SPECIALIZED_RETAIL ? "specialized-retail" : "general-insurance"} />
           )}
 
           {currentView === ViewType.PRODUCTION && (

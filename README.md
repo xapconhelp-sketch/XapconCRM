@@ -51,7 +51,8 @@ After the base CRM schema, `schema_security_hardening.sql`, and `schema_auth_mem
 1. `schema_contractor_claim_finances.sql`
 2. `schema_contractor_payment_receipts.sql`
 3. `schema_contractor_financial_module.sql`
+4. `schema_contractor_cost_invoices.sql`
 
-These scripts add organization-scoped financial summaries, payments and private receipts, supplements, and job costs. The commission calculator intentionally remains client-side and does not write commission settings or payouts to the database.
+These scripts add organization-scoped financial summaries, payments and private receipts, supplements, and job costs with private invoice attachments. The commission calculator intentionally remains client-side and does not write commission settings or payouts to the database.
 
 See [the activation and verification guide](docs/auth-membership-activation.md). `npm test` runs the finance tests plus the actual SQL migrations, triggers, RPCs and RLS tests in local PostgreSQL through PGlite. It does not create accounts or send emails in the connected Supabase project.
