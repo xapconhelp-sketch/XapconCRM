@@ -3,6 +3,7 @@ import { RoleModal } from "./contractor/DesignSystem";
 import { RoleInput, RoleTextarea } from "./contractor/DesignSystem";
 import IllustratedIcon from "./contractor/IllustratedIcon";
 import InsuranceCarrierComparison from "./InsuranceCarrierComparison";
+import InsuranceCarrierAnalytics from "./InsuranceCarrierAnalytics";
 import { CHART_PALETTE } from "../lib/chartPalette";
 import React, { useEffect, useMemo, useState } from "react";
 import { Lead } from "../types";
@@ -42,6 +43,7 @@ import {
 
 interface InsuranceDirectoryViewProps {
   claims: Lead[];
+  organizationId?: string;
   onNavigateToClaim: (claimId: string) => void;
   onInsuranceRegistered?: () => void;
   canManageDirectory?: boolean;
@@ -54,6 +56,7 @@ const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py
 
 export default function InsuranceDirectoryView({
   claims,
+  organizationId = "",
   onNavigateToClaim,
   onInsuranceRegistered,
   canManageDirectory = true,
@@ -263,11 +266,11 @@ export default function InsuranceDirectoryView({
   return (
     <div className="insurance-directory-page flex-1 min-h-0 overflow-y-auto bg-[#F5F7FA] text-slate-800">
       <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
-        {canManageDirectory && <nav aria-label="Secciones de aseguradoras" className="flex w-fit gap-1 rounded-lg border border-[#E0E5E9] bg-white p-1 shadow-sm">
+        <nav aria-label="Secciones de aseguradoras" className="flex w-fit gap-1 rounded-lg border border-[#E0E5E9] bg-white p-1 shadow-sm">
           <button type="button" onClick={() => setDirectoryTab("directory")} aria-current={directoryTab === "directory" ? "page" : undefined} className={`rounded-md px-4 py-2 text-xs font-semibold transition ${directoryTab === "directory" ? "bg-[#18181B] text-white shadow-sm" : "text-[#586575] hover:bg-[#F3F5F7]"}`}>Directorio</button>
-          <button type="button" onClick={() => setDirectoryTab("statistics")} aria-current={directoryTab === "statistics" ? "page" : undefined} className={`rounded-md px-4 py-2 text-xs font-semibold transition ${directoryTab === "statistics" ? "bg-[#18181B] text-white shadow-sm" : "text-[#586575] hover:bg-[#F3F5F7]"}`}>Estadística</button>
-        </nav>}
-        {directoryTab === "directory" || !canManageDirectory ? <>
+          <button type="button" onClick={() => setDirectoryTab("statistics")} aria-current={directoryTab === "statistics" ? "page" : undefined} className={`rounded-md px-4 py-2 text-xs font-semibold transition ${directoryTab === "statistics" ? "bg-[#18181B] text-white shadow-sm" : "text-[#586575] hover:bg-[#F3F5F7]"}`}>{canManageDirectory ? "Estadística" : "Análisis"}</button>
+        </nav>
+        {directoryTab === "directory" ? <>
         <header className="insurance-directory-hero relative overflow-hidden rounded-[26px] bg-[#142B40] px-5 py-4 text-white shadow-[0_18px_50px_-26px_rgba(20,43,64,.65)] sm:px-8 sm:py-5">
           <div className="pointer-events-none absolute -right-10 -top-24 h-64 w-64 rounded-full border border-white/10" />
           <div className="pointer-events-none absolute -right-1 -top-16 h-48 w-48 rounded-full border border-white/10" />
@@ -434,7 +437,7 @@ export default function InsuranceDirectoryView({
             <div className="max-w-sm"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F5F1EC] text-[#664A14]"><Building2 className="h-6 w-6" /></span><h2 className="mt-4 text-lg font-semibold text-slate-900">Elige una aseguradora</h2><p className="mt-2 text-sm leading-6 text-slate-500">Selecciona un registro del catálogo para consultar su actividad y datos de contacto.</p></div>
           </section>}
         </main>
-        </> : <InsuranceCarrierComparison claims={claims.filter((claim) => claim.is_insurance_claim)} />}
+        </> : canManageDirectory ? <InsuranceCarrierComparison claims={claims.filter((claim) => claim.is_insurance_claim)} /> : <InsuranceCarrierAnalytics claims={claims} organizationId={organizationId} />}
       </div>
 
       {canManageDirectory && isAddingContact && selectedCompany && <Dialog title="Agregar dato de contacto" subtitle={`Completa la agenda de ${selectedCompany.name}.`} onClose={() => setIsAddingContact(false)}>

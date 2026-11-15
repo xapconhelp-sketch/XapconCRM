@@ -12,8 +12,8 @@ const sections = [
   { label: 'ESPACIO DE TRABAJO', items: [
     { type: ViewType.DASHBOARD, label: 'Inicio', icon: 'home' as Illustration },
     { type: ViewType.INSURANCE_CLAIM, label: 'Reclamos de seguro', icon: 'claim' as Illustration },
-    { type: ViewType.CLAIMS, label: 'Estimador retail', icon: 'estimate' as Illustration },
     { type: ViewType.PRODUCTION, label: 'Producción', icon: 'production' as Illustration },
+    { type: ViewType.CLAIMS, label: 'Estimador retail', icon: 'estimate' as Illustration },
   ] },
   { label: 'EQUIPO Y RECURSOS', items: [
     { type: ViewType.TEAM, label: 'Equipo y cuadrillas', icon: 'team' as Illustration },
@@ -29,15 +29,10 @@ export default function ContractorNavigation({ currentView, onViewChange, collap
   const [failedLogo, setFailedLogo] = useState<string | null>(null);
   const analyticsViews = [ViewType.ANALYTICS, ViewType.ANALYTICS_RETAIL, ViewType.ANALYTICS_SPECIALIZED_INSURANCE, ViewType.ANALYTICS_SPECIALIZED_RETAIL];
   const isAnalyticsView = analyticsViews.includes(currentView);
+  const isGeneralAnalyticsView = currentView === ViewType.ANALYTICS || currentView === ViewType.ANALYTICS_RETAIL;
+  const isSpecializedAnalyticsView = currentView === ViewType.ANALYTICS_SPECIALIZED_INSURANCE || currentView === ViewType.ANALYTICS_SPECIALIZED_RETAIL;
   const [analyticsExpanded, setAnalyticsExpanded] = useState(isAnalyticsView);
-  const [generalExpanded, setGeneralExpanded] = useState(currentView === ViewType.ANALYTICS || currentView === ViewType.ANALYTICS_RETAIL);
-  const [specializedExpanded, setSpecializedExpanded] = useState(currentView === ViewType.ANALYTICS_SPECIALIZED_INSURANCE || currentView === ViewType.ANALYTICS_SPECIALIZED_RETAIL);
   const navigate = (view: ViewType) => { onViewChange(view); setOpen(false); };
-  const analyticsLink = (view: ViewType, label: string, compact: boolean) => <Button key={view} variant="ghost" title={compact ? label : undefined} aria-label={label}
-    aria-current={currentView === view ? 'page' : undefined} onClick={() => navigate(view)}
-    className={cn('contractor-nav-link', compact && 'contractor-nav-compact', !compact && 'ml-7 min-h-9 pl-8 text-xs')}>
-    {!compact && <span className="w-4" />}{!compact && <span>{label}</span>}
-  </Button>;
   const links = (compact: boolean) => <>
     <div className="flex flex-1 flex-col gap-7 overflow-y-auto px-3 py-6">
       {sections.map(section => <div key={section.label} className="flex flex-col gap-1">
@@ -49,19 +44,17 @@ export default function ContractorNavigation({ currentView, onViewChange, collap
         </Button>)}
         {section.label === 'ESPACIO DE TRABAJO' && <div className="flex flex-col gap-1">
           <Button variant="ghost" title={compact ? 'Analítica' : undefined} aria-label="Analítica" aria-expanded={analyticsExpanded}
-            aria-current={isAnalyticsView ? 'page' : undefined} onClick={() => setAnalyticsExpanded(value => !value)}
+            aria-current={isAnalyticsView ? 'page' : undefined} onClick={() => compact ? navigate(ViewType.ANALYTICS) : setAnalyticsExpanded(value => !value)}
             className={cn('contractor-nav-link', compact && 'contractor-nav-compact')}>
             <IllustratedIcon name="activity" />{!compact && <><span className="flex-1 text-left">Analítica</span><ChevronDown className={cn('size-4 transition-transform', analyticsExpanded && 'rotate-180')} /></>}
           </Button>
-          {!compact && analyticsExpanded && <div className="flex flex-col gap-1 border-l border-slate-200 ml-6 pl-2">
-            <Button variant="ghost" aria-expanded={generalExpanded} onClick={() => setGeneralExpanded(value => !value)} className="contractor-nav-link min-h-9 pl-3 text-xs">
-              <span className="flex-1 text-left">General</span><ChevronDown className={cn('size-4 transition-transform', generalExpanded && 'rotate-180')} />
+          {!compact && analyticsExpanded && <div className="ml-6 flex flex-col gap-1 border-l border-slate-200 pl-2">
+            <Button variant="ghost" aria-current={isGeneralAnalyticsView ? 'page' : undefined} onClick={() => navigate(ViewType.ANALYTICS)} className="contractor-nav-link min-h-9 pl-3 text-xs">
+              <span>General</span>
             </Button>
-            {generalExpanded && <div className="flex flex-col gap-1">{analyticsLink(ViewType.ANALYTICS, 'Aseguranzas', compact)}{analyticsLink(ViewType.ANALYTICS_RETAIL, 'Retail', compact)}</div>}
-            <Button variant="ghost" aria-expanded={specializedExpanded} onClick={() => setSpecializedExpanded(value => !value)} className="contractor-nav-link min-h-9 pl-3 text-xs">
-              <span className="flex-1 text-left">Especializada</span><ChevronDown className={cn('size-4 transition-transform', specializedExpanded && 'rotate-180')} />
+            <Button variant="ghost" aria-current={isSpecializedAnalyticsView ? 'page' : undefined} onClick={() => navigate(ViewType.ANALYTICS_SPECIALIZED_INSURANCE)} className="contractor-nav-link min-h-9 pl-3 text-xs">
+              <span>Especializada</span>
             </Button>
-            {specializedExpanded && <div className="flex flex-col gap-1">{analyticsLink(ViewType.ANALYTICS_SPECIALIZED_INSURANCE, 'Aseguranzas', compact)}{analyticsLink(ViewType.ANALYTICS_SPECIALIZED_RETAIL, 'Retail', compact)}</div>}
           </div>}
         </div>}
       </div>)}

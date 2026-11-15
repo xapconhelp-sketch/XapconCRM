@@ -2068,7 +2068,7 @@ export default function App() {
 
           {userRole === "contractor" && [ViewType.ANALYTICS, ViewType.ANALYTICS_RETAIL, ViewType.ANALYTICS_SPECIALIZED_INSURANCE, ViewType.ANALYTICS_SPECIALIZED_RETAIL].includes(currentView) && (
             <ContractorAnalyticsView claims={filteredInsuranceClaims} organizationId={activeOrganization?.id || ""}
-              variant={currentView === ViewType.ANALYTICS_RETAIL ? "general-retail" : currentView === ViewType.ANALYTICS_SPECIALIZED_INSURANCE ? "specialized-insurance" : currentView === ViewType.ANALYTICS_SPECIALIZED_RETAIL ? "specialized-retail" : "general-insurance"} />
+              currentView={currentView as ViewType.ANALYTICS | ViewType.ANALYTICS_RETAIL | ViewType.ANALYTICS_SPECIALIZED_INSURANCE | ViewType.ANALYTICS_SPECIALIZED_RETAIL} onViewChange={(view) => navigateToView(view)} />
           )}
 
           {currentView === ViewType.PRODUCTION && (
@@ -2087,6 +2087,7 @@ export default function App() {
           {currentView === ViewType.INSURANCE_DIRECTORY && (
             <InsuranceDirectoryView
               claims={directoryClaims}
+              organizationId={activeOrganization?.id || ""}
               onNavigateToClaim={handleNavigateToInsuranceClaim}
               canManageDirectory={userRole === "admin"}
               directoryRefreshKey={insuranceRefreshKey}
