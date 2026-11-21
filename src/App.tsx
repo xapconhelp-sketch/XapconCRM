@@ -8,6 +8,7 @@ import { publicEstimate } from "./lib/estimatePrivacy.js";
 import { leadSummarySelect, preserveCaseDocuments } from "./lib/leadQueries.js";
 import { caseFileService } from "./services/caseFileService";
 import { backgroundRefresh } from "./lib/backgroundRefresh.js";
+import { adjacentClaimStage } from "./lib/claimPipeline";
 
 import Sidebar from "./components/Sidebar";
 import ContractorNavigation from "./components/contractor/Navigation";
@@ -1462,46 +1463,13 @@ export default function App() {
   // Actions: Production Kanban View connected to Supabase Leads
   const handleMoveProject = async (projectId: string, direction: "next" | "prev") => {
     if (!session) return;
-    const stages = [
-      "Nuevos",
-      "Estimados",
-      "En disputa",
-      "Aprobado",
-      "Aprobado y Suplementado",
-      "Construcción",
-      "Solicitud Depreciación",
-      "Finalizado",
-      "Cancelado",
-      "Negados"
-    ];
-
-    const claim = insuranceClaims.find(c => c.id === projectId);
+    const claim = insuranceClaims.find(c => c.id === projectId) || leads.find(c => c.id === projectId);
     if (!claim) return;
 
     const pendingMove = stageMoves.current.get(projectId);
     const currentStatus = pendingMove?.targets.at(-1) ?? claim.status;
-    const legacyStageAliases: Record<string, string> = {
-      "Nuevo": "Nuevos",
-      "Inspección": "Estimados",
-      "Esperando Scope": "Estimados",
-      "Esperando Depreciación": "Solicitud Depreciación",
-    };
-    const normalizedStatus = legacyStageAliases[currentStatus] || currentStatus;
-    let currentIdx = stages.indexOf(normalizedStatus);
-    if (currentIdx === -1) {
-      if (currentStatus === "Nuevo") {
-        currentIdx = 0;
-      } else {
-        currentIdx = 1;
-      }
-    }
-
-    let newIdx = currentIdx;
-    if (direction === "next" && currentIdx < stages.length - 1) newIdx++;
-    if (direction === "prev" && currentIdx > 0) newIdx--;
-
-    const newStatus = stages[newIdx];
-    if (newStatus === currentStatus) return;
+    const newStatus = adjacentClaimStage(currentStatus, direction);
+    if (!newStatus) return;
 
     const move = pendingMove ?? { confirmed: currentStatus, targets: [], revision: 0 };
     const alreadySaving = move.targets.length > 0;
@@ -1510,6 +1478,7 @@ export default function App() {
     stageMoves.current.set(projectId, move);
     setStageMoveError("");
     setInsuranceClaims(prev => prev.map(c => c.id === projectId ? { ...c, status: newStatus } : c));
+    setLeads(prev => prev.map(c => c.id === projectId ? { ...c, status: newStatus } : c));
     if (alreadySaving) return;
 
     const sameSession = () => dataContext.current.startsWith(`${session.user.id}:`);
@@ -1537,13 +1506,17 @@ export default function App() {
           },
         });
         if (timelineError) console.error("Error registrando el cambio de etapa:", timelineError.message);
-        else if (sameSession()) setInsuranceClaims(prev => prev.map(c => c.id === projectId ? { ...c, timeline: timeline as TimelineEvent[] } : c));
+        else if (sameSession()) {
+          setInsuranceClaims(prev => prev.map(c => c.id === projectId ? { ...c, timeline: timeline as TimelineEvent[] } : c));
+          setLeads(prev => prev.map(c => c.id === projectId ? { ...c, timeline: timeline as TimelineEvent[] } : c));
+        }
         move.targets.shift();
       }
     } catch (error) {
       saveFailed = true;
       if (sameSession()) {
         setInsuranceClaims(prev => prev.map(c => c.id === projectId ? { ...c, status: move.confirmed } : c));
+        setLeads(prev => prev.map(c => c.id === projectId ? { ...c, status: move.confirmed } : c));
         setStageMoveError(`No se pudo guardar el cambio de etapa. ${error instanceof Error ? error.message : "Intenta de nuevo."}`);
       }
     } finally {
@@ -1699,16 +1672,16 @@ export default function App() {
       {mobileMenuOpen && userRole === "admin" && (
         <div className="admin-mobile-drawer md:hidden fixed inset-0 top-[65px] bg-[#102A46] z-50 p-6 flex flex-col space-y-3 animate-fade-in select-none">
           {[
-            { id: ViewType.DASHBOARD, label: "Dashboard" },
-            { id: ViewType.INSURANCE_CLAIM, label: "Insurance Claim" },
-            { id: ViewType.PRODUCTION, label: "Production Pipeline" },
+            { id: ViewType.DASHBOARD, label: "Inicio" },
+            { id: ViewType.INSURANCE_CLAIM, label: "Reclamos de seguro" },
+            { id: ViewType.PRODUCTION, label: "Producción" },
             ...(userRole === "admin" ? [
               { id: ViewType.INSURANCE_DIRECTORY, label: "Aseguradoras" },
               { id: ViewType.VALORES_INSURANCE, label: "Valores Insurance" },
               { id: ViewType.CONTRACTOR_CASE_REPORTS, label: "Informes por empresa" },
               { id: ViewType.DOCUMENTS, label: "Documentos" },
             ] : []),
-            { id: ViewType.TEAM, label: "Personal & Crews" }
+            { id: ViewType.TEAM, label: "Equipo y cuadrillas" }
           ].map((item) => (
             <button
               key={item.id}

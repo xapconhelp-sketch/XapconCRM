@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS public.contractor_claim_supplements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   claim_id UUID NOT NULL REFERENCES public.leads(id) ON DELETE CASCADE,
   organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  entry_number SMALLINT NOT NULL,
   requested_amount NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (requested_amount >= 0),
   approved_amount NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (approved_amount >= 0),
   submitted_date DATE,

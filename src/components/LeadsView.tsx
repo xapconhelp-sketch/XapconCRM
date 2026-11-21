@@ -2069,7 +2069,7 @@ export default function LeadsView({
                 <button
                   type="button"
                   onClick={() => onMoveProject(selectedLead.id, "next")}
-                  disabled={selectedLead.status === "Cancelado"}
+                  disabled={selectedLead.status === "Cancelado" || selectedLead.status === "Negados"}
                   className="claim-stage-next px-3 py-1.5 bg-[#8C6A22] hover:bg-[#664A14] disabled:opacity-40 disabled:cursor-not-allowed text-slate-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer"
                   title="Avanzar a la siguiente etapa en el Kanban"
                 >

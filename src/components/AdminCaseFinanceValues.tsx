@@ -1,5 +1,6 @@
+import Field from "./ClaimFinanceField";
 import { useEffect, useState } from "react";
-import { AlertCircle, CalendarDays, Check, CheckCircle2, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, Check, CheckCircle2, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import type { Lead } from "../types";
 import { supabase } from "../lib/supabase";
 
@@ -16,7 +17,7 @@ type Entry = {
 };
 type StoredEntry = Omit<Entry, "amount"> & { amount: number | null };
 const CAPACITY: Record<"sow" | "supplement", number> = { sow: 5, supplement: 2 };
-const emptyEntry = (claim: Lead, recordType: RecordType, entryNumber: number): Entry => ({
+const emptyEntry = (claim: Pick<Lead, "id" | "organizationId">, recordType: RecordType, entryNumber: number): Entry => ({
   lead_id: claim.id,
   organization_id: claim.organizationId || "",
   record_type: recordType,
@@ -26,7 +27,7 @@ const emptyEntry = (claim: Lead, recordType: RecordType, entryNumber: number): E
   estimate_sent: false,
 });
 
-export default function AdminCaseFinanceValues({ claim }: { claim: Lead }) {
+export default function AdminCaseFinanceValues({ claim, sowOnly = false }: { claim: Pick<Lead, "id" | "name" | "organizationId">; sowOnly?: boolean }) {
   const [estimate, setEstimate] = useState<Entry>(() => emptyEntry(claim, "estimate", 1));
   const [sows, setSows] = useState<Entry[]>([]);
   const [supplements, setSupplements] = useState<Entry[]>([]);
@@ -45,7 +46,8 @@ export default function AdminCaseFinanceValues({ claim }: { claim: Lead }) {
       const { data, error } = await supabase.from("admin_insurance_values")
         .select("id,lead_id,organization_id,record_type,entry_number,amount,event_date,estimate_sent")
         .eq("lead_id", claim.id)
-        .in("record_type", ["estimate", "sow", "supplement"])
+        .eq("organization_id", claim.organizationId || "")
+        .in("record_type", sowOnly ? ["sow"] : ["estimate", "sow", "supplement"])
         .order("record_type").order("entry_number");
       if (cancelled) return;
       if (error) {
@@ -67,7 +69,7 @@ export default function AdminCaseFinanceValues({ claim }: { claim: Lead }) {
       setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [claim.id, claim.organizationId]);
+  }, [claim.id, claim.organizationId, sowOnly]);
 
   const update = (recordType: RecordType, entryNumber: number, changes: Partial<Entry>) => {
     const updateRow = (row: Entry) => row.entry_number === entryNumber ? { ...row, ...changes } : row;
@@ -125,7 +127,7 @@ export default function AdminCaseFinanceValues({ claim }: { claim: Lead }) {
     const key = `${entry.record_type}:${entry.entry_number}`;
     setSavingKey(key);
     try {
-      const { error } = await supabase.from("admin_insurance_values").delete().eq("id", entry.id).eq("lead_id", claim.id);
+      const { error } = await supabase.from("admin_insurance_values").delete().eq("id", entry.id).eq("lead_id", claim.id).eq("record_type", entry.record_type).select("id").single();
       if (error) throw error;
       if (entry.record_type === "sow") setSows(rows => rows.filter(row => row.entry_number !== entry.entry_number));
       if (entry.record_type === "supplement") setSupplements(rows => rows.filter(row => row.entry_number !== entry.entry_number));
@@ -153,8 +155,8 @@ export default function AdminCaseFinanceValues({ claim }: { claim: Lead }) {
         const dateLabel = entry.record_type === "estimate" ? "Fecha enviado" : entry.record_type === "sow" ? "Fecha recibido" : "Fecha preparado";
         return <div key={key} className="admin-finance-row">
           <div className="admin-finance-entry-name"><strong>{label}</strong>{entry.record_type === "estimate" && <label><input type="checkbox" checked={entry.estimate_sent} onChange={event => update("estimate", 1, { estimate_sent: event.target.checked })} />Enviado</label>}</div>
-          <label className="admin-finance-field"><span>Monto</span><span className="admin-finance-input"><b>$</b><input aria-label={`${label} monto`} type="number" min="0" step="0.01" value={entry.amount} onChange={event => update(entry.record_type, entry.entry_number, { amount: event.target.value })} placeholder="0.00" /></span></label>
-          <label className="admin-finance-field"><span>{dateLabel}</span><span className="admin-finance-input admin-finance-date"><CalendarDays className="h-3.5 w-3.5" /><input aria-label={`${label} fecha`} type="date" value={entry.event_date || ""} onChange={event => update(entry.record_type, entry.entry_number, { event_date: event.target.value || null })} /></span></label>
+          <Field label="Monto" accessibleLabel={`${label} monto`} type="number" min={0} value={entry.amount} onChange={value => update(entry.record_type, entry.entry_number, { amount: value })} />
+          <Field label={dateLabel} accessibleLabel={`${label} fecha`} type="date" value={entry.event_date || ""} onChange={value => update(entry.record_type, entry.entry_number, { event_date: value || null })} />
           <div className="admin-finance-actions"><button type="button" onClick={() => void save(entry)} disabled={busy || (!entry.id && !entry.amount.trim() && !entry.event_date && !entry.estimate_sent)} className="admin-finance-save"><Check className="h-3.5 w-3.5" />{busy ? "Guardando…" : "Guardar"}</button>{entry.record_type !== "estimate" && <button type="button" onClick={() => void removeRow(entry)} disabled={busy} aria-label={`Eliminar ${label}`} title={`Eliminar ${label}`} className="admin-finance-delete"><Trash2 className="h-3.5 w-3.5" /></button>}</div>
         </div>;
       })}</div>
@@ -162,9 +164,9 @@ export default function AdminCaseFinanceValues({ claim }: { claim: Lead }) {
   );
 
   return <section className="space-y-4" aria-label={`Finanzas de ${claim.name}`}>
-    {notice && <div role={notice.kind === "error" ? "alert" : "status"} className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-[11px] ${notice.kind === "error" ? "border-red-100 bg-red-50 text-red-800" : "border-emerald-100 bg-emerald-50 text-emerald-800"}`}>{notice.kind === "error" ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}{notice.message}</div>}
-    {renderCard("Estimado", "estimate", [estimate])}
+    {notice && <div role={notice.kind === "error" ? "alert" : "status"} className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-xs ${notice.kind === "error" ? "border-red-100 bg-red-50 text-red-800" : "border-emerald-100 bg-emerald-50 text-emerald-800"}`}>{notice.kind === "error" ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}{notice.message}</div>}
+    {!sowOnly && renderCard("Estimado", "estimate", [estimate])}
     {renderCard("SOW recibidos", "sow", sows, CAPACITY.sow)}
-    {renderCard("Suplementos", "supplement", supplements, CAPACITY.supplement)}
+    {!sowOnly && renderCard("Suplementos", "supplement", supplements, CAPACITY.supplement)}
   </section>;
 }

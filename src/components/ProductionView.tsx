@@ -1,5 +1,6 @@
 import { RoleSectionIcon, RoleIconTile } from "./contractor/DesignSystem";
 import { KPI, Lead, ViewType } from "../types";
+import { CLAIM_PIPELINE_STAGES, normalizeClaimStage } from "../lib/claimPipeline";
 import {
   ArrowRight,
   ArrowLeft,
@@ -15,25 +16,19 @@ interface ProductionViewProps {
   onMoveProject: (projectId: string, direction: "next" | "prev") => void;
 }
 
-const PIPELINE_COLUMNS = [
-  { id: "Nuevos", title: "Nuevos", accent: "#64748B", tint: "#F1F5F9", header: "#688A72" },
-  { id: "Estimados", title: "Estimados", accent: "#4385A4", tint: "#EAF3F7", header: "#688A72" },
-  { id: "En disputa", title: "En disputa", accent: "#B8794B", tint: "#F7EFE9", header: "#B8794B" },
-  { id: "Aprobado", title: "Aprobado", accent: "#57846C", tint: "#EDF4EF", header: "#688A72" },
-  { id: "Aprobado y Suplementado", title: "Aprobado y Suplementado", accent: "#57846C", tint: "#EDF4EF", header: "#688A72" },
-  { id: "Construcción", title: "Construcción", accent: "#4F7390", tint: "#EBF1F5", header: "#796E9A" },
-  { id: "Solicitud Depreciación", title: "Solicitud Depreciación", accent: "#AD8059", tint: "#F7F4E9" },
-  { id: "Finalizado", title: "Finalizado", accent: "#4E8C75", tint: "#EAF4F0", header: "#617F9B" },
-  { id: "Cancelado", title: "Cancelado", accent: "#7B8793", tint: "#E6ECF1", header: "#777F87" },
-  { id: "Negados", title: "Negados", accent: "#B6484F", tint: "#F9ECEC", header: "#AD5C61" },
-];
-
-const legacyStageAliases: Record<string, string> = {
-  "Nuevo": "Nuevos",
-  "Inspección": "Estimados",
-  "Esperando Scope": "Estimados",
-  "Esperando Depreciación": "Solicitud Depreciación",
+const PIPELINE_STYLE: Record<string, { accent: string; tint: string; header?: string }> = {
+  "Nuevos": { accent: "#64748B", tint: "#F1F5F9", header: "#688A72" },
+  "Estimados": { accent: "#4385A4", tint: "#EAF3F7", header: "#688A72" },
+  "En disputa": { accent: "#B8794B", tint: "#F7EFE9", header: "#B8794B" },
+  "Aprobado": { accent: "#57846C", tint: "#EDF4EF", header: "#688A72" },
+  "Aprobado y Suplementado": { accent: "#57846C", tint: "#EDF4EF", header: "#688A72" },
+  "Construcción": { accent: "#4F7390", tint: "#EBF1F5", header: "#796E9A" },
+  "Solicitud Depreciación": { accent: "#AD8059", tint: "#F7F4E9" },
+  "Finalizado": { accent: "#4E8C75", tint: "#EAF4F0", header: "#617F9B" },
+  "Cancelado": { accent: "#7B8793", tint: "#E6ECF1", header: "#777F87" },
+  "Negados": { accent: "#B6484F", tint: "#F9ECEC", header: "#AD5C61" },
 };
+const PIPELINE_COLUMNS = CLAIM_PIPELINE_STAGES.map(id => ({ id, title: id, ...PIPELINE_STYLE[id] }));
 
 export default function ProductionView({ claims, onMoveProject, adminMetrics }: ProductionViewProps) {
   return (
@@ -52,7 +47,7 @@ export default function ProductionView({ claims, onMoveProject, adminMetrics }: 
       <div className="flex snap-x gap-4 overflow-x-auto pb-4 select-none">
         {PIPELINE_COLUMNS.map((column, index) => {
           const projects = claims.filter((claim) => {
-            const stage = legacyStageAliases[claim.status] || claim.status;
+            const stage = normalizeClaimStage(claim.status);
             return stage === column.id;
           });
 
